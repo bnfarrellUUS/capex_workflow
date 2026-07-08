@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getRequest, approveRequest, rejectRequest, resubmitRequest, completeFinance,
+  uploadAttachment, deleteAttachment, attachmentUrl,
   type CapexRequestData,
 } from '../api/requests'
 import { useMe } from '../auth/useMe'
@@ -21,6 +22,7 @@ export default function RequestDetailPage() {
   const [comment, setComment] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   async function act(fn: () => Promise<CapexRequestData>) {
     setErr(null)
@@ -99,6 +101,32 @@ export default function RequestDetailPage() {
           ))}
           {req.actions.length === 0 && <li className="text-slate-500">No actions yet.</li>}
         </ul>
+      </section>
+
+      <section>
+        <h2 className="mb-1 font-semibold">Attachments</h2>
+        <ul className="space-y-1 text-sm">
+          {req.attachments.map((a) => (
+            <li key={a.id} className="flex items-center gap-3">
+              <a className="text-brand-blue hover:underline" href={attachmentUrl(id, a.id)}>{a.filename}</a>
+              <span className="text-xs text-slate-500">{(a.size / 1024).toFixed(1)} KB</span>
+              {canEdit && (
+                <button className="text-xs text-red-600" disabled={busy}
+                  onClick={() => act(() => deleteAttachment(id, a.id))}>Remove</button>
+              )}
+            </li>
+          ))}
+          {req.attachments.length === 0 && <li className="text-slate-500">No attachments.</li>}
+        </ul>
+        {canEdit && (
+          <div className="mt-2">
+            <input type="file" ref={fileRef} className="text-sm" />
+            <Button className="ml-2" disabled={busy} onClick={() => {
+              const f = fileRef.current?.files?.[0]
+              if (f) act(() => uploadAttachment(id, f))
+            }}>Upload</Button>
+          </div>
+        )}
       </section>
 
       {err && <p className="text-sm text-red-600" role="alert">{err}</p>}

@@ -1,4 +1,4 @@
-import { api } from './client'
+import { api, apiUpload } from './client'
 
 export interface EquipItem {
   id?: string
@@ -46,6 +46,7 @@ export interface CapexRequestData {
     created_at: string | null
     actor_name: string | null
   }[]
+  attachments: { id: string; filename: string; content_type: string; size: number }[]
 }
 
 export function createDraft(): Promise<CapexRequestData> {
@@ -71,4 +72,15 @@ export function resubmitRequest(id: string): Promise<CapexRequestData> {
 }
 export function completeFinance(id: string, costs: Record<string, string | null>): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/finance`, { method: 'POST', body: costs })
+}
+export function uploadAttachment(id: string, file: File): Promise<CapexRequestData> {
+  const fd = new FormData()
+  fd.append('file', file)
+  return apiUpload<CapexRequestData>(`/requests/${id}/attachments`, fd)
+}
+export function deleteAttachment(id: string, attId: string): Promise<CapexRequestData> {
+  return api<CapexRequestData>(`/requests/${id}/attachments/${attId}`, { method: 'DELETE' })
+}
+export function attachmentUrl(id: string, attId: string): string {
+  return `/api/requests/${id}/attachments/${attId}`
 }

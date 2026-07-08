@@ -52,3 +52,22 @@ export async function api<T = unknown>(
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
 }
+
+export async function apiUpload<T = unknown>(path: string, formData: FormData): Promise<T> {
+  const token = await ensureCsrf()
+  const res = await fetch(`/api${path}`, {
+    method: 'POST', credentials: 'include', headers: { 'X-CSRFToken': token }, body: formData,
+  })
+  if (!res.ok) {
+    if (res.status === 401) csrfToken = null
+    let message = res.statusText
+    try {
+      const d = await res.json()
+      if (d && d.error) message = d.error
+    } catch {
+      /* non-JSON */
+    }
+    throw new ApiError(res.status, message)
+  }
+  return (await res.json()) as T
+}
