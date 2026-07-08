@@ -105,7 +105,9 @@ class TestConfig(BaseConfig):
 
 class ProdConfig(BaseConfig):
     # e.g. mssql+pyodbc://user:pass@host/db?driver=ODBC+Driver+18+for+SQL+Server
-    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
+    # Read lazily (via .get) so importing the module never fails when the var
+    # is unset in dev/test; deployment must set DATABASE_URL.
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
 ```
 
 - [ ] **Step 3: Write the extensions module**
@@ -343,7 +345,7 @@ def verify_password(pw: str, hashed: str) -> bool:
 `backend/app/models/__init__.py` (replace the empty file):
 ```python
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional
 
@@ -355,6 +357,10 @@ from app.extensions import db
 
 def _id() -> str:
     return uuid.uuid4().hex
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class User(db.Model):
@@ -389,9 +395,9 @@ class User(db.Model):
     locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     reset_token: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True)
     reset_token_expiry: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=_utcnow, onupdate=_utcnow
     )
 
 
@@ -404,7 +410,8 @@ class Division(db.Model):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     l1_approver_id: Mapped[Optional[str]] = mapped_column(
-        ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
+        ForeignKey("users.id", ondelete="NO ACTION", use_alter=True, name="fk_division_l1_approver"),
+        nullable=True,
     )
     l1_approver: Mapped[Optional["User"]] = relationship(
         "User", foreign_keys=[l1_approver_id]
@@ -444,7 +451,7 @@ class CapexRequest(db.Model):
         ForeignKey("divisions.id", ondelete="NO ACTION"), nullable=True
     )
     division: Mapped[Optional["Division"]] = relationship("Division")
-    request_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    request_date: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
     # Basic info
     description: Mapped[str] = mapped_column(Text, default="")
@@ -481,9 +488,9 @@ class CapexRequest(db.Model):
     required_levels: Mapped[int] = mapped_column(Integer, default=1)
     current_level: Mapped[int] = mapped_column(Integer, default=0)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=_utcnow, onupdate=_utcnow
     )
 
     equipment_items: Mapped[list["EquipmentItem"]] = relationship(
@@ -527,7 +534,7 @@ class Attachment(db.Model):
     size: Mapped[int] = mapped_column(Integer)
     uploaded_by_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="NO ACTION"))
     uploaded_by: Mapped["User"] = relationship("User")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
 
 class ApprovalAction(db.Model):
@@ -546,7 +553,7 @@ class ApprovalAction(db.Model):
     action: Mapped[str] = mapped_column(String)  # SUBMITTED | APPROVED | REJECTED | RESUBMITTED | FINANCE_COMPLETED
     level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
 
 class NotificationLog(db.Model):
@@ -558,7 +565,7 @@ class NotificationLog(db.Model):
     )
     recipient: Mapped[str] = mapped_column(String)
     type: Mapped[str] = mapped_column(String)  # ASSIGNED | DECIDED | FINANCE_READY | REMINDER
-    sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    sent_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
 
 class Counter(db.Model):
