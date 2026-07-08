@@ -11,6 +11,8 @@ import DivisionNewPage from './routes/admin/DivisionNewPage'
 import DivisionEditPage from './routes/admin/DivisionEditPage'
 import ThresholdsPage from './routes/admin/ThresholdsPage'
 import ProfilePage from './routes/ProfilePage'
+import NewRequestPage from './routes/NewRequestPage'
+import WizardPage from './routes/WizardPage'
 
 export default function App() {
   return (
@@ -19,6 +21,8 @@ export default function App() {
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/requests/new" element={<NewRequestPage />} />
+        <Route path="/requests/:id/edit" element={<WizardPage />} />
         <Route element={<AdminLayout />}>
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/new" element={<UserNewPage />} />

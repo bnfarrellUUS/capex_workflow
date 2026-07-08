@@ -6,6 +6,7 @@ import { Button } from './ui/Button'
 
 const NAV = [
   { to: '/', label: 'Dashboard', roles: [] as string[], end: true },
+  { to: '/requests/new', label: 'New Request', roles: [] as string[] },
   { to: '/admin/users', label: 'Users', roles: ['ADMIN'] },
   { to: '/admin/divisions', label: 'Divisions', roles: ['ADMIN'] },
   { to: '/admin/thresholds', label: 'Approval Thresholds', roles: ['ADMIN'] },
