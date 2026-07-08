@@ -22,7 +22,6 @@
 **Files:**
 - Create: `frontend/package.json`
 - Create: `frontend/tsconfig.json`
-- Create: `frontend/tsconfig.node.json`
 - Create: `frontend/vite.config.ts`
 - Create: `frontend/index.html`
 - Create: `frontend/.gitignore`
@@ -45,10 +44,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.59.0",
@@ -69,7 +68,9 @@
 }
 ```
 
-- [ ] **Step 2: Write the TypeScript configs**
+- [ ] **Step 2: Write the TypeScript config**
+
+A single `tsconfig.json` (no project references / composite — that path makes `tsc -b` emit `vite.config.js`/`.d.ts`/`.tsbuildinfo` artifacts). One config covers `src` and `vite.config.ts` with `noEmit`.
 
 `frontend/tsconfig.json`:
 ```json
@@ -92,23 +93,7 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["vitest/globals"]
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
-```
-
-`frontend/tsconfig.node.json`:
-```json
-{
-  "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true,
-    "strict": true
-  },
-  "include": ["vite.config.ts"]
+  "include": ["src", "vite.config.ts"]
 }
 ```
 
@@ -205,6 +190,7 @@ node_modules/
 dist/
 *.local
 .env
+*.tsbuildinfo
 ```
 
 - [ ] **Step 8: Install and verify build + dev server**
