@@ -63,7 +63,7 @@ export function UserForm({
       <div className="space-y-1">
         <Label htmlFor="divisionId">Division</Label>
         <select id="divisionId" name="divisionId" defaultValue={user?.divisionId ?? "none"}
-          className="w-full rounded-md border px-3 py-2 text-sm">
+          className="w-full rounded-md border bg-background px-3 py-2 text-sm">
           <option value="none">— None —</option>
           {divisions.map((d) => (
             <option key={d.id} value={d.id}>{d.number} — {d.name}</option>

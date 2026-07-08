@@ -16,9 +16,9 @@ model User {
   roles            String    @default("[\"REQUESTOR\"]") // JSON array of role strings
   active           Boolean   @default(true)
   divisionId       String?
-  division         Division? @relation(fields: [divisionId], references: [id])
+  division         Division? @relation(fields: [divisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   delegateId       String?
-  delegate         User?     @relation("Delegation", fields: [delegateId], references: [id])
+  delegate         User?     @relation("Delegation", fields: [delegateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   delegatesFor     User[]    @relation("Delegation")
   failedLogins     Int       @default(0)
   lockedUntil      DateTime?
@@ -41,7 +41,7 @@ model Division {
   name         String
   active       Boolean @default(true)
   l1ApproverId String?
-  l1Approver   User?   @relation("L1Approver", fields: [l1ApproverId], references: [id])
+  l1Approver   User?   @relation("L1Approver", fields: [l1ApproverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   users    User[]
   requests CapexRequest[]
@@ -52,7 +52,7 @@ model ApprovalThreshold {
   level      Int      @unique // 1, 2, 3
   maxAmount  Decimal? // requests up to this amount stop at this level; null = no limit (top level)
   approverId String?  // company-wide approver for levels 2 and 3; level 1 uses Division.l1Approver
-  approver   User?    @relation("LevelApprover", fields: [approverId], references: [id])
+  approver   User?    @relation("LevelApprover", fields: [approverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model CapexRequest {
@@ -60,11 +60,11 @@ model CapexRequest {
   number            String    @unique // CX000001
   status            String    @default("DRAFT")
   requestorId       String
-  requestor         User      @relation("Requestor", fields: [requestorId], references: [id])
+  requestor         User      @relation("Requestor", fields: [requestorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assigneeId        String?
-  assignee          User?     @relation("Assignee", fields: [assigneeId], references: [id])
+  assignee          User?     @relation("Assignee", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   divisionId        String?
-  division          Division? @relation(fields: [divisionId], references: [id])
+  division          Division? @relation(fields: [divisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   requestDate       DateTime  @default(now())
 
   // Basic info
@@ -114,7 +114,7 @@ model CapexRequest {
 model EquipmentItem {
   id        String       @id @default(cuid())
   requestId String
-  request   CapexRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  request   CapexRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   units     Int
   condition String // "NEW" | "USED"
   type      String
@@ -126,22 +126,22 @@ model EquipmentItem {
 model Attachment {
   id           String       @id @default(cuid())
   requestId    String
-  request      CapexRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  request      CapexRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   filename     String
   storagePath  String
   contentType  String
   size         Int
   uploadedById String
-  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdAt    DateTime     @default(now())
 }
 
 model ApprovalAction {
   id         String       @id @default(cuid())
   requestId  String
-  request    CapexRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  request    CapexRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   actorId    String
-  actor      User         @relation(fields: [actorId], references: [id])
+  actor      User         @relation(fields: [actorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   actedForId String? // set when actor acted as a delegate for this user id
   action     String // SUBMITTED | APPROVED | REJECTED | RESUBMITTED | FINANCE_COMPLETED
   level      Int?
@@ -152,7 +152,7 @@ model ApprovalAction {
 model NotificationLog {
   id        String        @id @default(cuid())
   requestId String?
-  request   CapexRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  request   CapexRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   recipient String
   type      String // ASSIGNED | DECIDED | FINANCE_READY | REMINDER
   sentAt    DateTime      @default(now())

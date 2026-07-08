@@ -19,13 +19,16 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
  * 5 consecutive failures locks the account for 15 minutes.
  */
 export async function authenticate(username: string, password: string): Promise<User | null> {
-  const user = await prisma.user.findUnique({ where: { username } });
+  const user = await prisma.user.findUnique({ where: { username: username.toLowerCase() } });
   if (!user || !user.active) return null;
   if (user.lockedUntil && user.lockedUntil > new Date()) return null;
 
+  const baselineFailures =
+    user.lockedUntil && user.lockedUntil <= new Date() ? 0 : user.failedLogins;
+
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
-    const failures = user.failedLogins + 1;
+    const failures = baselineFailures + 1;
     await prisma.user.update({
       where: { id: user.id },
       data: {

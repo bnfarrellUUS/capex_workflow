@@ -36,13 +36,13 @@ export async function createUser(input: {
     return { ok: false, error: "Password must be at least 8 characters." };
   }
   const clash = await prisma.user.findFirst({
-    where: { OR: [{ username: input.username }, { email: input.email }] },
+    where: { OR: [{ username: input.username.toLowerCase() }, { email: input.email.toLowerCase() }] },
   });
   if (clash) return { ok: false, error: "Username or email already exists." };
   await prisma.user.create({
     data: {
-      username: input.username,
-      email: input.email,
+      username: input.username.toLowerCase(),
+      email: input.email.toLowerCase(),
       name: input.name,
       passwordHash: await hashPassword(input.password),
       roles: serializeRoles(input.roles),
@@ -57,14 +57,14 @@ export async function updateUser(
   input: { name: string; email: string; roles: Role[]; divisionId: string | null; active: boolean }
 ): Promise<ServiceResult> {
   const clash = await prisma.user.findFirst({
-    where: { email: input.email, NOT: { id } },
+    where: { email: input.email.toLowerCase(), NOT: { id } },
   });
   if (clash) return { ok: false, error: "Email already in use." };
   await prisma.user.update({
     where: { id },
     data: {
       name: input.name,
-      email: input.email,
+      email: input.email.toLowerCase(),
       roles: serializeRoles(input.roles),
       divisionId: input.divisionId,
       active: input.active,

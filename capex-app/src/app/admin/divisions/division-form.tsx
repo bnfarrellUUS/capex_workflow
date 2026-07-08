@@ -37,7 +37,7 @@ export function EditDivisionRow({ division, approvers }: { division: DivisionDat
       <span className="w-20 text-sm font-mono">{division.number}</span>
       <Input name="name" defaultValue={division.name} className="w-56" />
       <select name="l1ApproverId" defaultValue={division.l1ApproverId ?? "none"}
-        className="rounded-md border px-2 py-1.5 text-sm">
+        className="rounded-md border bg-background px-2 py-1.5 text-sm">
         <option value="none">— No L1 approver —</option>
         {approvers.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
