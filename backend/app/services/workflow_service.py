@@ -70,3 +70,68 @@ def submit(request_id, actor_id):
     _add_action(req, actor_id, "SUBMITTED", level=1)
     db.session.commit()
     return req
+
+
+def _guarded_transition(request_id, expected_level, values):
+    stmt = (sql_update(CapexRequest)
+            .where(CapexRequest.id == request_id, CapexRequest.current_level == expected_level)
+            .values(**values))
+    result = db.session.execute(stmt)
+    if result.rowcount != 1:
+        raise ServiceError("This request was already actioned by someone else.", 409)
+
+
+def _require_assignee(req, actor_id):
+    if not req.status.startswith("PENDING_L"):
+        raise ServiceError("This request is not awaiting a decision.")
+    if req.assignee_id != actor_id:
+        raise ServiceError("This request is not assigned to you.", 403)
+
+
+def _acted_for(req, level, actor_id, thresholds):
+    intended = intended_approver(level, req.division, thresholds)
+    if intended is not None and intended.id != actor_id:
+        return intended.id
+    return None
+
+
+def approve(request_id, actor_id, comment=None):
+    req = db.session.get(CapexRequest, request_id)
+    if req is None:
+        raise ServiceError("Request not found.", 404)
+    _require_assignee(req, actor_id)
+    thresholds = threshold_service.list_thresholds()
+    level = req.current_level
+    acted_for = _acted_for(req, level, actor_id, thresholds)
+
+    if level >= req.required_levels:
+        values = {"status": "APPROVED", "assignee_id": None}
+    else:
+        nxt = level + 1
+        assignee = resolve_assignee(nxt, req.division, thresholds)
+        if assignee is None:
+            raise ServiceError(f"No approver configured for level {nxt}.")
+        values = {"status": f"PENDING_L{nxt}", "current_level": nxt, "assignee_id": assignee.id}
+
+    _guarded_transition(req.id, level, values)
+    _add_action(req, actor_id, "APPROVED", level=level, acted_for_id=acted_for, comment=comment)
+    db.session.commit()
+    db.session.refresh(req)
+    return req
+
+
+def reject(request_id, actor_id, comment):
+    if not comment or not comment.strip():
+        raise ServiceError("A comment is required to reject a request.")
+    req = db.session.get(CapexRequest, request_id)
+    if req is None:
+        raise ServiceError("Request not found.", 404)
+    _require_assignee(req, actor_id)
+    thresholds = threshold_service.list_thresholds()
+    level = req.current_level
+    acted_for = _acted_for(req, level, actor_id, thresholds)
+    _guarded_transition(req.id, level, {"status": "REJECTED", "assignee_id": None})
+    _add_action(req, actor_id, "REJECTED", level=level, acted_for_id=acted_for, comment=comment)
+    db.session.commit()
+    db.session.refresh(req)
+    return req
