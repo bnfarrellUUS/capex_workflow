@@ -9,6 +9,7 @@ import UserEditPage from './routes/admin/UserEditPage'
 import DivisionsPage from './routes/admin/DivisionsPage'
 import DivisionNewPage from './routes/admin/DivisionNewPage'
 import DivisionEditPage from './routes/admin/DivisionEditPage'
+import ThresholdsPage from './routes/admin/ThresholdsPage'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/admin/divisions" element={<DivisionsPage />} />
           <Route path="/admin/divisions/new" element={<DivisionNewPage />} />
           <Route path="/admin/divisions/:id" element={<DivisionEditPage />} />
+          <Route path="/admin/thresholds" element={<ThresholdsPage />} />
         </Route>
       </Route>
     </Routes>
