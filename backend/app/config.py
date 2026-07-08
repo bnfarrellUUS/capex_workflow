@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 
 class BaseConfig:
@@ -8,6 +9,7 @@ class BaseConfig:
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = False  # overridden in prod
     WTF_CSRF_TIME_LIMIT = None
+    UPLOAD_ROOT = os.environ.get("UPLOAD_ROOT")  # None -> instance/uploads
 
 
 class DevConfig(BaseConfig):
@@ -20,6 +22,7 @@ class TestConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
+    UPLOAD_ROOT = os.path.join(tempfile.gettempdir(), "capex_test_uploads")
 
 
 class ProdConfig(BaseConfig):

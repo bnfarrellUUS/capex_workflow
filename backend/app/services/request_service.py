@@ -26,6 +26,10 @@ def _can_view(req, viewer):
     return "ADMIN" in roles or "FINANCE" in roles
 
 
+def can_view(req, viewer):
+    return _can_view(req, viewer)
+
+
 def get_request(request_id, viewer):
     req = db.session.get(CapexRequest, request_id)
     if req is None:
@@ -105,5 +109,9 @@ def request_out(req):
              "created_at": a.created_at.isoformat() if a.created_at else None,
              "actor_name": a.actor.name if a.actor else None}
             for a in sorted(req.actions, key=lambda x: x.created_at or x.id)
+        ],
+        "attachments": [
+            {"id": a.id, "filename": a.filename, "content_type": a.content_type, "size": a.size}
+            for a in req.attachments
         ],
     }
