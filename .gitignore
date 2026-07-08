@@ -1,8 +1,15 @@
-node_modules/
-.next/
-*.db
-*.db-journal
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
 .env
 .env.local
-capex-app/uploads/
-capex-app/.npmrc
+
+# Databases
+*.db
+*.db-journal
+
+# Python
+__pycache__/
+*.pyc
