@@ -7,6 +7,18 @@ from app.services import request_service, workflow_service, notify, attachment_s
 bp = Blueprint("requests", __name__, url_prefix="/api/requests")
 
 
+@bp.get("")
+@login_required
+def list_requests_route():
+    rows = request_service.list_requests(
+        current_user,
+        scope=request.args.get("scope", "mine"),
+        status=request.args.get("status") or None,
+        division_id=request.args.get("division_id") or None,
+    )
+    return jsonify([request_service.request_summary(r) for r in rows])
+
+
 @bp.post("")
 @login_required
 def create_request():

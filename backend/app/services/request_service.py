@@ -30,6 +30,33 @@ def can_view(req, viewer):
     return _can_view(req, viewer)
 
 
+def list_requests(viewer, scope="mine", status=None, division_id=None):
+    q = db.session.query(CapexRequest)
+    if scope == "assigned":
+        q = q.filter(CapexRequest.assignee_id == viewer.id)
+    elif scope == "all" and ("ADMIN" in viewer.roles_list or "FINANCE" in viewer.roles_list):
+        pass
+    else:
+        q = q.filter(CapexRequest.requestor_id == viewer.id)
+    if status:
+        q = q.filter(CapexRequest.status == status)
+    if division_id:
+        q = q.filter(CapexRequest.division_id == division_id)
+    return q.order_by(CapexRequest.created_at.desc()).all()
+
+
+def request_summary(req):
+    return {
+        "id": req.id, "number": req.number, "status": req.status,
+        "total_cost": money_str(req.total_cost),
+        "division_name": f"{req.division.number} — {req.division.name}" if req.division else None,
+        "requestor_name": req.requestor.name if req.requestor else None,
+        "assignee_name": req.assignee.name if req.assignee else None,
+        "current_level": req.current_level, "required_levels": req.required_levels,
+        "created_at": req.created_at.isoformat() if req.created_at else None,
+    }
+
+
 def get_request(request_id, viewer):
     req = db.session.get(CapexRequest, request_id)
     if req is None:
