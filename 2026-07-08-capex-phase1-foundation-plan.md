@@ -13,6 +13,7 @@
 - Company name in all UI/copy: **United Uptime Services** (never "D&H United").
 - Database schema must work identically on SQLite and SQL Server: **no DB enums, no arrays, no provider-specific native types**. Statuses/roles stored as strings validated in app code.
 - Money fields use Prisma `Decimal`.
+- **Prisma pinned to 6.14** (`"6.14"` range in package.json for both `prisma` and `@prisma/client`). Do NOT upgrade: v7 requires a `prisma.config.ts` + mandatory driver adapters, and 6.15+ adds an AI-consent gate on destructive CLI actions (`db push --force-reset`) that breaks agent-run tests. 6.14.0 is the last release before that gate. Classic Prisma: datasource `url` in `schema.prisma`, plain `new PrismaClient()`.
 - Passwords hashed with **bcryptjs** (pure JS — no native builds).
 - All authorization checks happen **server-side** in server actions/route handlers (`requireRole`), never only in the UI.
 - Request statuses: `DRAFT → SUBMITTED → PENDING_L1 → PENDING_L2 → PENDING_L3 → APPROVED | REJECTED`.
