@@ -39,6 +39,9 @@ def create_app(config_object=None):
     from .blueprints.divisions import bp as divisions_bp
     app.register_blueprint(divisions_bp)
 
+    from .blueprints.thresholds import bp as thresholds_bp
+    app.register_blueprint(thresholds_bp)
+
     @app.errorhandler(ServiceError)
     def _handle_service_error(err: ServiceError):
         return jsonify(error=err.message), err.status

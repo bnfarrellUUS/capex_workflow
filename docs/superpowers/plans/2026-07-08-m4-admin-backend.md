@@ -770,6 +770,7 @@ from flask import Blueprint, jsonify, request
 
 from app.authz import require_roles
 from app.schemas.threshold import ThresholdsUpdate
+from app.serialization import money_str
 from app.services import threshold_service
 
 bp = Blueprint("thresholds", __name__, url_prefix="/api/thresholds")
@@ -778,9 +779,24 @@ bp = Blueprint("thresholds", __name__, url_prefix="/api/thresholds")
 def threshold_out(t):
     return {
         "level": t.level,
-        "max_amount": str(t.max_amount) if t.max_amount is not None else None,
+        "max_amount": money_str(t.max_amount),
         "approver_id": t.approver_id,
     }
+```
+
+`backend/app/serialization.py` (money serializer — DB round-trip adds scale, so `str(Decimal)` yields e.g. `"50000.0000000000"`; strip it):
+```python
+from decimal import Decimal
+from typing import Optional
+
+
+def money_str(value: Optional[Decimal]) -> Optional[str]:
+    if value is None:
+        return None
+    s = format(value, "f")
+    if "." in s:
+        s = s.rstrip("0").rstrip(".")
+    return s
 
 
 @bp.get("")
