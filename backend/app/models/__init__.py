@@ -1,8 +1,10 @@
+import json
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional
 
+from flask_login import UserMixin
 from sqlalchemy import String, Boolean, Integer, Numeric, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,7 +19,7 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
@@ -53,6 +55,14 @@ class User(db.Model):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=_utcnow, onupdate=_utcnow
     )
+
+    @property
+    def is_active(self) -> bool:
+        return self.active
+
+    @property
+    def roles_list(self) -> list[str]:
+        return json.loads(self.roles)
 
 
 class Division(db.Model):

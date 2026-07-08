@@ -1,7 +1,7 @@
-from flask import Flask
+from flask import Flask, jsonify
 
 from .config import DevConfig
-from .extensions import db, migrate
+from .extensions import db, migrate, login_manager, csrf
 
 
 def create_app(config_object=None):
@@ -10,6 +10,17 @@ def create_app(config_object=None):
 
     db.init_app(app)
     migrate.init_app(app, db)
+    login_manager.init_app(app)
+    csrf.init_app(app)
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        from app.models import User
+        return db.session.get(User, user_id)
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        return jsonify(error="Authentication required."), 401
 
     # Import models so their tables register on the metadata.
     from app import models  # noqa: F401

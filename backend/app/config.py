@@ -4,6 +4,10 @@ import os
 class BaseConfig:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-change-me")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = False  # overridden in prod
+    WTF_CSRF_TIME_LIMIT = None
 
 
 class DevConfig(BaseConfig):
@@ -15,6 +19,7 @@ class DevConfig(BaseConfig):
 class TestConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    WTF_CSRF_ENABLED = False
 
 
 class ProdConfig(BaseConfig):
@@ -22,3 +27,4 @@ class ProdConfig(BaseConfig):
     # Read lazily so importing the module never fails when the var is unset
     # (dev/test); deployment must set DATABASE_URL.
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    SESSION_COOKIE_SECURE = True
