@@ -1,8 +1,8 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, Response
 from flask_login import login_required, current_user
 
 from app.schemas.request import RequestDraft, FinanceIn
-from app.services import request_service, workflow_service, notify
+from app.services import request_service, workflow_service, notify, attachment_service
 
 bp = Blueprint("requests", __name__, url_prefix="/api/requests")
 
@@ -72,4 +72,32 @@ def resubmit_request(request_id):
 def finance_request(request_id):
     costs = FinanceIn(**(request.get_json(silent=True) or {})).model_dump()
     req = workflow_service.complete_finance(request_id, current_user.id, costs)
+    return jsonify(request_service.request_out(req))
+
+
+@bp.post("/<request_id>/attachments")
+@login_required
+def upload_attachment(request_id):
+    f = request.files.get("file")
+    if f is None:
+        return jsonify(error="No file provided."), 400
+    attachment_service.add_attachment(request_id, current_user, f.filename,
+                                      f.mimetype or "application/octet-stream", f.read())
+    req = request_service.get_request(request_id, current_user)
+    return jsonify(request_service.request_out(req))
+
+
+@bp.get("/<request_id>/attachments/<att_id>")
+@login_required
+def download_attachment(request_id, att_id):
+    att, data = attachment_service.get_attachment(att_id, current_user)
+    return Response(data, mimetype=att.content_type,
+                    headers={"Content-Disposition": f'attachment; filename="{att.filename}"'})
+
+
+@bp.delete("/<request_id>/attachments/<att_id>")
+@login_required
+def delete_attachment_route(request_id, att_id):
+    attachment_service.delete_attachment(att_id, current_user)
+    req = request_service.get_request(request_id, current_user)
     return jsonify(request_service.request_out(req))
