@@ -36,6 +36,9 @@ def create_app(config_object=None):
     from .blueprints.users import bp as users_bp
     app.register_blueprint(users_bp)
 
+    from .blueprints.divisions import bp as divisions_bp
+    app.register_blueprint(divisions_bp)
+
     @app.errorhandler(ServiceError)
     def _handle_service_error(err: ServiceError):
         return jsonify(error=err.message), err.status
