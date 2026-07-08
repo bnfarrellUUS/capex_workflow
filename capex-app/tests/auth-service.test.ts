@@ -61,6 +61,8 @@ describe("authenticate", () => {
     for (let i = 0; i < 5; i++) await authenticate("jdoe", "wrong");
     const u = await prisma.user.findUnique({ where: { username: "jdoe" } });
     expect(u?.lockedUntil).not.toBeNull();
+    expect(u?.lockedUntil!.getTime()).toBeGreaterThan(Date.now() + 14 * 60_000);
+    expect(u?.lockedUntil!.getTime()).toBeLessThan(Date.now() + 16 * 60_000);
     // correct password still rejected while locked
     expect(await authenticate("jdoe", "CorrectHorse1!")).toBeNull();
   });
