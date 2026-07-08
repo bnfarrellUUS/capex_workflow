@@ -66,6 +66,8 @@ def submit(request_id, actor_id):
         raise ServiceError("Request not found.", 404)
     if req.status != "DRAFT":
         raise ServiceError("Only drafts can be submitted.")
+    if req.requestor_id != actor_id:
+        raise ServiceError("Only the requestor can submit this request.", 403)
     _open_workflow(req)
     _add_action(req, actor_id, "SUBMITTED", level=1)
     db.session.commit()

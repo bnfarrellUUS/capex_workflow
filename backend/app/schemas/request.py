@@ -39,3 +39,12 @@ class RequestSubmit(BaseModel):
     effect_on_operations: str = Field(min_length=1)
     division_id: str = Field(min_length=1)
     equipment_items: list[EquipmentItemIn] = Field(min_length=1)
+
+
+class FinanceIn(BaseModel):
+    cost_autos_trucks: Decimal | None = None
+    cost_machinery: Decimal | None = None
+    cost_improvements: Decimal | None = None
+    cost_furniture: Decimal | None = None
+    cost_permits: Decimal | None = None
+    cost_misc: Decimal | None = None
