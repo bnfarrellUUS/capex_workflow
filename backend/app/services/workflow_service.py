@@ -135,3 +135,42 @@ def reject(request_id, actor_id, comment):
     db.session.commit()
     db.session.refresh(req)
     return req
+
+
+_FINANCE_FIELDS = (
+    "cost_autos_trucks", "cost_machinery", "cost_improvements",
+    "cost_furniture", "cost_permits", "cost_misc",
+)
+
+
+def resubmit(request_id, actor_id):
+    req = db.session.get(CapexRequest, request_id)
+    if req is None:
+        raise ServiceError("Request not found.", 404)
+    if req.status != "REJECTED":
+        raise ServiceError("Only rejected requests can be resubmitted.")
+    if req.requestor_id != actor_id:
+        raise ServiceError("Only the requestor can resubmit.", 403)
+    _open_workflow(req)
+    _add_action(req, actor_id, "RESUBMITTED", level=1)
+    db.session.commit()
+    return req
+
+
+def complete_finance(request_id, actor_id, costs):
+    req = db.session.get(CapexRequest, request_id)
+    if req is None:
+        raise ServiceError("Request not found.", 404)
+    actor = db.session.get(User, actor_id)
+    if actor is None or "FINANCE" not in actor.roles_list:
+        raise ServiceError("The Finance role is required.", 403)
+    if req.status != "APPROVED":
+        raise ServiceError("Only approved requests can be completed by Finance.")
+    if req.finance_completed:
+        raise ServiceError("The Finance section is already completed.")
+    for field in _FINANCE_FIELDS:
+        setattr(req, field, costs.get(field))
+    req.finance_completed = True
+    _add_action(req, actor_id, "FINANCE_COMPLETED")
+    db.session.commit()
+    return req
