@@ -1,7 +1,9 @@
 from flask import Flask, jsonify
+from pydantic import ValidationError
 
 from .config import DevConfig
 from .extensions import db, migrate, login_manager, csrf
+from .services.errors import ServiceError
 
 
 def create_app(config_object=None):
@@ -30,5 +32,13 @@ def create_app(config_object=None):
 
     from .blueprints.auth import bp as auth_bp
     app.register_blueprint(auth_bp)
+
+    @app.errorhandler(ServiceError)
+    def _handle_service_error(err: ServiceError):
+        return jsonify(error=err.message), err.status
+
+    @app.errorhandler(ValidationError)
+    def _handle_validation_error(err: ValidationError):
+        return jsonify(error="Validation failed.", details=err.errors()), 400
 
     return app
