@@ -13,6 +13,7 @@ import ThresholdsPage from './routes/admin/ThresholdsPage'
 import ProfilePage from './routes/ProfilePage'
 import NewRequestPage from './routes/NewRequestPage'
 import WizardPage from './routes/WizardPage'
+import RequestDetailPage from './routes/RequestDetailPage'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/requests/new" element={<NewRequestPage />} />
         <Route path="/requests/:id/edit" element={<WizardPage />} />
+        <Route path="/requests/:id" element={<RequestDetailPage />} />
         <Route element={<AdminLayout />}>
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/new" element={<UserNewPage />} />

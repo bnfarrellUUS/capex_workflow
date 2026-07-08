@@ -28,7 +28,7 @@ export default function WizardPage() {
   })
   const submit = useMutation({
     mutationFn: () => submitRequest(id),
-    onSuccess: () => navigate('/', { replace: true }),
+    onSuccess: () => navigate(`/requests/${id}`, { replace: true }),
   })
   const submitError = submit.error instanceof ApiError ? submit.error.message : null
 
