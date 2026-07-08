@@ -64,7 +64,7 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.0",
     "vite": "^6.0.0",
-    "vitest": "^2.1.0"
+    "vitest": "^3.0.0"
   }
 }
 ```
@@ -106,8 +106,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "noEmit": true
+    "strict": true
   },
   "include": ["vite.config.ts"]
 }
@@ -117,8 +116,7 @@
 
 `frontend/vite.config.ts`:
 ```ts
-/// <reference types="vitest/config" />
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
