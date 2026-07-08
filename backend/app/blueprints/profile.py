@@ -20,6 +20,13 @@ def get_profile():
     return jsonify(profile_out(current_user))
 
 
+@bp.get("/delegate-options")
+@login_required
+def delegate_options():
+    users = profile_service.delegate_options(current_user.id)
+    return jsonify([{"id": u.id, "name": u.name} for u in users])
+
+
 @bp.patch("")
 @login_required
 def set_delegate():

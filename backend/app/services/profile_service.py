@@ -22,3 +22,8 @@ def set_delegate(user_id, delegate_id):
     user.delegate_id = delegate_id or None
     db.session.commit()
     return user
+
+
+def delegate_options(user_id):
+    users = db.session.query(User).filter(User.active.is_(True), User.id != user_id).all()
+    return [u for u in users if "APPROVER" in u.roles_list]

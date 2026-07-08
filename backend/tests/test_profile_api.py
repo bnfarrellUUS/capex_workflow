@@ -52,3 +52,15 @@ def test_set_delegate(client, app):
 def test_cannot_delegate_to_self(client, app):
     u = _user(client)
     assert client.patch("/api/profile", json={"delegate_id": u.id}).status_code == 400
+
+
+def test_delegate_options_excludes_self_and_non_approvers(client, app):
+    me = _user(client)  # requestor
+    appr = User(username="ap", email="ap@x.com", name="Approver",
+                password_hash=hash_password("secret123"), roles='["APPROVER"]')
+    db.session.add(appr)
+    db.session.commit()
+    body = client.get("/api/profile/delegate-options").get_json()
+    ids = [o["id"] for o in body]
+    assert appr.id in ids
+    assert me.id not in ids
