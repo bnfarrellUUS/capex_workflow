@@ -28,4 +28,7 @@ def create_app(config_object=None):
     from .blueprints.health import bp as health_bp
     app.register_blueprint(health_bp)
 
+    from .blueprints.auth import bp as auth_bp
+    app.register_blueprint(auth_bp)
+
     return app
