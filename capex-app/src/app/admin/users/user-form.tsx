@@ -75,7 +75,7 @@ export function UserForm({
           <input type="checkbox" name="active" defaultChecked={user.active} /> Active
         </label>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       <Button type="submit" disabled={pending}>{user ? "Save changes" : "Create user"}</Button>
     </form>
   );
