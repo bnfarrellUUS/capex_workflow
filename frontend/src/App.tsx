@@ -6,6 +6,9 @@ import { AdminLayout } from './auth/AdminLayout'
 import UsersPage from './routes/admin/UsersPage'
 import UserNewPage from './routes/admin/UserNewPage'
 import UserEditPage from './routes/admin/UserEditPage'
+import DivisionsPage from './routes/admin/DivisionsPage'
+import DivisionNewPage from './routes/admin/DivisionNewPage'
+import DivisionEditPage from './routes/admin/DivisionEditPage'
 
 export default function App() {
   return (
@@ -17,6 +20,9 @@ export default function App() {
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/new" element={<UserNewPage />} />
           <Route path="/admin/users/:id" element={<UserEditPage />} />
+          <Route path="/admin/divisions" element={<DivisionsPage />} />
+          <Route path="/admin/divisions/new" element={<DivisionNewPage />} />
+          <Route path="/admin/divisions/:id" element={<DivisionEditPage />} />
         </Route>
       </Route>
     </Routes>
