@@ -97,4 +97,13 @@ def request_out(req):
              "make": i.make, "model": i.model, "cost": money_str(i.cost)}
             for i in req.equipment_items
         ],
+        "requestor_name": req.requestor.name if req.requestor else None,
+        "assignee_name": req.assignee.name if req.assignee else None,
+        "division_name": f"{req.division.number} — {req.division.name}" if req.division else None,
+        "actions": [
+            {"action": a.action, "level": a.level, "comment": a.comment,
+             "created_at": a.created_at.isoformat() if a.created_at else None,
+             "actor_name": a.actor.name if a.actor else None}
+            for a in sorted(req.actions, key=lambda x: x.created_at or x.id)
+        ],
     }
