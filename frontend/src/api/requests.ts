@@ -44,3 +44,6 @@ export function getRequest(id: string): Promise<CapexRequestData> {
 export function updateDraft(id: string, patch: Record<string, unknown>): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}`, { method: 'PATCH', body: patch })
 }
+export function submitRequest(id: string): Promise<CapexRequestData> {
+  return api<CapexRequestData>(`/requests/${id}/submit`, { method: 'POST' })
+}

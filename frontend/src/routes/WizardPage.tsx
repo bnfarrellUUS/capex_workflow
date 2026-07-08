@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { getRequest, updateDraft } from '../api/requests'
+import { getRequest, updateDraft, submitRequest } from '../api/requests'
+import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import type { RequestForm } from './wizard/types'
@@ -20,10 +21,16 @@ export default function WizardPage() {
 
   useEffect(() => { if (data && !form) setForm(toForm(data)) }, [data, form])
 
+  const navigate = useNavigate()
   const save = useMutation({
     mutationFn: () => updateDraft(id, toPayload(form!)),
     onSuccess: () => setSaved(true),
   })
+  const submit = useMutation({
+    mutationFn: () => submitRequest(id),
+    onSuccess: () => navigate('/', { replace: true }),
+  })
+  const submitError = submit.error instanceof ApiError ? submit.error.message : null
 
   if (!form || !data) return <p className="text-sm text-slate-500">Loading…</p>
 
@@ -57,7 +64,9 @@ export default function WizardPage() {
         )}
         {step === 3 && <Equipment form={form} set={set} />}
         {step === 4 && <Economic form={form} set={set} />}
-        {step === 5 && <Review form={form} />}
+        {step === 5 && <Review form={form}
+          onSubmit={() => { save.mutate(); submit.mutate() }}
+          pending={submit.isPending} error={submitError} />}
       </div>
 
       <div className="mt-4 flex items-center gap-3">
@@ -166,14 +175,16 @@ function Economic({ form, set }: { form: RequestForm; set: Setter }) {
   )
 }
 
-function Review({ form }: { form: RequestForm }) {
+function Review({ form, onSubmit, pending, error }:
+  { form: RequestForm; onSubmit: () => void; pending: boolean; error: string | null }) {
   const total = equipmentTotal(form.equipment_items)
   return (
-    <div className="space-y-2 text-sm">
+    <div className="space-y-3 text-sm">
       <p><span className="font-medium">Description:</span> {form.description || '—'}</p>
       <p><span className="font-medium">Equipment lines:</span> {form.equipment_items.length}</p>
       <p><span className="font-medium">Total cost:</span> ${total.toLocaleString()}</p>
-      <p className="text-slate-500">Submit will be enabled in the next milestone.</p>
+      {error && <p className="text-red-600" role="alert">{error}</p>}
+      <Button disabled={pending} onClick={onSubmit}>Submit for approval</Button>
     </div>
   )
 }
