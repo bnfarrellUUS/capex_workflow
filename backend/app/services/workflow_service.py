@@ -32,3 +32,41 @@ def effective_assignee(user):
 
 def resolve_assignee(level, division, thresholds):
     return effective_assignee(intended_approver(level, division, thresholds))
+
+
+# ---- transactional actions ----
+
+def _add_action(req, actor_id, action, level=None, acted_for_id=None, comment=None):
+    db.session.add(ApprovalAction(
+        request_id=req.id, actor_id=actor_id, action=action,
+        level=level, acted_for_id=acted_for_id, comment=comment,
+    ))
+
+
+def _open_workflow(req):
+    total = sum((i.cost for i in req.equipment_items), Decimal(0))
+    if not req.equipment_items or total <= 0:
+        raise ServiceError("Add at least one equipment line item with a cost.")
+    if req.division is None:
+        raise ServiceError("A division is required.")
+    thresholds = threshold_service.list_thresholds()
+    l1 = intended_approver(1, req.division, thresholds)
+    if l1 is None:
+        raise ServiceError("The division has no level-1 approver assigned.")
+    req.total_cost = total
+    req.required_levels = compute_required_levels(total, thresholds)
+    req.current_level = 1
+    req.status = "PENDING_L1"
+    req.assignee_id = effective_assignee(l1).id
+
+
+def submit(request_id, actor_id):
+    req = db.session.get(CapexRequest, request_id)
+    if req is None:
+        raise ServiceError("Request not found.", 404)
+    if req.status != "DRAFT":
+        raise ServiceError("Only drafts can be submitted.")
+    _open_workflow(req)
+    _add_action(req, actor_id, "SUBMITTED", level=1)
+    db.session.commit()
+    return req
