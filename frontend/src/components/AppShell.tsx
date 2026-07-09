@@ -31,7 +31,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
     items: [
       { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: [], end: true },
       { to: '/requests/new', label: 'New Request', icon: FilePlus2, roles: [] },
-      { to: '/requests', label: 'My Requests', icon: ListChecks, roles: [] },
+      { to: '/requests', label: 'My Requests', icon: ListChecks, roles: [], end: true },
     ],
   },
   {
