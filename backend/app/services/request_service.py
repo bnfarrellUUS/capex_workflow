@@ -76,6 +76,9 @@ def update_draft(request_id, viewer, payload):
         raise ServiceError("This request can no longer be edited.")
     data = dict(payload)
     items = data.pop("equipment_items", None)
+    # request_date is non-nullable; never clear it when the client sends null.
+    if data.get("request_date") is None:
+        data.pop("request_date", None)
     for key, value in data.items():
         setattr(req, key, value)
     if items is not None:

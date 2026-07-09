@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, Field
@@ -30,6 +31,7 @@ class RequestDraft(BaseModel):
     payback_years: Decimal | None = None
     npv_savings: Decimal | None = None
     division_id: str | None = None
+    request_date: datetime | None = None
     equipment_items: list[EquipmentItemIn] = Field(default_factory=list)
 
 

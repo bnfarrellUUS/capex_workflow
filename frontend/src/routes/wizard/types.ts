@@ -18,6 +18,7 @@ export interface RequestForm {
   payback_years: string
   npv_savings: string
   division_id: string
+  request_date: string
   equipment_items: EquipItem[]
 }
 
@@ -36,6 +37,7 @@ export function toForm(r: CapexRequestData): RequestForm {
     payback_years: r.payback_years ?? '',
     npv_savings: r.npv_savings ?? '',
     division_id: r.division_id ?? '',
+    request_date: r.request_date ? r.request_date.slice(0, 10) : '',
     equipment_items: r.equipment_items.map((i) => ({ ...i })),
   }
 }
@@ -57,6 +59,7 @@ export function toPayload(f: RequestForm): Record<string, unknown> {
     payback_years: DEC(f.payback_years),
     npv_savings: DEC(f.npv_savings),
     division_id: f.division_id || null,
+    request_date: f.request_date || null,
     equipment_items: f.equipment_items.map((i) => ({
       units: Number(i.units) || 0, condition: i.condition, type: i.type,
       make: i.make, model: i.model, cost: i.cost.trim() === '' ? '0' : i.cost,

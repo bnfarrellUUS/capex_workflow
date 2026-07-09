@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { getRequest, updateDraft, submitRequest } from '../api/requests'
+import { getRequest, updateDraft, submitRequest, type CapexRequestData } from '../api/requests'
+import { listDivisions, type Division } from '../api/divisions'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { Select } from '../components/ui/Select'
 import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, equipmentTotal } from './wizard/types'
 
@@ -15,6 +17,7 @@ type Setter = <K extends keyof RequestForm>(k: K, v: RequestForm[K]) => void
 export default function WizardPage() {
   const { id = '' } = useParams()
   const { data } = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id) })
+  const { data: divisions = [] } = useQuery({ queryKey: ['divisions'], queryFn: listDivisions })
   const [form, setForm] = useState<RequestForm | null>(null)
   const [step, setStep] = useState(0)
   const [saved, setSaved] = useState(false)
@@ -70,7 +73,7 @@ export default function WizardPage() {
       </ol>
 
       <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        {step === 0 && <BasicInfo form={form} set={set} />}
+        {step === 0 && <BasicInfo form={form} set={set} data={data} divisions={divisions} />}
         {step === 1 && (
           <Field label="Brief description & justification">
             <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
@@ -119,14 +122,37 @@ const FLAGS: [keyof RequestForm, string][] = [
   ['budgeted', 'Budgeted'], ['replacement', 'Replacement equipment'],
   ['health_safety', 'Health & safety driven'], ['revenue_generating', 'Revenue generating'],
   ['environmental', 'Environmental / sustainability'], ['competitive_bids', 'Competitive bids received'],
-  ['lease_recommended', 'Lease recommended'],
+  ['lease_recommended', 'Recommended for lease rather than purchase (attach explanation & evaluation; note any manufacturer/dealer financing)'],
 ]
 
-function BasicInfo({ form, set }: { form: RequestForm; set: Setter }) {
+function BasicInfo({ form, set, data, divisions }:
+  { form: RequestForm; set: Setter; data: CapexRequestData; divisions: Division[] }) {
+  const readOnlyClass = 'cursor-default bg-surface-2 text-muted'
   return (
     <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field label="Capital request no.">
+          <Input value={data.number} readOnly className={readOnlyClass} />
+        </Field>
+        <Field label="Date">
+          <Input type="date" value={form.request_date}
+            onChange={(e) => set('request_date', e.target.value)} />
+        </Field>
+        <Field label="Requested by">
+          <Input value={data.requestor_name ?? ''} readOnly className={readOnlyClass} />
+        </Field>
+      </div>
       <Field label="Equipment / project description">
-        <Input value={form.description} onChange={(e) => set('description', e.target.value)} />
+        <textarea className="min-h-24 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
+          value={form.description} onChange={(e) => set('description', e.target.value)} />
+      </Field>
+      <Field label="Division">
+        <Select value={form.division_id} onChange={(e) => set('division_id', e.target.value)}>
+          <option value="">— Select division —</option>
+          {divisions.map((d) => (
+            <option key={d.id} value={d.id}>{d.number} — {d.name}</option>
+          ))}
+        </Select>
       </Field>
       <fieldset className="space-y-1">
         <legend className="text-sm font-medium">Flags</legend>

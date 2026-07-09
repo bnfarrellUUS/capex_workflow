@@ -15,6 +15,7 @@ export interface CapexRequestData {
   number: string
   status: string
   division_id: string | null
+  request_date: string | null
   description: string
   budgeted: boolean
   replacement: boolean
