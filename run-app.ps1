@@ -56,6 +56,19 @@ $frontendCmd = "Set-Location -LiteralPath '$Frontend'; & node '.\node_modules\vi
 Start-Process powershell -ArgumentList '-NoExit', '-Command', $backendCmd
 Start-Process powershell -ArgumentList '-NoExit', '-Command', $frontendCmd
 
+# Wait for the web server to accept connections, then open the browser.
+Write-Host 'Starting servers, opening the website when ready...' -ForegroundColor Cyan
+$ready = $false
+for ($i = 0; $i -lt 60; $i++) {
+  try {
+    Invoke-WebRequest -Uri 'http://localhost:5173' -UseBasicParsing -TimeoutSec 2 | Out-Null
+    $ready = $true
+    break
+  } catch { Start-Sleep -Seconds 1 }
+}
+if ($ready) { Start-Process 'http://localhost:5173' }
+else { Write-Host 'Web server did not respond in time; check the Web window for errors.' -ForegroundColor Yellow }
+
 Write-Host ''
 Write-Host '================================================================'
 Write-Host '  Backend:  http://localhost:5000/api/health'
