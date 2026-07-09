@@ -2,8 +2,22 @@ import { useEffect, useRef } from 'react'
 import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
 
+// Quill's default font/size formats are CSS classes, which email clients strip.
+// Register the style-based attributors instead so those formats become inline
+// styles that survive into the sent email.
+const FONTS = ['Georgia', 'Tahoma', 'Times New Roman', 'Verdana']
+const SIZES = ['12px', '18px', '24px']
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const FontStyle: any = Quill.import('attributors/style/font')
+FontStyle.whitelist = FONTS
+Quill.register(FontStyle, true)
+const SizeStyle: any = Quill.import('attributors/style/size')
+SizeStyle.whitelist = SIZES
+Quill.register(SizeStyle, true)
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 const TOOLBAR = [
-  [{ font: [] }, { size: [] }],
+  [{ font: [false, ...FONTS] }, { size: [false, ...SIZES] }],
   ['bold', 'italic', 'underline'],
   [{ color: [] }, { background: [] }],
   [{ list: 'ordered' }, { list: 'bullet' }],

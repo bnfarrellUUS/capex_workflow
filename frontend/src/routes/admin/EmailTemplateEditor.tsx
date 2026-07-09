@@ -20,6 +20,7 @@ export default function EmailTemplateEditor() {
   const [body, setBody] = useState('')
   const [enabled, setEnabled] = useState(true)
   const [dirty, setDirty] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const insertRef = useRef<(t: string) => void>(() => {})
 
@@ -27,18 +28,30 @@ export default function EmailTemplateEditor() {
     if (data) { setSubject(data.subject); setBody(data.body_html); setEnabled(data.enabled); setDirty(false) }
   }, [data])
 
-  function apply(updated: EmailTemplate) {
-    qc.setQueryData(['email-templates', type], updated)
-    qc.invalidateQueries({ queryKey: ['email-templates'] })
-    setDirty(false)
+  function markDirty() {
+    setDirty(true)
+    setStatus(null)
   }
-  const save = useMutation({ mutationFn: () => saveEmailTemplate(type, { subject, body_html: body, enabled }), onSuccess: apply })
-  const asDefault = useMutation({ mutationFn: () => saveAsDefault(type), onSuccess: apply })
-  const reset = useMutation({ mutationFn: () => resetEmailTemplate(type), onSuccess: apply })
+  function apply(message: string) {
+    return (updated: EmailTemplate) => {
+      // Merge over the cached template rather than replace it, so a response
+      // missing a field can never blank out what the page renders from.
+      qc.setQueryData(['email-templates', type], (prev: EmailTemplate | undefined) =>
+        prev ? { ...prev, ...updated } : updated)
+      qc.invalidateQueries({ queryKey: ['email-templates'], exact: true })
+      setDirty(false)
+      setStatus(message)
+    }
+  }
+  const save = useMutation({ mutationFn: () => saveEmailTemplate(type, { subject, body_html: body, enabled }), onSuccess: apply('Saved.') })
+  const asDefault = useMutation({ mutationFn: () => saveAsDefault(type), onSuccess: apply('Saved as default.') })
+  const reset = useMutation({ mutationFn: () => resetEmailTemplate(type), onSuccess: apply('Reset to default.') })
   const doPreview = useMutation({
     mutationFn: () => previewEmailTemplate(type, { subject, body_html: body }),
     onSuccess: (p) => setPreview(p.html),
   })
+  const failure = [save, asDefault, reset, doPreview].find((m) => m.error)?.error
+  const errorText = failure instanceof Error ? failure.message : null
 
   if (!data) return null
   return (
@@ -55,8 +68,10 @@ export default function EmailTemplateEditor() {
             <Button variant="ghost" onClick={() => reset.mutate()}>Reset to default</Button>
           </div>
         </div>
+        {status && <p className="mb-2 text-sm text-emerald-600 dark:text-emerald-400">{status}</p>}
+        {errorText && <p className="mb-2 text-sm text-red-600 dark:text-red-400" role="alert">{errorText}</p>}
         <label className="mb-1 block text-xs text-muted">Subject</label>
-        <Input value={subject} onChange={(e) => { setSubject(e.target.value); setDirty(true) }} />
+        <Input value={subject} onChange={(e) => { setSubject(e.target.value); markDirty() }} />
         <label className="mb-1 mt-4 block text-xs text-muted">Body</label>
         {/* Visual replica of the email frame so WYSIWYG editing matches what is
             sent: navy header + logo above the editable body, footer below. */}
@@ -70,8 +85,19 @@ export default function EmailTemplateEditor() {
                 <div className="text-[13px] tracking-wide" style={{ color: '#93BBF5' }}>CAPEX Flow</div>
               </div>
             </div>
-            <QuillEditor value={data.body_html} onChange={(html) => { setBody(html); setDirty(true) }}
+            <QuillEditor value={data.body_html} onChange={(html) => { setBody(html); markDirty() }}
               onReady={(insert) => (insertRef.current = insert)} />
+            {/* Locked CTA button: rendered by the email frame below the body,
+                shown here (non-editable) so the editor matches the sent email. */}
+            <div className="px-7 pb-5">
+              <span className="inline-block rounded-lg px-[22px] py-3 text-[15px] font-bold text-white"
+                style={{ background: '#2563EB', fontFamily: EMAIL_FONT }}>
+                {data.button_label}
+              </span>
+              <p className="mt-1.5 text-[11px]" style={{ color: '#94A3B8', fontFamily: EMAIL_FONT }}>
+                Added automatically — links the reader to the request.
+              </p>
+            </div>
             <div className="px-7 py-4 text-xs" style={{
               borderTop: '1px solid #E2E8F0', color: '#64748B', fontFamily: EMAIL_FONT,
             }}>
@@ -80,7 +106,7 @@ export default function EmailTemplateEditor() {
           </div>
         </div>
         <label className="mt-4 flex items-center gap-2 text-sm text-fg">
-          <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); setDirty(true) }} />
+          <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); markDirty() }} />
           Send this email
         </label>
       </div>

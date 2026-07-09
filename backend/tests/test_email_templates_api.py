@@ -31,3 +31,19 @@ def test_admin_can_list_get_save_preview_reset(client, app):
 
     reset = client.post("/api/email-templates/ASSIGNED/reset").get_json()
     assert reset["subject"] == items[0]["subject"] or reset["is_custom"] is True
+
+
+def test_all_template_responses_share_one_shape(client, app):
+    # Regression: the PUT response used to lack "tokens" — the client caches
+    # these responses interchangeably, and the missing field crashed the
+    # editor right after Save (perceived as a hang).
+    make_user("boss", roles='["ADMIN"]')
+    _login(client, "boss")
+    get_keys = set(client.get("/api/email-templates/ASSIGNED").get_json())
+    saved = client.put("/api/email-templates/ASSIGNED",
+                       json={"subject": "S", "body_html": "<p>b</p>", "enabled": True}).get_json()
+    defaulted = client.post("/api/email-templates/ASSIGNED/save-as-default").get_json()
+    reset = client.post("/api/email-templates/ASSIGNED/reset").get_json()
+    for resp in (saved, defaulted, reset):
+        assert set(resp) == get_keys
+        assert resp["tokens"] and resp["button_label"]

@@ -27,10 +27,13 @@ describe('EmailTemplateEditor', () => {
       type: 'ASSIGNED', name: 'Approval needed', subject: 'S', body_html: '<p>x</p>',
       enabled: true, is_custom: false, default_subject: 'S', default_body_html: '<p>x</p>',
       tokens: [{ token: '{number}', description: 'Request number' }],
+      button_label: 'Review & approve',
     } as never)
     renderAt()
     await waitFor(() => expect(screen.getByText('{number}')).toBeInTheDocument())
     fireEvent.click(screen.getByText('{number}'))   // does not throw
     expect(screen.getByText('Request number')).toBeInTheDocument()
+    // the locked CTA button replica is shown below the editor
+    expect(screen.getByText('Review & approve')).toBeInTheDocument()
   })
 })

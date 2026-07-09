@@ -30,46 +30,31 @@ TOKENS = {
     "FINANCE_READY": _COMMON,
 }
 
-# Outlook's Word engine ignores padding on <a>, so the button's size/shape must
-# come from the <td> (bgcolor + padding); border-radius degrades to square there.
-_F = "Arial,Helvetica,sans-serif"
-
-
-def _button(label):
-    return (
-        '<table role="presentation" cellpadding="0" cellspacing="0" '
-        'style="margin:20px 0 8px;"><tr>'
-        '<td bgcolor="#2563EB" style="padding:12px 22px;border-radius:8px;">'
-        f'<a href="{{link}}" style="font:bold 15px {_F};color:#ffffff;'
-        f'text-decoration:none;">{label}</a>'
-        "</td></tr></table>"
-    )
-
-
-def _fact_row(label, value):
-    # Every <td> carries its own font — Outlook resets fonts per cell.
-    return (
-        f'<tr><td width="110" style="padding:3px 12px 3px 0;font:14px {_F};'
-        f'color:#64748B;">{label}</td>'
-        f'<td style="padding:3px 0;font:14px {_F};color:#0B1B2B;">{value}</td></tr>'
-    )
-
-
+# The editable body must be HTML that Quill can round-trip unchanged —
+# paragraphs, bold, blockquote. Structured/presentational pieces (the CTA
+# button) live in the locked frame instead: Quill strips bgcolor/padding/VML,
+# which previously turned the saved button into invisible white-on-white text.
 _FACTS = (
-    '<table role="presentation" cellpadding="0" cellspacing="0" '
-    'style="margin:16px 0;">'
-    + _fact_row("Requested by", "<strong>{requestor}</strong>")
-    + _fact_row("Division", "{division}")
-    + _fact_row("Total cost", "{total_cost}")
-    + "</table>"
+    "<p><br></p>"
+    "<p>Requested by: <strong>{requestor}</strong></p>"
+    "<p>Division: {division}</p>"
+    "<p>Total cost: <strong>{total_cost}</strong></p>"
 )
+
+# Label of the locked CTA button the frame renders below the body.
+BUTTON_LABELS = {
+    "ASSIGNED": "Review & approve",
+    "APPROVED": "View the request",
+    "REJECTED": "Open the request",
+    "FINANCE_READY": "Complete the finance section",
+}
 
 DEFAULTS = {
     "ASSIGNED": {
         "subject": "Action needed: {number} awaiting your {level} approval",
         "body_html": (
             "<p>Request <strong>{number}</strong> needs your <strong>{level}</strong> "
-            "approval.</p>" + _FACTS + _button("Review &amp; approve")
+            "approval.</p>" + _FACTS
         ),
     },
     "APPROVED": {
@@ -77,20 +62,15 @@ DEFAULTS = {
         "body_html": (
             "<p>Your request <strong>{number}</strong> ({total_cost}) was "
             "<strong>approved</strong>. It is now with Finance for completion.</p>"
-            + _button("View the request")
         ),
     },
     "REJECTED": {
         "subject": "{number} was rejected",
         "body_html": (
             "<p>Your request <strong>{number}</strong> ({total_cost}) was "
-            "<strong>rejected</strong>.</p>"
-            '<table role="presentation" cellpadding="0" cellspacing="0" '
-            'style="margin:12px 0;"><tr>'
-            '<td bgcolor="#FEF2F2" style="padding:10px 14px;border-left:3px solid '
-            f'#B91C1C;font:14px {_F};color:#0B1B2B;">'
-            "Reviewer's comment: {comment}</td></tr></table>"
-            "<p>You can edit and resubmit it.</p>" + _button("Open the request")
+            "<strong>rejected</strong>.</p><p><br></p>"
+            "<blockquote>Reviewer's comment: {comment}</blockquote><p><br></p>"
+            "<p>You can edit and resubmit it.</p>"
         ),
     },
     "FINANCE_READY": {
@@ -98,10 +78,20 @@ DEFAULTS = {
         "body_html": (
             "<p>Request <strong>{number}</strong> ({total_cost}) has been fully "
             "approved and needs the finance cost breakdown.</p>" + _FACTS
-            + _button("Complete the finance section")
         ),
     },
 }
+
+
+def _polish(body_html):
+    """Give Quill's bare tags the inline styles email clients need, matching
+    what the Quill editor shows: paragraphs are margin-0 (spacing comes from
+    blank lines), blockquotes get the editor's gray-bar look."""
+    return (body_html
+            .replace("<p>", '<p style="margin:0;">')
+            .replace("<blockquote>",
+                     '<blockquote style="margin:12px 0;padding:4px 0 4px 16px;'
+                     'border-left:4px solid #CBD5E1;color:#475569;">'))
 
 
 def _require_type(type_):
@@ -121,6 +111,7 @@ def get(type_):
             "default_subject": shipped["subject"],
             "default_body_html": shipped["body_html"],
             "is_custom": False,
+            "button_label": BUTTON_LABELS[type_],
         }
     return {
         "type": type_, "name": NAMES[type_],
@@ -128,6 +119,7 @@ def get(type_):
         "default_subject": row.default_subject,
         "default_body_html": row.default_body_html,
         "is_custom": True,
+        "button_label": BUTTON_LABELS[type_],
     }
 
 
@@ -195,20 +187,24 @@ def _logo_data_uri():
 def preview(type_, subject, body_html):
     _require_type(type_)
     ctx = sample_context(type_)
+    body = _polish(_substitute(body_html, ctx, escape=True))
     return {
         "subject": _substitute(subject, ctx),
-        "html": email_frame.wrap(_substitute(body_html, ctx, escape=True),
-                                 logo_src=_logo_data_uri()),
+        "html": email_frame.wrap(body, logo_src=_logo_data_uri(),
+                                 button_label=BUTTON_LABELS[type_],
+                                 button_href=ctx["link"]),
     }
 
 
 def render(type_, context, *, redirect_note=None):
     tmpl = get(type_)
     subject = _substitute(tmpl["subject"], context)
-    body = _substitute(tmpl["body_html"], context, escape=True)
+    body = _polish(_substitute(tmpl["body_html"], context, escape=True))
     return {
         "subject": subject,
-        "html": email_frame.wrap(body, redirect_note=redirect_note),
+        "html": email_frame.wrap(body, redirect_note=redirect_note,
+                                 button_label=BUTTON_LABELS[type_],
+                                 button_href=context.get("link")),
         "enabled": tmpl["enabled"],
     }
 

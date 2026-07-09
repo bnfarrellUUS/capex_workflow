@@ -9,6 +9,8 @@ export interface EmailTemplate extends EmailTemplateSummary {
   default_subject: string
   default_body_html: string
   tokens: Token[]
+  /** Label of the locked CTA button the email frame appends below the body. */
+  button_label: string
 }
 export interface Preview { subject: string; html: string }
 

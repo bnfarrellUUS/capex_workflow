@@ -70,3 +70,21 @@ body {
 .email-editor > div {
   background: #ffffff;
 }
+
+/* Labels for the style-based font/size whitelists (Quill only ships labels for
+   its default class-based values). */
+.email-editor .ql-picker.ql-font .ql-picker-label::before,
+.email-editor .ql-picker.ql-font .ql-picker-item::before {
+  content: 'Arial';
+}
+.email-editor .ql-picker.ql-font [data-value='Georgia']::before { content: 'Georgia'; font-family: Georgia, serif; }
+.email-editor .ql-picker.ql-font [data-value='Tahoma']::before { content: 'Tahoma'; font-family: Tahoma, sans-serif; }
+.email-editor .ql-picker.ql-font [data-value='Times New Roman']::before { content: 'Times New Roman'; font-family: 'Times New Roman', serif; }
+.email-editor .ql-picker.ql-font [data-value='Verdana']::before { content: 'Verdana'; font-family: Verdana, sans-serif; }
+.email-editor .ql-picker.ql-size .ql-picker-label::before,
+.email-editor .ql-picker.ql-size .ql-picker-item::before {
+  content: 'Normal';
+}
+.email-editor .ql-picker.ql-size [data-value='12px']::before { content: 'Small'; }
+.email-editor .ql-picker.ql-size [data-value='18px']::before { content: 'Large'; }
+.email-editor .ql-picker.ql-size [data-value='24px']::before { content: 'Huge'; }

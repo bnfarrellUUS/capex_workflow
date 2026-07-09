@@ -39,6 +39,16 @@ def test_frame_is_table_based_for_outlook():
     assert 'bgcolor="#0B2A4A"' in html
 
 
+def test_frame_button_renders_vml_and_fallback():
+    html = email_frame.wrap("<p>x</p>", button_label="Review & approve",
+                            button_href="http://x/r/1")
+    assert "v:roundrect" in html                       # rounded in Outlook
+    assert html.count("Review &amp; approve") == 2     # VML + <a> fallback
+    assert 'href="http://x/r/1"' in html
+    # no button when not configured
+    assert "v:roundrect" not in email_frame.wrap("<p>x</p>")
+
+
 from app.services import email_template_service as ets
 from app.services.errors import ServiceError
 import pytest
@@ -58,6 +68,19 @@ def test_render_substitutes_tokens_and_frames(app):
     assert "CX000042" in out["html"]
     assert "United Uptime Services" in out["html"]      # framed
     assert "{number}" not in out["html"]
+    # the locked CTA button is appended by the frame, pointing at the request
+    assert "Review &amp; approve" in out["html"]
+    assert 'href="http://x/req/1"' in out["html"]
+
+
+def test_default_bodies_are_quill_safe(app):
+    # The editable body must survive a Quill round-trip: no tables, no VML,
+    # no bgcolor — those get stripped by the editor and broke sent emails.
+    for type_ in ets.TYPES:
+        body = ets.DEFAULTS[type_]["body_html"]
+        assert "<table" not in body
+        assert "bgcolor" not in body
+        assert "roundrect" not in body
 
 
 def test_render_leaves_unknown_token_intact(app):
