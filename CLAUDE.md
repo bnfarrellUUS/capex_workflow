@@ -121,7 +121,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 102 tests).
+- Backend: `cd backend && pytest -q` (currently 111 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -193,7 +193,8 @@ After final approval, a **FINANCE** user completes the cost breakdown
 - `components/AppShell.tsx` — navy grouped sidebar (icons, active pill) + header
   (theme toggle, Sign Out). `components/ui/` — `Button` (variants
   primary/secondary/ghost), `Input`, `Select`, `PasswordInput` (eye toggle),
-  `Card`/`StatCard`, `Badge`/`StatusBadge`. `components/Logo.tsx`,
+  `Card`/`StatCard`, `Badge`/`StatusBadge`, `TransferList` (dual-listbox:
+  Available | Add»/«Remove | Selected + ▲▼ reorder). `components/Logo.tsx`,
   `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
   `RequestsListPage` (+ shared `RequestsTable`), `NewRequestPage` (creates a
@@ -201,7 +202,9 @@ After final approval, a **FINANCE** user completes the cost breakdown
   Basic Info, Description, Effect on Ops, Equipment, Economic, Review — step
   tabs are clickable and save the draft before jumping), `RequestDetailPage`,
   `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds +
-  forms). `routes/wizard/types.ts` maps API ↔ form (`toForm`/`toPayload`).
+  forms). Approver pools (division L1, threshold L2/L3) and user roles are
+  assigned with the `TransferList` dual-listbox, not checkboxes.
+  `routes/wizard/types.ts` maps API ↔ form (`toForm`/`toPayload`).
 - `api/` — `client.ts` (fetch wrapper; obtains CSRF from `/api/auth/csrf`, sends
   `X-CSRFToken` on mutations, `credentials: 'include'`), plus per-resource
   modules (`auth`, `requests`, `divisions`, `users`, `thresholds`, `profileApi`).
