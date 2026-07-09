@@ -93,8 +93,8 @@ through tools that shell out. Two consequences:
   `flask db upgrade`, `python seed.py`) and opens both servers in their own
   windows. It launches each server from its own directory via a *relative* path
   and runs Vite through `node` directly, so the `&`-in-path never reaches a
-  parser. (The old `run-app.bat` is broken by the `&` path — its `start cmd /k`
-  windows flash and close — so prefer the `.ps1`.)
+  parser. (A prior `run-app.bat` was removed — cmd's `start cmd /k` mis-parses
+  the `&` in the path, flashing the windows closed.)
 - When running frontend tooling directly (CI, agents), call the binaries via
   node to sidestep the shell: e.g.
   `node ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json`,

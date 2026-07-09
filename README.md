@@ -7,7 +7,9 @@ Internal web app to submit, route, approve, and search capital-expenditure reque
 - **frontend/** — React + Vite + TypeScript SPA (Tailwind, brand colors)
 
 ## Run (Windows, Git Bash — the repo path contains `&`)
-Double-click **run-app.bat**, or manually:
+Run **`.\run-app.ps1`** from a PowerShell prompt (use
+`powershell -ExecutionPolicy Bypass -File .\run-app.ps1` if execution is
+blocked), or manually:
 
     # backend
     cd backend && python -m venv .venv && source .venv/Scripts/activate
