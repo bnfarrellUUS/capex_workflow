@@ -10,6 +10,8 @@ import DivisionsPage from './routes/admin/DivisionsPage'
 import DivisionNewPage from './routes/admin/DivisionNewPage'
 import DivisionEditPage from './routes/admin/DivisionEditPage'
 import ThresholdsPage from './routes/admin/ThresholdsPage'
+import EmailTemplatesPage from './routes/admin/EmailTemplatesPage'
+import EmailTemplateEditor from './routes/admin/EmailTemplateEditor'
 import ProfilePage from './routes/ProfilePage'
 import NewRequestPage from './routes/NewRequestPage'
 import WizardPage from './routes/WizardPage'
@@ -35,6 +37,8 @@ export default function App() {
           <Route path="/admin/divisions/new" element={<DivisionNewPage />} />
           <Route path="/admin/divisions/:id" element={<DivisionEditPage />} />
           <Route path="/admin/thresholds" element={<ThresholdsPage />} />
+          <Route path="/admin/email-templates" element={<EmailTemplatesPage />} />
+          <Route path="/admin/email-templates/:type" element={<EmailTemplateEditor />} />
         </Route>
       </Route>
     </Routes>
