@@ -14,6 +14,7 @@ import ProfilePage from './routes/ProfilePage'
 import NewRequestPage from './routes/NewRequestPage'
 import WizardPage from './routes/WizardPage'
 import RequestDetailPage from './routes/RequestDetailPage'
+import RequestsListPage from './routes/RequestsListPage'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/requests" element={<RequestsListPage />} />
         <Route path="/requests/new" element={<NewRequestPage />} />
         <Route path="/requests/:id/edit" element={<WizardPage />} />
         <Route path="/requests/:id" element={<RequestDetailPage />} />

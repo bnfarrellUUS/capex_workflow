@@ -84,3 +84,22 @@ export function deleteAttachment(id: string, attId: string): Promise<CapexReques
 export function attachmentUrl(id: string, attId: string): string {
   return `/api/requests/${id}/attachments/${attId}`
 }
+
+export interface RequestSummary {
+  id: string
+  number: string
+  status: string
+  total_cost: string | null
+  division_name: string | null
+  requestor_name: string | null
+  assignee_name: string | null
+  created_at: string | null
+}
+
+export function listRequests(params: { scope?: string; status?: string } = {}): Promise<RequestSummary[]> {
+  const q = new URLSearchParams()
+  if (params.scope) q.set('scope', params.scope)
+  if (params.status) q.set('status', params.status)
+  const qs = q.toString()
+  return api<RequestSummary[]>(`/requests${qs ? `?${qs}` : ''}`)
+}
