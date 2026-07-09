@@ -8,7 +8,7 @@ with an SMTP or Microsoft Graph backend — services/notify.py is the only calle
 """
 
 
-def send(to, subject, body):
+def send(to, subject, body, html=None):
     # Imported lazily so the app (and CI on non-Windows) never needs pywin32
     # unless email is actually being sent.
     import pythoncom
@@ -20,7 +20,10 @@ def send(to, subject, body):
         mail = outlook.CreateItem(0)  # 0 = olMailItem
         mail.To = to
         mail.Subject = subject
-        mail.Body = body
+        if html is not None:
+            mail.HTMLBody = html
+        else:
+            mail.Body = body
         mail.Send()
     finally:
         pythoncom.CoUninitialize()
