@@ -74,9 +74,14 @@ def submit(request_id, actor_id):
     return req
 
 
-def _guarded_transition(request_id, expected_level, values):
+def _guarded_transition(request_id, expected_level, expected_status, values):
+    # Guard on BOTH level and status so terminal transitions (reject, final
+    # approve) — which don't change current_level — are still protected against
+    # a concurrent second action.
     stmt = (sql_update(CapexRequest)
-            .where(CapexRequest.id == request_id, CapexRequest.current_level == expected_level)
+            .where(CapexRequest.id == request_id,
+                   CapexRequest.current_level == expected_level,
+                   CapexRequest.status == expected_status)
             .values(**values))
     result = db.session.execute(stmt)
     if result.rowcount != 1:
@@ -115,7 +120,7 @@ def approve(request_id, actor_id, comment=None):
             raise ServiceError(f"No approver configured for level {nxt}.")
         values = {"status": f"PENDING_L{nxt}", "current_level": nxt, "assignee_id": assignee.id}
 
-    _guarded_transition(req.id, level, values)
+    _guarded_transition(req.id, level, f"PENDING_L{level}", values)
     _add_action(req, actor_id, "APPROVED", level=level, acted_for_id=acted_for, comment=comment)
     db.session.commit()
     db.session.refresh(req)
@@ -132,7 +137,7 @@ def reject(request_id, actor_id, comment):
     thresholds = threshold_service.list_thresholds()
     level = req.current_level
     acted_for = _acted_for(req, level, actor_id, thresholds)
-    _guarded_transition(req.id, level, {"status": "REJECTED", "assignee_id": None})
+    _guarded_transition(req.id, level, f"PENDING_L{level}", {"status": "REJECTED", "assignee_id": None})
     _add_action(req, actor_id, "REJECTED", level=level, acted_for_id=acted_for, comment=comment)
     db.session.commit()
     db.session.refresh(req)

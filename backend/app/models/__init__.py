@@ -10,6 +10,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
 
+# Money uses fixed precision so SQL Server stores cents (an unscaled Numeric
+# becomes DECIMAL(18,0) there and would truncate). Ratios get more scale.
+MONEY = Numeric(18, 2)
+RATIO = Numeric(9, 4)
+
 
 def _id() -> str:
     return uuid.uuid4().hex
@@ -22,12 +27,12 @@ def _utcnow() -> datetime:
 class User(UserMixin, db.Model):
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
-    username: Mapped[str] = mapped_column(String, unique=True)
-    email: Mapped[str] = mapped_column(String, unique=True)
-    name: Mapped[str] = mapped_column(String)
-    password_hash: Mapped[str] = mapped_column(String)
-    roles: Mapped[str] = mapped_column(String, default='["REQUESTOR"]')
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    username: Mapped[str] = mapped_column(String(150), unique=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True)
+    name: Mapped[str] = mapped_column(String(150))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    roles: Mapped[str] = mapped_column(String(255), default='["REQUESTOR"]')
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     division_id: Mapped[Optional[str]] = mapped_column(
@@ -49,7 +54,7 @@ class User(UserMixin, db.Model):
 
     failed_logins: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    reset_token: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True)
+    reset_token: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
     reset_token_expiry: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -68,9 +73,9 @@ class User(UserMixin, db.Model):
 class Division(db.Model):
     __tablename__ = "divisions"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
-    number: Mapped[str] = mapped_column(String, unique=True)
-    name: Mapped[str] = mapped_column(String)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    number: Mapped[str] = mapped_column(String(50), unique=True)
+    name: Mapped[str] = mapped_column(String(150))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     l1_approver_id: Mapped[Optional[str]] = mapped_column(
@@ -89,9 +94,9 @@ class Division(db.Model):
 class ApprovalThreshold(db.Model):
     __tablename__ = "approval_thresholds"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     level: Mapped[int] = mapped_column(Integer, unique=True)  # 1, 2, 3
-    max_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
+    max_amount: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
     approver_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
     )
@@ -101,9 +106,9 @@ class ApprovalThreshold(db.Model):
 class CapexRequest(db.Model):
     __tablename__ = "capex_requests"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
-    number: Mapped[str] = mapped_column(String, unique=True)
-    status: Mapped[str] = mapped_column(String, default="DRAFT")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    number: Mapped[str] = mapped_column(String(20), unique=True)
+    status: Mapped[str] = mapped_column(String(30), default="DRAFT")
 
     requestor_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="NO ACTION"))
     requestor: Mapped["User"] = relationship("User", foreign_keys=[requestor_id])
@@ -132,23 +137,23 @@ class CapexRequest(db.Model):
     effect_on_operations: Mapped[str] = mapped_column(Text, default="")
 
     # Economic justification
-    asset_life: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    irr_after_tax: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    first_year_ebit: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    annual_savings: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    payback_years: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    npv_savings: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
+    asset_life: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    irr_after_tax: Mapped[Optional[Decimal]] = mapped_column(RATIO, nullable=True)
+    first_year_ebit: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
+    annual_savings: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
+    payback_years: Mapped[Optional[Decimal]] = mapped_column(RATIO, nullable=True)
+    npv_savings: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
 
     # Finance section (completed after final approval)
-    cost_autos_trucks: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    cost_machinery: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    cost_improvements: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    cost_furniture: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    cost_permits: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
-    cost_misc: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
+    cost_autos_trucks: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
+    cost_machinery: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
+    cost_improvements: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
+    cost_furniture: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
+    cost_permits: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
+    cost_misc: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
     finance_completed: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    total_cost: Mapped[Decimal] = mapped_column(Numeric, default=0)
+    total_cost: Mapped[Decimal] = mapped_column(MONEY, default=0)
     required_levels: Mapped[int] = mapped_column(Integer, default=1)
     current_level: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -171,30 +176,30 @@ class CapexRequest(db.Model):
 class EquipmentItem(db.Model):
     __tablename__ = "equipment_items"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     request_id: Mapped[str] = mapped_column(
         ForeignKey("capex_requests.id", ondelete="CASCADE")
     )
     request: Mapped["CapexRequest"] = relationship(back_populates="equipment_items")
     units: Mapped[int] = mapped_column(Integer)
-    condition: Mapped[str] = mapped_column(String)  # "NEW" | "USED"
-    type: Mapped[str] = mapped_column(String)
-    make: Mapped[str] = mapped_column(String)
-    model: Mapped[str] = mapped_column(String)
-    cost: Mapped[Decimal] = mapped_column(Numeric)
+    condition: Mapped[str] = mapped_column(String(10))  # "NEW" | "USED"
+    type: Mapped[str] = mapped_column(String(150))
+    make: Mapped[str] = mapped_column(String(150))
+    model: Mapped[str] = mapped_column(String(150))
+    cost: Mapped[Decimal] = mapped_column(MONEY)
 
 
 class Attachment(db.Model):
     __tablename__ = "attachments"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     request_id: Mapped[str] = mapped_column(
         ForeignKey("capex_requests.id", ondelete="CASCADE")
     )
     request: Mapped["CapexRequest"] = relationship(back_populates="attachments")
-    filename: Mapped[str] = mapped_column(String)
-    storage_path: Mapped[str] = mapped_column(String)
-    content_type: Mapped[str] = mapped_column(String)
+    filename: Mapped[str] = mapped_column(String(255))
+    storage_path: Mapped[str] = mapped_column(String(500))
+    content_type: Mapped[str] = mapped_column(String(150))
     size: Mapped[int] = mapped_column(Integer)
     uploaded_by_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="NO ACTION"))
     uploaded_by: Mapped["User"] = relationship("User")
@@ -204,7 +209,7 @@ class Attachment(db.Model):
 class ApprovalAction(db.Model):
     __tablename__ = "approval_actions"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     request_id: Mapped[str] = mapped_column(
         ForeignKey("capex_requests.id", ondelete="CASCADE")
     )
@@ -214,7 +219,7 @@ class ApprovalAction(db.Model):
     acted_for_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
     )
-    action: Mapped[str] = mapped_column(String)  # SUBMITTED | APPROVED | REJECTED | RESUBMITTED | FINANCE_COMPLETED
+    action: Mapped[str] = mapped_column(String(30))  # SUBMITTED | APPROVED | REJECTED | RESUBMITTED | FINANCE_COMPLETED
     level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
@@ -223,24 +228,24 @@ class ApprovalAction(db.Model):
 class NotificationLog(db.Model):
     __tablename__ = "notification_logs"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     request_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("capex_requests.id", ondelete="SET NULL"), nullable=True
     )
-    recipient: Mapped[str] = mapped_column(String)
-    type: Mapped[str] = mapped_column(String)  # ASSIGNED | DECIDED | FINANCE_READY | REMINDER
+    recipient: Mapped[str] = mapped_column(String(255))
+    type: Mapped[str] = mapped_column(String(30))  # ASSIGNED | DECIDED | FINANCE_READY | REMINDER
     sent_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
 
 class Counter(db.Model):
     __tablename__ = "counters"
 
-    name: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), primary_key=True)
     value: Mapped[int] = mapped_column(Integer)
 
 
 class AppSetting(db.Model):
     __tablename__ = "app_settings"
 
-    key: Mapped[str] = mapped_column(String, primary_key=True)
-    value: Mapped[str] = mapped_column(String)
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)

@@ -56,7 +56,9 @@ def test_reject_sets_status_and_records_comment(app):
     assert action.comment == "Not this quarter"
 
 
-def test_guarded_transition_rejects_stale_level(app):
-    requestor, l1, l2, req = _two_level()  # current_level == 1
+def test_guarded_transition_rejects_stale_level_or_status(app):
+    requestor, l1, l2, req = _two_level()  # current_level == 1, status PENDING_L1
     with pytest.raises(ServiceError):
-        _guarded_transition(req.id, 999, {"status": "APPROVED"})
+        _guarded_transition(req.id, 999, "PENDING_L1", {"status": "APPROVED"})  # stale level
+    with pytest.raises(ServiceError):
+        _guarded_transition(req.id, 1, "PENDING_L2", {"status": "APPROVED"})  # stale status

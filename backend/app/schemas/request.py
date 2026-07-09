@@ -4,12 +4,12 @@ from pydantic import BaseModel, Field
 
 
 class EquipmentItemIn(BaseModel):
-    units: int = 1
+    units: int = Field(default=1, ge=0)
     condition: str = "NEW"
     type: str = ""
     make: str = ""
     model: str = ""
-    cost: Decimal = Decimal(0)
+    cost: Decimal = Field(default=Decimal(0), ge=0)
 
 
 class RequestDraft(BaseModel):

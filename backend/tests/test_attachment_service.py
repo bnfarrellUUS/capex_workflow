@@ -42,6 +42,16 @@ def test_delete_attachment(app):
         attachment_service.get_attachment(att.id, owner)
 
 
+def test_upload_sanitizes_traversal_filename(app):
+    owner = make_user("owner", roles='["REQUESTOR"]')
+    req = _draft(owner)
+    att = attachment_service.add_attachment(req.id, owner, "../../../evil.txt", "text/plain", b"x")
+    assert ".." not in att.storage_path
+    assert att.storage_path.startswith(req.id + "/")
+    _, data = attachment_service.get_attachment(att.id, owner)
+    assert data == b"x"
+
+
 def test_request_out_lists_attachments(app):
     owner = make_user("owner", roles='["REQUESTOR"]')
     req = _draft(owner)
