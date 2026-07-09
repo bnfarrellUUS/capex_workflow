@@ -25,6 +25,20 @@ def test_frame_redirect_note_banner():
     assert "Intended recipient: a@x.com" in html
 
 
+def test_frame_logo_defaults_to_cid_and_accepts_override():
+    assert f'src="cid:{email_frame.LOGO_CID}"' in email_frame.wrap("<p>x</p>")
+    html = email_frame.wrap("<p>x</p>", logo_src="data:image/png;base64,AAA")
+    assert 'src="data:image/png;base64,AAA"' in html
+    assert "cid:" not in html
+
+
+def test_frame_is_table_based_for_outlook():
+    # Outlook's Word engine needs table structure, not divs, for the card layout.
+    html = email_frame.wrap("<p>x</p>")
+    assert 'width="600"' in html
+    assert 'bgcolor="#0B2A4A"' in html
+
+
 from app.services import email_template_service as ets
 from app.services.errors import ServiceError
 import pytest
@@ -78,6 +92,9 @@ def test_preview_substitutes_sample_data_and_frames(app):
     assert out["subject"] == "Re: CX000042"
     assert "CX000042" in out["html"] and "Level 2 of 3" in out["html"]
     assert "United Uptime Services" in out["html"]      # framed
+    # the browser preview inlines the logo (cid: is Outlook-only)
+    assert "data:image/png;base64," in out["html"]
+    assert "cid:" not in out["html"]
 
 
 def test_render_escapes_token_values_in_body(app):

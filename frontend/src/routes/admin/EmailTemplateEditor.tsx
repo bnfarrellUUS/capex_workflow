@@ -8,6 +8,9 @@ import {
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { QuillEditor } from '../../components/ui/QuillEditor'
+import { Logo } from '../../components/Logo'
+
+const EMAIL_FONT = 'Arial, Helvetica, sans-serif'
 
 export default function EmailTemplateEditor() {
   const { type = '' } = useParams()
@@ -55,8 +58,27 @@ export default function EmailTemplateEditor() {
         <label className="mb-1 block text-xs text-muted">Subject</label>
         <Input value={subject} onChange={(e) => { setSubject(e.target.value); setDirty(true) }} />
         <label className="mb-1 mt-4 block text-xs text-muted">Body</label>
-        <QuillEditor value={data.body_html} onChange={(html) => { setBody(html); setDirty(true) }}
-          onReady={(insert) => (insertRef.current = insert)} />
+        {/* Visual replica of the email frame so WYSIWYG editing matches what is
+            sent: navy header + logo above the editable body, footer below. */}
+        <div className="rounded-xl p-6" style={{ background: '#EEF3FB' }}>
+          <div className="email-editor mx-auto max-w-[600px] overflow-hidden rounded-xl border bg-white"
+            style={{ borderColor: '#E2E8F0' }}>
+            <div className="flex items-center gap-3.5 px-7 py-5" style={{ background: '#0B2A4A' }}>
+              <Logo size={40} />
+              <div style={{ fontFamily: EMAIL_FONT }}>
+                <div className="text-xl font-bold text-white">United Uptime Services</div>
+                <div className="text-[13px] tracking-wide" style={{ color: '#93BBF5' }}>CAPEX Flow</div>
+              </div>
+            </div>
+            <QuillEditor value={data.body_html} onChange={(html) => { setBody(html); setDirty(true) }}
+              onReady={(insert) => (insertRef.current = insert)} />
+            <div className="px-7 py-4 text-xs" style={{
+              borderTop: '1px solid #E2E8F0', color: '#64748B', fontFamily: EMAIL_FONT,
+            }}>
+              Automated message from CAPEX Flow — please do not reply.
+            </div>
+          </div>
+        </div>
         <label className="mt-4 flex items-center gap-2 text-sm text-fg">
           <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); setDirty(true) }} />
           Send this email

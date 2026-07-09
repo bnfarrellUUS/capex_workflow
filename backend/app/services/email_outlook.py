@@ -8,6 +8,18 @@ with an SMTP or Microsoft Graph backend — services/notify.py is the only calle
 """
 
 
+import os
+
+from app.services import email_frame
+
+_LOGO_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "assets", "email_logo.png"))
+
+# MAPI property for an attachment's Content-ID (PR_ATTACH_CONTENT_ID), so the
+# HTML can reference the inline logo as <img src="cid:...">.
+_PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+
+
 def send(to, subject, body, html=None):
     # Imported lazily so the app (and CI on non-Windows) never needs pywin32
     # unless email is actually being sent.
@@ -21,6 +33,10 @@ def send(to, subject, body, html=None):
         mail.To = to
         mail.Subject = subject
         if html is not None:
+            if f"cid:{email_frame.LOGO_CID}" in html:
+                att = mail.Attachments.Add(_LOGO_PATH)
+                att.PropertyAccessor.SetProperty(
+                    _PR_ATTACH_CONTENT_ID, email_frame.LOGO_CID)
             mail.HTMLBody = html
         else:
             mail.Body = body

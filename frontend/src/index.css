@@ -46,3 +46,27 @@ body {
   background-color: var(--color-bg);
   color: var(--color-fg);
 }
+
+/* Email template editor: make the Quill surface look like the email body
+   (the frame chrome around it is rendered by EmailTemplateEditor). Emails are
+   always light, so the editing surface stays white in dark mode too. */
+.email-editor .ql-toolbar.ql-snow {
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.email-editor .ql-container.ql-snow {
+  border: 0;
+  background: #ffffff;
+}
+.email-editor .ql-editor {
+  min-height: 260px;
+  padding: 24px 28px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #0b1b2b;
+}
+.email-editor > div {
+  background: #ffffff;
+}

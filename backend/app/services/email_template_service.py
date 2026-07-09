@@ -30,18 +30,38 @@ TOKENS = {
     "FINANCE_READY": _COMMON,
 }
 
-_BTN = (
-    'style="display:inline-block;background:#2563EB;color:#ffffff;'
-    'text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:bold;"'
-)
+# Outlook's Word engine ignores padding on <a>, so the button's size/shape must
+# come from the <td> (bgcolor + padding); border-radius degrades to square there.
+_F = "Arial,Helvetica,sans-serif"
+
+
+def _button(label):
+    return (
+        '<table role="presentation" cellpadding="0" cellspacing="0" '
+        'style="margin:20px 0 8px;"><tr>'
+        '<td bgcolor="#2563EB" style="padding:12px 22px;border-radius:8px;">'
+        f'<a href="{{link}}" style="font:bold 15px {_F};color:#ffffff;'
+        f'text-decoration:none;">{label}</a>'
+        "</td></tr></table>"
+    )
+
+
+def _fact_row(label, value):
+    # Every <td> carries its own font — Outlook resets fonts per cell.
+    return (
+        f'<tr><td width="110" style="padding:3px 12px 3px 0;font:14px {_F};'
+        f'color:#64748B;">{label}</td>'
+        f'<td style="padding:3px 0;font:14px {_F};color:#0B1B2B;">{value}</td></tr>'
+    )
+
+
 _FACTS = (
-    '<table style="margin:16px 0;border-collapse:collapse;font-size:14px;">'
-    "<tr><td style=\"padding:2px 12px 2px 0;color:#64748B;\">Requested by</td>"
-    "<td><strong>{requestor}</strong></td></tr>"
-    "<tr><td style=\"padding:2px 12px 2px 0;color:#64748B;\">Division</td>"
-    "<td>{division}</td></tr>"
-    "<tr><td style=\"padding:2px 12px 2px 0;color:#64748B;\">Total cost</td>"
-    "<td>{total_cost}</td></tr></table>"
+    '<table role="presentation" cellpadding="0" cellspacing="0" '
+    'style="margin:16px 0;">'
+    + _fact_row("Requested by", "<strong>{requestor}</strong>")
+    + _fact_row("Division", "{division}")
+    + _fact_row("Total cost", "{total_cost}")
+    + "</table>"
 )
 
 DEFAULTS = {
@@ -49,8 +69,7 @@ DEFAULTS = {
         "subject": "Action needed: {number} awaiting your {level} approval",
         "body_html": (
             "<p>Request <strong>{number}</strong> needs your <strong>{level}</strong> "
-            "approval.</p>" + _FACTS +
-            f'<p><a href="{{link}}" {_BTN}>Review &amp; approve</a></p>'
+            "approval.</p>" + _FACTS + _button("Review &amp; approve")
         ),
     },
     "APPROVED": {
@@ -58,7 +77,7 @@ DEFAULTS = {
         "body_html": (
             "<p>Your request <strong>{number}</strong> ({total_cost}) was "
             "<strong>approved</strong>. It is now with Finance for completion.</p>"
-            f'<p><a href="{{link}}" {_BTN}>View the request</a></p>'
+            + _button("View the request")
         ),
     },
     "REJECTED": {
@@ -66,18 +85,20 @@ DEFAULTS = {
         "body_html": (
             "<p>Your request <strong>{number}</strong> ({total_cost}) was "
             "<strong>rejected</strong>.</p>"
-            '<p style="background:#FEF2F2;border-left:3px solid #B91C1C;padding:8px 12px;">'
-            "Reviewer's comment: {comment}</p>"
-            "<p>You can edit and resubmit it.</p>"
-            f'<p><a href="{{link}}" {_BTN}>Open the request</a></p>'
+            '<table role="presentation" cellpadding="0" cellspacing="0" '
+            'style="margin:12px 0;"><tr>'
+            '<td bgcolor="#FEF2F2" style="padding:10px 14px;border-left:3px solid '
+            f'#B91C1C;font:14px {_F};color:#0B1B2B;">'
+            "Reviewer's comment: {comment}</td></tr></table>"
+            "<p>You can edit and resubmit it.</p>" + _button("Open the request")
         ),
     },
     "FINANCE_READY": {
         "subject": "{number} approved — finance section pending",
         "body_html": (
             "<p>Request <strong>{number}</strong> ({total_cost}) has been fully "
-            "approved and needs the finance cost breakdown.</p>" + _FACTS +
-            f'<p><a href="{{link}}" {_BTN}>Complete the finance section</a></p>'
+            "approved and needs the finance cost breakdown.</p>" + _FACTS
+            + _button("Complete the finance section")
         ),
     },
 }
@@ -155,12 +176,29 @@ def _substitute(text, context, escape=False):
     return text
 
 
+_logo_data_uri_cache = None
+
+
+def _logo_data_uri():
+    # The browser preview can't resolve the Outlook cid: reference, so inline
+    # the same PNG the sender attaches.
+    global _logo_data_uri_cache
+    if _logo_data_uri_cache is None:
+        import base64
+        import os
+        path = os.path.join(os.path.dirname(__file__), "..", "assets", "email_logo.png")
+        with open(path, "rb") as f:
+            _logo_data_uri_cache = "data:image/png;base64," + base64.b64encode(f.read()).decode()
+    return _logo_data_uri_cache
+
+
 def preview(type_, subject, body_html):
     _require_type(type_)
     ctx = sample_context(type_)
     return {
         "subject": _substitute(subject, ctx),
-        "html": email_frame.wrap(_substitute(body_html, ctx, escape=True)),
+        "html": email_frame.wrap(_substitute(body_html, ctx, escape=True),
+                                 logo_src=_logo_data_uri()),
     }
 
 
