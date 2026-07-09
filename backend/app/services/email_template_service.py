@@ -1,3 +1,5 @@
+import html
+
 from flask import current_app
 
 from app.extensions import db
@@ -146,9 +148,10 @@ def reset(type_):
     return get(type_)
 
 
-def _substitute(text, context):
+def _substitute(text, context, escape=False):
     for key, value in context.items():
-        text = text.replace("{" + key + "}", str(value))
+        replacement = html.escape(str(value)) if escape else str(value)
+        text = text.replace("{" + key + "}", replacement)
     return text
 
 
@@ -157,14 +160,14 @@ def preview(type_, subject, body_html):
     ctx = sample_context(type_)
     return {
         "subject": _substitute(subject, ctx),
-        "html": email_frame.wrap(_substitute(body_html, ctx)),
+        "html": email_frame.wrap(_substitute(body_html, ctx, escape=True)),
     }
 
 
 def render(type_, context, *, redirect_note=None):
     tmpl = get(type_)
     subject = _substitute(tmpl["subject"], context)
-    body = _substitute(tmpl["body_html"], context)
+    body = _substitute(tmpl["body_html"], context, escape=True)
     return {
         "subject": subject,
         "html": email_frame.wrap(body, redirect_note=redirect_note),

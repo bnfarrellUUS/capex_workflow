@@ -78,3 +78,15 @@ def test_preview_substitutes_sample_data_and_frames(app):
     assert out["subject"] == "Re: CX000042"
     assert "CX000042" in out["html"] and "Level 2 of 3" in out["html"]
     assert "United Uptime Services" in out["html"]      # framed
+
+
+def test_render_escapes_token_values_in_body(app):
+    out = ets.render("REJECTED", {"number": "CX1", "total_cost": "$1.00",
+                                  "comment": "a < b & <b>bold</b>",
+                                  "requestor": "x", "division": "d",
+                                  "link": "http://x/r/1"})
+    # user-supplied value is escaped, not rendered as real markup
+    assert "a &lt; b &amp; &lt;b&gt;bold&lt;/b&gt;" in out["html"]
+    assert "<b>bold</b>" not in out["html"]
+    # template's own markup and the framed shell remain intact
+    assert "United Uptime Services" in out["html"]
