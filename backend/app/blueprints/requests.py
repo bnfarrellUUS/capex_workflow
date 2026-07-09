@@ -67,7 +67,7 @@ def approve_request(request_id):
 def reject_request(request_id):
     comment = (request.get_json(silent=True) or {}).get("comment", "")
     req = workflow_service.reject(request_id, current_user.id, comment)
-    notify.notify_decision(req, False)
+    notify.notify_decision(req, False, comment)
     return jsonify(request_service.request_out(req))
 
 
