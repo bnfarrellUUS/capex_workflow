@@ -176,6 +176,27 @@ instead.
 Notifications are **best-effort**: a notification failure is caught and logged
 and will **never** block or roll back the workflow transition itself.
 
+**Email content.** Each notification body includes the request details
+(requestor, division, total cost) and a **deep link straight to the request in
+the app** — the approver clicks it and lands on the request detail page where
+the Approve / Reject buttons are. There is no approve-from-email; the link takes
+them into the app to act. The link is built from the **`APP_BASE_URL`** config,
+so set that to the real hostname when you move to a server. Example approver
+email:
+
+```
+Subject: Action needed: CX000042 awaiting your Level 2 of 3 approval
+
+Request CX000042 needs your Level 2 of 3 approval.
+
+Requested by: Dana Ruiz
+Division:     12 — Field Services
+Total cost:   $182,400.00
+
+Review and approve:
+http://localhost:5000/requests/<id>
+```
+
 ### 7.2 Current state: sent through local Outlook (redirected for testing)
 
 For every notification the app **always**:
@@ -201,6 +222,7 @@ the signed-in Outlook account.
 |-----|---------------|---------|
 | `EMAIL_ENABLED` | `1` (on) | Set `0` to log/record only and not send. |
 | `EMAIL_REDIRECT_TO` | `bryan.farrell@uniteduptime.com` | Where all mail is sent during testing. Clear it to send to real recipients. |
+| `APP_BASE_URL` | `http://localhost:5000` | Base URL used for the deep link in every email. Set to the real hostname on the server. |
 
 **Requirements to actually send:**
 - Runs on a **Windows** machine with the **Outlook desktop app** installed and a

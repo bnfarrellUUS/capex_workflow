@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from app.extensions import db
 from app.models import NotificationLog
 from app.services import notify
@@ -48,3 +50,28 @@ def test_notify_assignment_notifies_current_level_approvers(app):
     notify.notify_assignment(req)
     row = db.session.query(NotificationLog).filter_by(type="ASSIGNED").one()
     assert row.recipient == approver.email
+
+
+def test_notify_assignment_body_has_deep_link_and_details(app, monkeypatch):
+    sent = {}
+    monkeypatch.setattr("app.services.email_outlook.send",
+                        lambda to, subject, body: sent.update(subject=subject, body=body))
+    app.config["EMAIL_ENABLED"] = True
+    app.config["APP_BASE_URL"] = "https://capex.example.com"
+
+    approver = make_user("appr")
+    req_owner = make_user("req", roles='["REQUESTOR"]')
+    div = make_division(l1_approver_id=approver.id)
+    req = make_draft(req_owner.id, div.id)
+    req.current_level = 1
+    req.required_levels = 2
+    req.status = "PENDING_L1"
+    req.total_cost = Decimal("82400")
+    db.session.commit()
+
+    notify.notify_assignment(req)
+
+    assert f"https://capex.example.com/requests/{req.id}" in sent["body"]
+    assert "Level 1 of 2" in sent["body"]
+    assert "$82,400.00" in sent["body"]        # formatted money
+    assert req.number in sent["subject"]
