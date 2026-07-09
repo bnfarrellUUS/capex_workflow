@@ -87,9 +87,14 @@ search capital-expenditure (CAPEX) requests. Product brand name: **CAPEX Flow**
 **Windows gotcha:** the repo path contains `&` (`D&H United Fueling Solutions`),
 which breaks npm's default cmd script-shell and breaks running `npm run …`
 through tools that shell out. Two consequences:
-- Use **`run-app.bat`** (repo root) to start everything — it points
-  `npm_config_script_shell` at Git Bash, does first-run setup (venv, deps,
-  `flask db upgrade`, `python seed.py`), and launches both servers.
+- Use **`run-app.ps1`** (repo root) to start everything: `.\run-app.ps1` from a
+  PowerShell prompt (or `powershell -ExecutionPolicy Bypass -File .\run-app.ps1`
+  if script execution is blocked). It does first-run setup (venv, deps,
+  `flask db upgrade`, `python seed.py`) and opens both servers in their own
+  windows. It launches each server from its own directory via a *relative* path
+  and runs Vite through `node` directly, so the `&`-in-path never reaches a
+  parser. (The old `run-app.bat` is broken by the `&` path — its `start cmd /k`
+  windows flash and close — so prefer the `.ps1`.)
 - When running frontend tooling directly (CI, agents), call the binaries via
   node to sidestep the shell: e.g.
   `node ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json`,
