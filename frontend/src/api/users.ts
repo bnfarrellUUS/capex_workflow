@@ -32,3 +32,6 @@ export function updateUser(id: string, body: UserInput): Promise<AdminUser> {
 export function resetUserPassword(id: string, password: string): Promise<void> {
   return api(`/users/${id}/reset-password`, { method: 'POST', body: { password } })
 }
+export function deleteUser(id: string): Promise<void> {
+  return api(`/users/${id}`, { method: 'DELETE' })
+}

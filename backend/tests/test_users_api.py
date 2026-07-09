@@ -57,6 +57,60 @@ def test_update_user(client, app):
     assert set(body["roles"]) == {"REQUESTOR", "APPROVER"}
 
 
+def test_update_can_change_username(client, app):
+    _admin(client)
+    u = client.post("/api/users", json={
+        "username": "olduser", "email": "o@x.com", "name": "O",
+        "password": "password1", "roles": ["REQUESTOR"]}).get_json()
+    r = client.patch(f"/api/users/{u['id']}", json={
+        "username": "newuser", "name": "O", "email": "o@x.com",
+        "roles": ["REQUESTOR"], "division_id": None, "active": True})
+    assert r.status_code == 200 and r.get_json()["username"] == "newuser"
+
+
+def test_update_username_duplicate_conflicts(client, app):
+    _admin(client)
+    client.post("/api/users", json={"username": "aa", "email": "aa@x.com", "name": "A",
+                                     "password": "password1", "roles": ["REQUESTOR"]})
+    b = client.post("/api/users", json={"username": "bb", "email": "bb@x.com", "name": "B",
+                                        "password": "password1", "roles": ["REQUESTOR"]}).get_json()
+    r = client.patch(f"/api/users/{b['id']}", json={
+        "username": "aa", "name": "B", "email": "bb@x.com",
+        "roles": ["REQUESTOR"], "division_id": None, "active": True})
+    assert r.status_code == 409
+
+
+def test_delete_user_without_history_succeeds(client, app):
+    _admin(client)
+    u = client.post("/api/users", json={"username": "tmp", "email": "tmp@x.com", "name": "T",
+                                        "password": "password1", "roles": ["REQUESTOR"]}).get_json()
+    assert client.delete(f"/api/users/{u['id']}").status_code == 200
+    assert all(x["username"] != "tmp" for x in client.get("/api/users").get_json())
+
+
+def test_delete_user_with_history_blocked(client, app):
+    from app.extensions import db
+    from app.models import User
+    from app.services import request_service
+    _admin(client)
+    u = client.post("/api/users", json={"username": "hasreq", "email": "h@x.com", "name": "H",
+                                        "password": "password1", "roles": ["REQUESTOR"]}).get_json()
+    request_service.create_draft(db.session.get(User, u["id"]))
+    assert client.delete(f"/api/users/{u['id']}").status_code == 409
+
+
+def test_cannot_delete_self(client, app):
+    from app.extensions import db
+    from app.models import User
+    from app.services.security import hash_password
+    admin = User(username="admin", email="a@x.com", name="Admin",
+                 password_hash=hash_password("secret123"), roles='["ADMIN"]')
+    db.session.add(admin)
+    db.session.commit()
+    client.post("/api/auth/login", json={"username": "admin", "password": "secret123"})
+    assert client.delete(f"/api/users/{admin.id}").status_code == 400
+
+
 def test_admin_reset_password(client, app):
     _admin(client)
     created = client.post("/api/users", json={

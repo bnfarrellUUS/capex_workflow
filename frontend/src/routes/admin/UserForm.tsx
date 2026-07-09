@@ -31,20 +31,18 @@ export function UserForm({
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const body: UserInput = {
-      email, name, roles, division_id: divisionId || null,
-      ...(user ? { active } : { username, password }),
+      username, email, name, roles, division_id: divisionId || null,
+      ...(user ? { active } : { password }),
     }
     onSubmit(body)
   }
 
   return (
     <form onSubmit={submit} className="max-w-lg space-y-4">
-      {!user && (
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Username</label>
-          <Input value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </div>
-      )}
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Username</label>
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} required />
+      </div>
       <div className="space-y-1">
         <label className="text-sm font-medium">Full name</label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required />

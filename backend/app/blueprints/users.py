@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from flask_login import current_user
 
 from app.authz import require_roles
 from app.schemas.user import UserCreate, UserUpdate, PasswordIn
@@ -41,4 +42,11 @@ def update_user(user_id):
 def reset_password(user_id):
     data = PasswordIn(**(request.get_json(silent=True) or {}))
     user_service.admin_reset_password(user_id, data.password)
+    return jsonify(ok=True)
+
+
+@bp.delete("/<user_id>")
+@require_roles("ADMIN")
+def delete_user(user_id):
+    user_service.delete_user(user_id, current_user.id)
     return jsonify(ok=True)

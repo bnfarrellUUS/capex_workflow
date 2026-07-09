@@ -16,6 +16,7 @@ class UserUpdate(BaseModel):
     roles: list[str]
     division_id: str | None = None
     active: bool = True
+    username: str | None = None  # optional; omit to leave unchanged
 
 
 class PasswordIn(BaseModel):

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listUsers, updateUser, resetUserPassword, type UserInput } from '../../api/users'
+import { listUsers, updateUser, resetUserPassword, deleteUser, type UserInput } from '../../api/users'
 import { listDivisions } from '../../api/divisions'
 import { ApiError } from '../../api/client'
 import { UserForm } from './UserForm'
@@ -21,6 +21,12 @@ export default function UserEditPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); navigate('/admin/users') },
   })
   const error = mutation.error instanceof ApiError ? mutation.error.message : mutation.error ? 'Failed.' : null
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteUser(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); navigate('/admin/users') },
+  })
+  const deleteError = deleteMutation.error instanceof ApiError ? deleteMutation.error.message : null
 
   const [newPassword, setNewPassword] = useState('')
   const [resetMsg, setResetMsg] = useState<string | null>(null)
@@ -49,6 +55,25 @@ export default function UserEditPage() {
             onClick={() => resetMutation.mutate()}>Reset</Button>
         </div>
         {resetMsg && <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{resetMsg}</p>}
+      </div>
+      <div className="max-w-lg border-t border-border pt-6">
+        <h2 className="mb-1 font-semibold text-fg">Delete user</h2>
+        <p className="mb-2 text-sm text-muted">
+          Permanently removes this user. Users with request or approval history can't be
+          deleted — deactivate them instead.
+        </p>
+        <Button
+          className="bg-red-600 text-white hover:bg-red-700"
+          disabled={deleteMutation.isPending}
+          onClick={() => {
+            if (window.confirm(`Delete user "${user.username}"? This cannot be undone.`)) {
+              deleteMutation.mutate()
+            }
+          }}
+        >
+          Delete user
+        </Button>
+        {deleteError && <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">{deleteError}</p>}
       </div>
     </div>
   )
