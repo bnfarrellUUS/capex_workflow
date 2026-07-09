@@ -11,11 +11,21 @@ class BaseConfig:
     WTF_CSRF_TIME_LIMIT = None
     UPLOAD_ROOT = os.environ.get("UPLOAD_ROOT")  # None -> instance/uploads
 
+    # Email delivery. The routing logic in services/notify.py always records a
+    # NotificationLog; EMAIL_ENABLED additionally sends the message through the
+    # local Outlook desktop app (services/email_outlook.py). While running
+    # locally we redirect every message to EMAIL_REDIRECT_TO and note the
+    # intended recipient in the body; clear it when real delivery is wanted.
+    EMAIL_ENABLED = os.environ.get("EMAIL_ENABLED", "0") == "1"
+    EMAIL_REDIRECT_TO = os.environ.get("EMAIL_REDIRECT_TO", "bryan.farrell@uniteduptime.com")
+
 
 class DevConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "sqlite:///capex_dev.db"
     )
+    # Send via Outlook by default in dev; set EMAIL_ENABLED=0 to silence it.
+    EMAIL_ENABLED = os.environ.get("EMAIL_ENABLED", "1") == "1"
 
 
 class TestConfig(BaseConfig):
@@ -23,6 +33,7 @@ class TestConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
     UPLOAD_ROOT = os.path.join(tempfile.gettempdir(), "capex_test_uploads")
+    EMAIL_ENABLED = False
 
 
 class ProdConfig(BaseConfig):

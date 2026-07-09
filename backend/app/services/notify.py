@@ -1,5 +1,7 @@
 import logging
 
+from flask import current_app
+
 from app.extensions import db
 from app.models import NotificationLog, User
 
@@ -7,7 +9,8 @@ log = logging.getLogger("capex.notify")
 
 
 def send_email(recipient, subject, body, request_id=None, type_="INFO"):
-    """Best-effort notification. Dev driver logs + records NotificationLog.
+    """Best-effort notification. Always logs + records NotificationLog, and (when
+    EMAIL_ENABLED) delivers the message through the configured backend.
     Never raises — a failure must not block a workflow transition."""
     try:
         log.info("EMAIL to=%s subject=%s", recipient, subject)
@@ -15,7 +18,23 @@ def send_email(recipient, subject, body, request_id=None, type_="INFO"):
         db.session.commit()
     except Exception:
         db.session.rollback()
-        log.exception("notification failed for %s", recipient)
+        log.exception("notification log failed for %s", recipient)
+    _deliver(recipient, subject, body)
+
+
+def _deliver(recipient, subject, body):
+    """Send the message via Outlook when email is enabled. While running locally
+    every message is redirected to EMAIL_REDIRECT_TO with the intended recipient
+    noted in the body. Delivery failures are logged, never raised."""
+    if not current_app.config.get("EMAIL_ENABLED"):
+        return
+    redirect_to = current_app.config.get("EMAIL_REDIRECT_TO") or recipient
+    try:
+        from app.services import email_outlook
+        full_body = f"[Intended recipient: {recipient}]\n\n{body}"
+        email_outlook.send(redirect_to, subject, full_body)
+    except Exception:
+        log.exception("email delivery failed (intended %s)", recipient)
 
 
 def notify_assignment(req):
