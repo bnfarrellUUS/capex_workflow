@@ -5,6 +5,7 @@ import { login } from '../api/auth'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { PasswordInput } from '../components/ui/PasswordInput'
 import { Logo } from '../components/Logo'
 
 export default function LoginPage() {
@@ -44,7 +45,7 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1">
             <label htmlFor="password" className="text-sm font-medium">Password</label>
-            <Input id="password" type="password" value={password}
+            <PasswordInput id="password" value={password}
               onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
           </div>
           {error && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
