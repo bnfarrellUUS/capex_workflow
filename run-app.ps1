@@ -59,11 +59,14 @@ $serverCmd = "Set-Location -LiteralPath '$Backend'; & '.\.venv\Scripts\python.ex
 Start-Process powershell -ArgumentList '-NoExit', '-Command', $serverCmd
 
 # Wait for the server to accept connections, then open the browser.
+# Poll 127.0.0.1 (what `flask run` binds) rather than localhost: on Windows
+# localhost resolves to IPv6 ::1 first and the ~2s fallback to 127.0.0.1 would
+# exceed the request timeout on every attempt, so the browser would never open.
 Write-Host 'Starting the server, opening the website when ready...' -ForegroundColor Cyan
 $ready = $false
 for ($i = 0; $i -lt 60; $i++) {
   try {
-    Invoke-WebRequest -Uri 'http://localhost:5000/api/health' -UseBasicParsing -TimeoutSec 2 | Out-Null
+    Invoke-WebRequest -Uri 'http://127.0.0.1:5000/api/health' -UseBasicParsing -TimeoutSec 2 | Out-Null
     $ready = $true
     break
   } catch { Start-Sleep -Seconds 1 }
