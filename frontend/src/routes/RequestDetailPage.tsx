@@ -139,7 +139,7 @@ export default function RequestDetailPage() {
                 onChange={(e) => setComment(e.target.value)} />
               <div className="flex gap-2">
                 <Button disabled={busy} onClick={() => act(() => approveRequest(id, comment || undefined))}>Approve</Button>
-                <Button className="bg-red-600 hover:bg-red-700" disabled={busy}
+                <Button className="bg-red-600 hover:bg-red-700" disabled={busy || !comment.trim()}
                   onClick={() => act(() => rejectRequest(id, comment))}>Reject</Button>
               </div>
             </div>

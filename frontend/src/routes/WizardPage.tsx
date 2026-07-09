@@ -31,6 +31,17 @@ export default function WizardPage() {
     onSuccess: () => navigate(`/requests/${id}`, { replace: true }),
   })
   const submitError = submit.error instanceof ApiError ? submit.error.message : null
+  const saveError = save.error instanceof ApiError ? save.error.message : null
+
+  // Save first; only advance / submit if the save actually persisted.
+  async function saveThen(action?: () => void) {
+    try {
+      await save.mutateAsync()
+    } catch {
+      return // error surfaced via saveError; stay put
+    }
+    action?.()
+  }
 
   if (!form || !data) return <p className="text-sm text-slate-500">Loading…</p>
 
@@ -65,8 +76,8 @@ export default function WizardPage() {
         {step === 3 && <Equipment form={form} set={set} />}
         {step === 4 && <Economic form={form} set={set} />}
         {step === 5 && <Review form={form}
-          onSubmit={() => { save.mutate(); submit.mutate() }}
-          pending={submit.isPending} error={submitError} />}
+          onSubmit={() => saveThen(() => submit.mutate())}
+          pending={submit.isPending || save.isPending} error={submitError} />}
       </div>
 
       <div className="mt-4 flex items-center gap-3">
@@ -74,10 +85,11 @@ export default function WizardPage() {
           disabled={step === 0} onClick={() => setStep(step - 1)}>Back</Button>
         <Button className="bg-slate-200 text-slate-800 hover:bg-slate-300"
           disabled={save.isPending} onClick={() => save.mutate()}>Save Draft</Button>
-        {saved && <span className="text-sm text-green-700">Saved.</span>}
+        {saved && !saveError && <span className="text-sm text-green-700">Saved.</span>}
+        {saveError && <span className="text-sm text-red-600" role="alert">{saveError}</span>}
         <div className="flex-1" />
         {step < STEPS.length - 1 && (
-          <Button onClick={() => { save.mutate(); setStep(step + 1) }}>Next</Button>
+          <Button disabled={save.isPending} onClick={() => saveThen(() => setStep(step + 1))}>Next</Button>
         )}
       </div>
     </div>

@@ -13,9 +13,15 @@ export function resetCsrf(): void {
   csrfToken = null
 }
 
+// CSRF/auth failures that mean the cached token is stale and should be refetched.
+function _clearsCsrf(status: number): boolean {
+  return status === 400 || status === 401 || status === 403
+}
+
 async function ensureCsrf(): Promise<string> {
   if (csrfToken) return csrfToken
   const res = await fetch('/api/auth/csrf', { credentials: 'include' })
+  if (!res.ok) throw new ApiError(res.status, 'Could not obtain a CSRF token.')
   const data = await res.json()
   csrfToken = data.csrfToken as string
   return csrfToken
@@ -38,7 +44,7 @@ export async function api<T = unknown>(
   })
 
   if (!res.ok) {
-    if (res.status === 401) csrfToken = null
+    if (_clearsCsrf(res.status)) csrfToken = null
     let message = res.statusText
     try {
       const data = await res.json()
@@ -59,7 +65,7 @@ export async function apiUpload<T = unknown>(path: string, formData: FormData): 
     method: 'POST', credentials: 'include', headers: { 'X-CSRFToken': token }, body: formData,
   })
   if (!res.ok) {
-    if (res.status === 401) csrfToken = null
+    if (_clearsCsrf(res.status)) csrfToken = null
     let message = res.statusText
     try {
       const d = await res.json()
