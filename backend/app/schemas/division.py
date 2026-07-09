@@ -10,4 +10,4 @@ class DivisionUpdate(BaseModel):
     number: str = Field(min_length=1)
     name: str = Field(min_length=1)
     active: bool = True
-    l1_approver_id: str | None = None
+    l1_approver_ids: list[str] = []

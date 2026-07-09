@@ -10,7 +10,9 @@ bp = Blueprint("divisions", __name__, url_prefix="/api/divisions")
 def division_out(d):
     return {
         "id": d.id, "number": d.number, "name": d.name,
-        "active": d.active, "l1_approver_id": d.l1_approver_id,
+        "active": d.active,
+        "l1_approver_ids": [u.id for u in d.l1_approvers],
+        "l1_approver_names": [u.name for u in d.l1_approvers],
     }
 
 

@@ -56,6 +56,43 @@ def test_reject_sets_status_and_records_comment(app):
     assert action.comment == "Not this quarter"
 
 
+def test_any_one_of_multiple_l1_approvers_can_approve(app):
+    cfo = make_user("cfo")
+    ceo = make_user("ceo")
+    requestor = make_user("req", roles='["REQUESTOR"]')
+    div = make_division(l1_approver_ids=[cfo.id, ceo.id])
+    set_thresholds()
+    req = make_draft(requestor.id, div.id, costs=("30000",))
+    submit(req.id, requestor.id)
+    # ceo (the second approver, not the displayed assignee) can approve
+    result = approve(req.id, ceo.id)
+    assert result.status == "APPROVED"
+
+
+def test_any_one_of_multiple_approvers_can_reject(app):
+    cfo = make_user("cfo")
+    ceo = make_user("ceo")
+    requestor = make_user("req", roles='["REQUESTOR"]')
+    div = make_division(l1_approver_ids=[cfo.id, ceo.id])
+    set_thresholds()
+    req = make_draft(requestor.id, div.id, costs=("30000",))
+    submit(req.id, requestor.id)
+    result = reject(req.id, ceo.id, "No")
+    assert result.status == "REJECTED"
+
+
+def test_non_approver_cannot_act(app):
+    cfo = make_user("cfo")
+    outsider = make_user("nope")
+    requestor = make_user("req", roles='["REQUESTOR"]')
+    div = make_division(l1_approver_ids=[cfo.id])
+    set_thresholds()
+    req = make_draft(requestor.id, div.id, costs=("30000",))
+    submit(req.id, requestor.id)
+    with pytest.raises(ServiceError):
+        approve(req.id, outsider.id)
+
+
 def test_guarded_transition_rejects_stale_level_or_status(app):
     requestor, l1, l2, req = _two_level()  # current_level == 1, status PENDING_L1
     with pytest.raises(ServiceError):

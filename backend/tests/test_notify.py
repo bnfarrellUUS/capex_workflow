@@ -10,12 +10,13 @@ def test_send_email_logs_notification(app):
     assert row.recipient == "a@x.com" and row.type == "ASSIGNED"
 
 
-def test_notify_assignment_uses_assignee(app):
+def test_notify_assignment_notifies_current_level_approvers(app):
     approver = make_user("appr")
     req_owner = make_user("req", roles='["REQUESTOR"]')
     div = make_division(l1_approver_id=approver.id)
     req = make_draft(req_owner.id, div.id)
-    req.assignee_id = approver.id
+    req.current_level = 1
+    req.status = "PENDING_L1"
     db.session.commit()
     notify.notify_assignment(req)
     row = db.session.query(NotificationLog).filter_by(type="ASSIGNED").one()

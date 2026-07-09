@@ -33,7 +33,21 @@ def can_view(req, viewer):
 def list_requests(viewer, scope="mine", status=None, division_id=None):
     q = db.session.query(CapexRequest)
     if scope == "assigned":
-        q = q.filter(CapexRequest.assignee_id == viewer.id)
+        # A pending request is "assigned" to every eligible approver at its
+        # current level (any one can act), so filter by pool membership.
+        from app.services import threshold_service, workflow_service
+        thresholds = threshold_service.list_thresholds()
+        q = q.filter(CapexRequest.status.like("PENDING_L%"))
+        if status:
+            q = q.filter(CapexRequest.status == status)
+        if division_id:
+            q = q.filter(CapexRequest.division_id == division_id)
+        rows = q.order_by(CapexRequest.created_at.desc()).all()
+        return [
+            r for r in rows
+            if viewer.id in {u.id for u in workflow_service.eligible_actors(
+                r.current_level, r.division, thresholds)}
+        ]
     elif scope == "all" and ("ADMIN" in viewer.roles_list or "FINANCE" in viewer.roles_list):
         pass
     else:
@@ -92,12 +106,19 @@ def update_draft(request_id, viewer, payload):
 
 
 def request_out(req):
+    from app.services import threshold_service, workflow_service
+    approvers = []
+    if req.status.startswith("PENDING_L"):
+        approvers = workflow_service.eligible_actors(
+            req.current_level, req.division, threshold_service.list_thresholds())
     return {
         "id": req.id,
         "number": req.number,
         "status": req.status,
         "requestor_id": req.requestor_id,
         "assignee_id": req.assignee_id,
+        "current_approver_ids": [u.id for u in approvers],
+        "current_approver_names": [u.name for u in approvers],
         "division_id": req.division_id,
         "request_date": req.request_date.isoformat() if req.request_date else None,
         "description": req.description,

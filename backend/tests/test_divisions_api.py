@@ -25,7 +25,7 @@ def test_create_list_update_division(client, app):
     assert any(d["number"] == "100" for d in listing)
 
     updated = client.patch(f"/api/divisions/{div['id']}", json={
-        "number": "100", "name": "Field Svcs", "active": False, "l1_approver_id": None})
+        "number": "100", "name": "Field Svcs", "active": False, "l1_approver_ids": []})
     assert updated.status_code == 200
     assert updated.get_json()["name"] == "Field Svcs"
     assert updated.get_json()["active"] is False

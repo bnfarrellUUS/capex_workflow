@@ -3,7 +3,7 @@ import type { Division, DivisionInput } from '../../api/divisions'
 import type { AdminUser } from '../../api/users'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
-import { Select } from '../../components/ui/Select'
+import { ApproverPicker } from '../../components/ui/ApproverPicker'
 
 export function DivisionForm({
   approvers, division, pending, error, onSubmit,
@@ -17,11 +17,11 @@ export function DivisionForm({
   const [number, setNumber] = useState(division?.number ?? '')
   const [name, setName] = useState(division?.name ?? '')
   const [active, setActive] = useState(division?.active ?? true)
-  const [l1, setL1] = useState(division?.l1_approver_id ?? '')
+  const [l1Ids, setL1Ids] = useState<string[]>(division?.l1_approver_ids ?? [])
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    onSubmit({ number, name, active, l1_approver_id: l1 || null })
+    onSubmit({ number, name, active, l1_approver_ids: l1Ids })
   }
 
   return (
@@ -35,13 +35,12 @@ export function DivisionForm({
         <Input value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div className="space-y-1">
-        <label className="text-sm font-medium">Level-1 approver</label>
-        <Select value={l1} onChange={(e) => setL1(e.target.value)}>
-          <option value="">— None —</option>
-          {approvers.map((u) => (
-            <option key={u.id} value={u.id}>{u.name} ({u.username})</option>
-          ))}
-        </Select>
+        <label className="text-sm font-medium">Level-1 approvers (any one may approve)</label>
+        <ApproverPicker
+          options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.username})` }))}
+          selected={l1Ids}
+          onChange={setL1Ids}
+        />
       </div>
       {division && (
         <label className="flex items-center gap-2 text-sm">

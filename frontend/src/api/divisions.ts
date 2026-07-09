@@ -5,14 +5,15 @@ export interface Division {
   number: string
   name: string
   active: boolean
-  l1_approver_id: string | null
+  l1_approver_ids: string[]
+  l1_approver_names?: string[]
 }
 
 export interface DivisionInput {
   number: string
   name: string
   active?: boolean
-  l1_approver_id?: string | null
+  l1_approver_ids?: string[]
 }
 
 export function listDivisions(): Promise<Division[]> {

@@ -19,8 +19,12 @@ def send_email(recipient, subject, body, request_id=None, type_="INFO"):
 
 
 def notify_assignment(req):
-    if req.assignee is not None:
-        send_email(req.assignee.email, f"{req.number} is waiting for your approval",
+    # Notify every eligible approver at the current level (any one may act).
+    from app.services import threshold_service, workflow_service
+    actors = workflow_service.eligible_actors(
+        req.current_level, req.division, threshold_service.list_thresholds())
+    for actor in actors:
+        send_email(actor.email, f"{req.number} is waiting for your approval",
                    f"Request {req.number} is assigned to you.", req.id, "ASSIGNED")
 
 

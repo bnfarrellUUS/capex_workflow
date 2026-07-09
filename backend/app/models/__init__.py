@@ -5,10 +5,23 @@ from decimal import Decimal
 from typing import Optional
 
 from flask_login import UserMixin
-from sqlalchemy import String, Boolean, Integer, Numeric, DateTime, ForeignKey, Text
+from sqlalchemy import String, Boolean, Integer, Numeric, DateTime, ForeignKey, Text, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+
+# Level approvers are many-to-many: any one of them can act at that level.
+# L1 approvers are per-division; L2/L3 approvers hang off the threshold row.
+division_l1_approvers = Table(
+    "division_l1_approvers", db.metadata,
+    Column("division_id", String(36), ForeignKey("divisions.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", String(36), ForeignKey("users.id", ondelete="NO ACTION"), primary_key=True),
+)
+threshold_approvers = Table(
+    "threshold_approvers", db.metadata,
+    Column("threshold_id", String(36), ForeignKey("approval_thresholds.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", String(36), ForeignKey("users.id", ondelete="NO ACTION"), primary_key=True),
+)
 
 # Money uses fixed precision so SQL Server stores cents (an unscaled Numeric
 # becomes DECIMAL(18,0) there and would truncate). Ratios get more scale.
@@ -78,12 +91,9 @@ class Division(db.Model):
     name: Mapped[str] = mapped_column(String(150))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    l1_approver_id: Mapped[Optional[str]] = mapped_column(
-        ForeignKey("users.id", ondelete="NO ACTION", use_alter=True, name="fk_division_l1_approver"),
-        nullable=True,
-    )
-    l1_approver: Mapped[Optional["User"]] = relationship(
-        "User", foreign_keys=[l1_approver_id]
+    # Level-1 approvers for this division (any one may approve).
+    l1_approvers: Mapped[list["User"]] = relationship(
+        "User", secondary=division_l1_approvers
     )
 
     users: Mapped[list["User"]] = relationship(
@@ -97,10 +107,8 @@ class ApprovalThreshold(db.Model):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     level: Mapped[int] = mapped_column(Integer, unique=True)  # 1, 2, 3
     max_amount: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
-    approver_id: Mapped[Optional[str]] = mapped_column(
-        ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
-    )
-    approver: Mapped[Optional["User"]] = relationship("User", foreign_keys=[approver_id])
+    # Approvers for this level (any one may approve). L1 uses the division's list.
+    approvers: Mapped[list["User"]] = relationship("User", secondary=threshold_approvers)
 
 
 class CapexRequest(db.Model):

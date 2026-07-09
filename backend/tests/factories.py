@@ -14,20 +14,27 @@ def make_user(username, roles='["APPROVER"]', delegate_id=None):
     return u
 
 
-def make_division(number="100", l1_approver_id=None):
-    d = Division(number=number, name="Field Services", l1_approver_id=l1_approver_id)
+def _users(ids):
+    ids = [i for i in ids if i]
+    return db.session.query(User).filter(User.id.in_(ids)).all() if ids else []
+
+
+def make_division(number="100", l1_approver_id=None, l1_approver_ids=None):
+    d = Division(number=number, name="Field Services")
+    d.l1_approvers = _users(l1_approver_ids if l1_approver_ids is not None else [l1_approver_id])
     db.session.add(d)
     db.session.commit()
     return d
 
 
-def set_thresholds(l1="50000", l2="250000", l2_approver=None, l3_approver=None):
+def set_thresholds(l1="50000", l2="250000", l2_approver=None, l3_approver=None,
+                   l2_approvers=None, l3_approvers=None):
     rows = {t.level: t for t in threshold_service.list_thresholds()}
     rows[1].max_amount = Decimal(l1)
     rows[2].max_amount = Decimal(l2)
-    rows[2].approver_id = l2_approver
+    rows[2].approvers = _users(l2_approvers if l2_approvers is not None else [l2_approver])
     rows[3].max_amount = None
-    rows[3].approver_id = l3_approver
+    rows[3].approvers = _users(l3_approvers if l3_approvers is not None else [l3_approver])
     db.session.commit()
     return list(rows.values())
 

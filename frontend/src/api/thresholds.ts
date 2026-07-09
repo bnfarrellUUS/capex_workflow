@@ -3,7 +3,8 @@ import { api } from './client'
 export interface Threshold {
   level: number
   max_amount: string | null
-  approver_id: string | null
+  approver_ids: string[]
+  approver_names?: string[]
 }
 
 export function listThresholds(): Promise<Threshold[]> {

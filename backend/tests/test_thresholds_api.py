@@ -23,9 +23,9 @@ def test_get_returns_three_levels(client, app):
 def test_put_updates_thresholds(client, app):
     _admin(client)
     r = client.put("/api/thresholds", json={"thresholds": [
-        {"level": 1, "max_amount": "50000", "approver_id": None},
-        {"level": 2, "max_amount": "250000", "approver_id": None},
-        {"level": 3, "max_amount": None, "approver_id": None},
+        {"level": 1, "max_amount": "50000", "approver_ids": []},
+        {"level": 2, "max_amount": "250000", "approver_ids": []},
+        {"level": 3, "max_amount": None, "approver_ids": []},
     ]})
     assert r.status_code == 200
     body = r.get_json()

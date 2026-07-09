@@ -137,11 +137,12 @@ Frontend: http://localhost:5173 · Dev login: **admin / ChangeMe123!**
 - **User** — `username`, `email`, `name`, `password_hash`, `roles` (JSON string
   array, see Roles), `active`, `division_id`, `delegate_id` (out-of-office
   delegate), lockout fields, reset token. `roles_list` property parses roles.
-- **Division** — `number`, `name`, `active`, `l1_approver_id` (Level-1 approver
-  for its requests).
+- **Division** — `number`, `name`, `active`, `l1_approvers` (many-to-many via
+  `division_l1_approvers`: the Level-1 approver pool for its requests).
 - **ApprovalThreshold** — one row per `level` (1/2/3), `max_amount` (top level
-  usually null = no cap), `approver_id` (global approver for L2/L3; L1 comes
-  from the division).
+  usually null = no cap), `approvers` (many-to-many via `threshold_approvers`:
+  the L2/L3 approver pool; L1 comes from the division). Each level can have
+  multiple approvers and **any one** may act.
 - **CapexRequest** — `number`, `status`, `requestor_id`, `assignee_id` (current
   approver), `division_id`, `request_date`; Basic-info flags (`budgeted`,
   `replacement`, `health_safety`, `revenue_generating`, `environmental`,
@@ -165,9 +166,13 @@ several).
 Status flow: `DRAFT` → `PENDING_L1` → `PENDING_L2` → `PENDING_L3` → `APPROVED`,
 with `REJECTED` as a side state (a rejected request can be resubmitted by its
 owner). The number of levels required (`required_levels`) is derived from
-`total_cost` vs the `ApprovalThreshold` caps. L1 approver comes from the
-request's division; L2/L3 from the threshold rows. After final approval, a
-**FINANCE** user completes the cost breakdown (`cost_*` → `finance_completed`).
+`total_cost` vs the `ApprovalThreshold` caps. Each level has a **pool** of
+approvers (L1 from the request's division, L2/L3 from the threshold rows), each
+mapped through their out-of-office delegate; **any one** eligible approver may
+approve (advances) or reject. The pool appears on every member's "assigned"
+worklist; `assignee_id` is just a display hint (the first current approver).
+After final approval, a **FINANCE** user completes the cost breakdown
+(`cost_*` → `finance_completed`).
 
 ## Frontend layout (`frontend/src/`)
 

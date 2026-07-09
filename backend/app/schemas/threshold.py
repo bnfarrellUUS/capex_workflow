@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class ThresholdIn(BaseModel):
     level: int
     max_amount: Decimal | None = None
-    approver_id: str | None = None
+    approver_ids: list[str] = []
 
 
 class ThresholdsUpdate(BaseModel):

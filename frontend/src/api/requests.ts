@@ -37,6 +37,8 @@ export interface CapexRequestData {
   assignee_id: string | null
   requestor_name: string | null
   assignee_name: string | null
+  current_approver_ids: string[]
+  current_approver_names: string[]
   division_name: string | null
   finance_completed: boolean
   equipment_items: EquipItem[]

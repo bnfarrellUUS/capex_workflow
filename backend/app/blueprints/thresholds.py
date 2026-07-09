@@ -12,7 +12,8 @@ def threshold_out(t):
     return {
         "level": t.level,
         "max_amount": money_str(t.max_amount),
-        "approver_id": t.approver_id,
+        "approver_ids": [u.id for u in t.approvers],
+        "approver_names": [u.name for u in t.approvers],
     }
 
 

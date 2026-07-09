@@ -5,7 +5,7 @@ import { listUsers } from '../../api/users'
 import { ApiError } from '../../api/client'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
-import { Select } from '../../components/ui/Select'
+import { ApproverPicker } from '../../components/ui/ApproverPicker'
 
 const LABELS: Record<number, string> = {
   1: 'Level 1 (Manager)',
@@ -52,14 +52,18 @@ export default function ThresholdsPage() {
                   onChange={(e) => setRow(r.level, { max_amount: e.target.value === '' ? null : e.target.value })} />
               </div>
               <div className="flex-1 space-y-1">
-                <label className="text-xs text-muted">Approver {r.level === 1 ? '(per division)' : ''}</label>
-                <Select value={r.approver_id ?? ''} disabled={r.level === 1}
-                  onChange={(e) => setRow(r.level, { approver_id: e.target.value || null })}>
-                  <option value="">{r.level === 1 ? 'Set on each division' : '— None —'}</option>
-                  {approvers.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name} ({u.username})</option>
-                  ))}
-                </Select>
+                <label className="text-xs text-muted">
+                  Approvers {r.level === 1 ? '(set per division)' : '(any one may approve)'}
+                </label>
+                {r.level === 1 ? (
+                  <p className="text-sm text-muted">Level-1 approvers are configured on each division.</p>
+                ) : (
+                  <ApproverPicker
+                    options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.username})` }))}
+                    selected={r.approver_ids}
+                    onChange={(ids) => setRow(r.level, { approver_ids: ids })}
+                  />
+                )}
               </div>
             </div>
           </div>

@@ -17,11 +17,12 @@ def compute_required_levels(total_cost, thresholds) -> int:
     return max(t.level for t in thresholds)
 
 
-def intended_approver(level, division, thresholds):
+def intended_approvers(level, division, thresholds):
+    """The users configured to approve at a level (any one of them may act)."""
     if level == 1:
-        return division.l1_approver if division is not None else None
+        return list(division.l1_approvers) if division is not None else []
     match = next((t for t in thresholds if t.level == level), None)
-    return match.approver if match is not None else None
+    return list(match.approvers) if match is not None else []
 
 
 def effective_assignee(user):
@@ -30,8 +31,21 @@ def effective_assignee(user):
     return user.delegate if user.delegate_id else user
 
 
-def resolve_assignee(level, division, thresholds):
-    return effective_assignee(intended_approver(level, division, thresholds))
+def eligible_actors(level, division, thresholds):
+    """Who may actually act at a level: each configured approver mapped through
+    their out-of-office delegate, de-duplicated."""
+    seen, out = set(), []
+    for approver in intended_approvers(level, division, thresholds):
+        actor = effective_assignee(approver)
+        if actor is not None and actor.id not in seen:
+            seen.add(actor.id)
+            out.append(actor)
+    return out
+
+
+def first_assignee(level, division, thresholds):
+    actors = eligible_actors(level, division, thresholds)
+    return actors[0] if actors else None
 
 
 # ---- transactional actions ----
@@ -50,14 +64,14 @@ def _open_workflow(req):
     if req.division is None:
         raise ServiceError("A division is required.")
     thresholds = threshold_service.list_thresholds()
-    l1 = intended_approver(1, req.division, thresholds)
+    l1 = first_assignee(1, req.division, thresholds)
     if l1 is None:
         raise ServiceError("The division has no level-1 approver assigned.")
     req.total_cost = total
     req.required_levels = compute_required_levels(total, thresholds)
     req.current_level = 1
     req.status = "PENDING_L1"
-    req.assignee_id = effective_assignee(l1).id
+    req.assignee_id = l1.id
 
 
 def submit(request_id, actor_id):
@@ -88,17 +102,20 @@ def _guarded_transition(request_id, expected_level, expected_status, values):
         raise ServiceError("This request was already actioned by someone else.", 409)
 
 
-def _require_assignee(req, actor_id):
+def _require_current_approver(req, actor_id, thresholds):
     if not req.status.startswith("PENDING_L"):
         raise ServiceError("This request is not awaiting a decision.")
-    if req.assignee_id != actor_id:
+    actor_ids = {u.id for u in eligible_actors(req.current_level, req.division, thresholds)}
+    if actor_id not in actor_ids:
         raise ServiceError("This request is not assigned to you.", 403)
 
 
 def _acted_for(req, level, actor_id, thresholds):
-    intended = intended_approver(level, req.division, thresholds)
-    if intended is not None and intended.id != actor_id:
-        return intended.id
+    # If the actor is standing in for an approver (their delegate), record whom.
+    for approver in intended_approvers(level, req.division, thresholds):
+        actor = effective_assignee(approver)
+        if actor is not None and actor.id == actor_id and approver.id != actor_id:
+            return approver.id
     return None
 
 
@@ -106,8 +123,8 @@ def approve(request_id, actor_id, comment=None):
     req = db.session.get(CapexRequest, request_id)
     if req is None:
         raise ServiceError("Request not found.", 404)
-    _require_assignee(req, actor_id)
     thresholds = threshold_service.list_thresholds()
+    _require_current_approver(req, actor_id, thresholds)
     level = req.current_level
     acted_for = _acted_for(req, level, actor_id, thresholds)
 
@@ -115,7 +132,7 @@ def approve(request_id, actor_id, comment=None):
         values = {"status": "APPROVED", "assignee_id": None}
     else:
         nxt = level + 1
-        assignee = resolve_assignee(nxt, req.division, thresholds)
+        assignee = first_assignee(nxt, req.division, thresholds)
         if assignee is None:
             raise ServiceError(f"No approver configured for level {nxt}.")
         values = {"status": f"PENDING_L{nxt}", "current_level": nxt, "assignee_id": assignee.id}
@@ -133,8 +150,8 @@ def reject(request_id, actor_id, comment):
     req = db.session.get(CapexRequest, request_id)
     if req is None:
         raise ServiceError("Request not found.", 404)
-    _require_assignee(req, actor_id)
     thresholds = threshold_service.list_thresholds()
+    _require_current_approver(req, actor_id, thresholds)
     level = req.current_level
     acted_for = _acted_for(req, level, actor_id, thresholds)
     _guarded_transition(req.id, level, f"PENDING_L{level}", {"status": "REJECTED", "assignee_id": None})

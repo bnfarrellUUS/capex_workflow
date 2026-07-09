@@ -40,7 +40,7 @@ export default function RequestDetailPage() {
 
   if (!req || !me) return <p className="text-sm text-muted">Loading…</p>
 
-  const isAssignee = req.assignee_id === me.id && req.status.startsWith('PENDING_')
+  const isAssignee = req.status.startsWith('PENDING_') && req.current_approver_ids.includes(me.id)
   const isOwner = req.requestor_id === me.id
   const canEdit = isOwner && (req.status === 'DRAFT' || req.status === 'REJECTED')
   const canResubmit = isOwner && req.status === 'REJECTED'
@@ -65,7 +65,7 @@ export default function RequestDetailPage() {
       <section className="grid grid-cols-2 gap-2 text-sm">
         <div><span className="font-medium">Requestor:</span> {req.requestor_name}</div>
         <div><span className="font-medium">Division:</span> {req.division_name ?? '—'}</div>
-        <div><span className="font-medium">Assignee:</span> {req.assignee_name ?? '—'}</div>
+        <div><span className="font-medium">Awaiting:</span> {req.current_approver_names.length ? req.current_approver_names.join(', ') : (req.assignee_name ?? '—')}</div>
         <div><span className="font-medium">Total cost:</span> ${Number(req.total_cost ?? 0).toLocaleString()}</div>
         <div className="col-span-2"><span className="font-medium">Description:</span> {req.description || '—'}</div>
       </section>
