@@ -130,13 +130,17 @@ build`; there is no live dev server.)
 - `models/__init__.py` — all SQLAlchemy models (see Data model below).
 - `blueprints/` — HTTP routes, one per resource, each mounted under `/api/...`:
   `health`, `auth` (`/api/auth`), `users`, `divisions`, `thresholds`,
-  `profile`, `requests`. Routes are thin; they validate input with Pydantic
-  schemas and delegate to services.
+  `profile`, `requests`, `email_templates` (`/api/email-templates`, ADMIN-only).
+  Routes are thin; they validate input with Pydantic schemas and delegate to
+  services.
 - `services/` — business logic: `request_service`, `workflow_service`
   (approval routing), `auth_service`, `user_service`, `division_service`,
   `threshold_service`, `profile_service`, `attachment_service`/`storage`,
   `counter_service` (request numbers `CX000001…`), `notify` (writes
-  `NotificationLog`), `security`, `errors` (`ServiceError(msg, status)`).
+  `NotificationLog`, renders emails via templates), `email_template_service`
+  (four editable email templates: defaults, tokens, render, three-tier reset),
+  `email_frame` (brand HTML wrapper), `email_outlook` (Outlook COM sender),
+  `security`, `errors` (`ServiceError(msg, status)`).
 - `schemas/request.py` — Pydantic v2 input models. **Important:** the PATCH
   route builds `RequestDraft(**json).model_dump(exclude_unset=True)`, so a field
   absent from `RequestDraft` is silently dropped even if the model/serializer
@@ -169,6 +173,10 @@ build`; there is no live dev server.)
 - **Attachment**, **ApprovalAction** (audit trail: SUBMITTED/APPROVED/REJECTED/
   RESUBMITTED/FINANCE_COMPLETED, with `level`, `comment`, `acted_for_id` for
   delegated actions), **NotificationLog**, **Counter**, **AppSetting**.
+- **EmailTemplate** — one row per email `type` (ASSIGNED/APPROVED/REJECTED/
+  FINANCE_READY): live `subject`/`body_html`/`enabled` plus `default_subject`/
+  `default_body_html` (admin-set baseline). A row exists only once customized;
+  code holds the shipped defaults (`email_template_service.DEFAULTS`).
 
 ## Roles & approval workflow
 
@@ -186,6 +194,14 @@ worklist; `assignee_id` is just a display hint (the first current approver).
 After final approval, a **FINANCE** user completes the cost breakdown
 (`cost_*` → `finance_completed`).
 
+Each transition sends a notification email (assignment/decision/finance-ready).
+Emails are **editable HTML templates** — admins customize the subject, body
+(WYSIWYG), and enabled flag per type under **Admin → Email Templates**, with
+`{token}` placeholders substituted at send time and a brand-styled locked frame.
+Sent via the local Outlook desktop app (`email_outlook`); redirected to
+`EMAIL_REDIRECT_TO` while testing. Defaults live in
+`email_template_service.DEFAULTS`.
+
 ## Frontend layout (`frontend/src/`)
 
 - `main.tsx` (query client, 401 → redirect to /login), `App.tsx` (routes),
@@ -201,9 +217,11 @@ After final approval, a **FINANCE** user completes the cost breakdown
   draft then redirects to the wizard), `WizardPage` (6-step request wizard:
   Basic Info, Description, Effect on Ops, Equipment, Economic, Review — step
   tabs are clickable and save the draft before jumping), `RequestDetailPage`,
-  `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds +
-  forms). Approver pools (division L1, threshold L2/L3) and user roles are
-  assigned with the `TransferList` dual-listbox, not checkboxes.
+  `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds,
+  Email Templates + forms). The Email Templates editor uses `components/ui/
+  QuillEditor` (Quill 2.x on a ref) with a placeholders panel and a sandboxed
+  iframe preview. Approver pools (division L1, threshold L2/L3) and user roles
+  are assigned with the `TransferList` dual-listbox, not checkboxes.
   `routes/wizard/types.ts` maps API ↔ form (`toForm`/`toPayload`).
 - `api/` — `client.ts` (fetch wrapper; obtains CSRF from `/api/auth/csrf`, sends
   `X-CSRFToken` on mutations, `credentials: 'include'`), plus per-resource

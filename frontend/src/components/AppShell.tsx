@@ -7,6 +7,7 @@ import {
   Users,
   Building2,
   SlidersHorizontal,
+  Mail,
   UserCircle,
   LogOut,
   type LucideIcon,
@@ -42,6 +43,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       { to: '/admin/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
       { to: '/admin/divisions', label: 'Divisions', icon: Building2, roles: ['ADMIN'] },
       { to: '/admin/thresholds', label: 'Approval Thresholds', icon: SlidersHorizontal, roles: ['ADMIN'] },
+      { to: '/admin/email-templates', label: 'Email Templates', icon: Mail, roles: ['ADMIN'] },
     ],
   },
   {

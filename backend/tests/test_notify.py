@@ -15,7 +15,7 @@ def test_send_email_logs_notification(app):
 def test_send_email_delivers_redirected_when_enabled(app, monkeypatch):
     sent = {}
     monkeypatch.setattr("app.services.email_outlook.send",
-                        lambda to, subject, body: sent.update(to=to, subject=subject, body=body))
+                        lambda to, subject, body, html=None: sent.update(to=to, body=body))
     app.config["EMAIL_ENABLED"] = True
     app.config["EMAIL_REDIRECT_TO"] = "me@uus.com"
 
@@ -29,7 +29,7 @@ def test_send_email_delivers_redirected_when_enabled(app, monkeypatch):
 
 
 def test_send_email_delivery_failure_never_raises(app, monkeypatch):
-    def boom(to, subject, body):
+    def boom(to, subject, body, html=None):
         raise RuntimeError("Outlook not running")
     monkeypatch.setattr("app.services.email_outlook.send", boom)
     app.config["EMAIL_ENABLED"] = True
@@ -52,26 +52,43 @@ def test_notify_assignment_notifies_current_level_approvers(app):
     assert row.recipient == approver.email
 
 
-def test_notify_assignment_body_has_deep_link_and_details(app, monkeypatch):
+def test_notify_assignment_uses_template_html(app, monkeypatch):
     sent = {}
     monkeypatch.setattr("app.services.email_outlook.send",
-                        lambda to, subject, body: sent.update(subject=subject, body=body))
+                        lambda to, subject, body, html=None: sent.update(subject=subject, html=html))
     app.config["EMAIL_ENABLED"] = True
     app.config["APP_BASE_URL"] = "https://capex.example.com"
-
     approver = make_user("appr")
-    req_owner = make_user("req", roles='["REQUESTOR"]')
+    owner = make_user("req", roles='["REQUESTOR"]')
     div = make_division(l1_approver_id=approver.id)
-    req = make_draft(req_owner.id, div.id)
-    req.current_level = 1
-    req.required_levels = 2
-    req.status = "PENDING_L1"
+    req = make_draft(owner.id, div.id)
+    req.current_level, req.required_levels, req.status = 1, 2, "PENDING_L1"
     req.total_cost = Decimal("82400")
     db.session.commit()
 
     notify.notify_assignment(req)
 
-    assert f"https://capex.example.com/requests/{req.id}" in sent["body"]
-    assert "Level 1 of 2" in sent["body"]
-    assert "$82,400.00" in sent["body"]        # formatted money
+    assert sent["html"] is not None and "United Uptime Services" in sent["html"]
+    assert "https://capex.example.com/requests/" in sent["html"]
+    assert "Level 1 of 2" in sent["html"]
     assert req.number in sent["subject"]
+
+
+def test_disabled_template_logs_but_does_not_send(app, monkeypatch):
+    from app.services import email_template_service as ets
+    calls = []
+    monkeypatch.setattr("app.services.email_outlook.send",
+                        lambda *a, **k: calls.append(a))
+    app.config["EMAIL_ENABLED"] = True
+    approver = make_user("appr")
+    owner = make_user("req", roles='["REQUESTOR"]')
+    div = make_division(l1_approver_id=approver.id)
+    req = make_draft(owner.id, div.id)
+    req.current_level, req.required_levels, req.status = 1, 1, "PENDING_L1"
+    db.session.commit()
+    ets.save("ASSIGNED", subject="s", body_html="<p>x</p>", enabled=False)
+
+    notify.notify_assignment(req)
+
+    assert calls == []                                        # not sent
+    assert db.session.query(NotificationLog).filter_by(type="ASSIGNED").count() == 1

@@ -8,50 +8,37 @@ from app.models import NotificationLog, User
 log = logging.getLogger("capex.notify")
 
 
-def send_email(recipient, subject, body, request_id=None, type_="INFO"):
-    """Best-effort notification. Always logs + records NotificationLog, and (when
-    EMAIL_ENABLED) delivers the message through the configured backend.
-    Never raises — a failure must not block a workflow transition."""
+def _redirect_note(intended):
+    if not (current_app.config.get("EMAIL_ENABLED")
+            and current_app.config.get("EMAIL_REDIRECT_TO")):
+        return None
+    return f"Intended recipient: {intended} (redirected while testing)"
+
+
+def _emit(intended, subject, html, enabled, request_id, type_):
+    """Always record a NotificationLog; deliver via Outlook when enabled."""
     try:
-        log.info("EMAIL to=%s subject=%s", recipient, subject)
-        db.session.add(NotificationLog(request_id=request_id, recipient=recipient, type=type_))
+        log.info("EMAIL to=%s subject=%s", intended, subject)
+        db.session.add(NotificationLog(request_id=request_id, recipient=intended, type=type_))
         db.session.commit()
     except Exception:
         db.session.rollback()
-        log.exception("notification log failed for %s", recipient)
-    _deliver(recipient, subject, body)
-
-
-def _deliver(recipient, subject, body):
-    """Send the message via Outlook when email is enabled. While running locally
-    every message is redirected to EMAIL_REDIRECT_TO with the intended recipient
-    noted in the body. Delivery failures are logged, never raised."""
-    if not current_app.config.get("EMAIL_ENABLED"):
+        log.exception("notification log failed for %s", intended)
+    if not enabled or not current_app.config.get("EMAIL_ENABLED"):
         return
-    redirect_to = current_app.config.get("EMAIL_REDIRECT_TO") or recipient
+    redirect_to = current_app.config.get("EMAIL_REDIRECT_TO") or intended
     try:
         from app.services import email_outlook
-        full_body = f"[Intended recipient: {recipient}]\n\n{body}"
-        email_outlook.send(redirect_to, subject, full_body)
+        email_outlook.send(redirect_to, subject, "", html=html)
     except Exception:
-        log.exception("email delivery failed (intended %s)", recipient)
+        log.exception("email delivery failed (intended %s)", intended)
 
 
-def _request_url(req):
-    base = (current_app.config.get("APP_BASE_URL") or "").rstrip("/")
-    return f"{base}/requests/{req.id}"
-
-
-def _money(value):
-    return f"${value:,.2f}" if value is not None else "—"
-
-
-def _request_facts(req):
-    division = f"{req.division.number} — {req.division.name}" if req.division else "—"
-    requestor = req.requestor.name if req.requestor else "—"
-    return (f"Requested by: {requestor}\n"
-            f"Division:     {division}\n"
-            f"Total cost:   {_money(req.total_cost)}")
+def _send_template(intended, type_, req, **extra):
+    from app.services import email_template_service as ets
+    ctx = ets.context_for(req, **extra)
+    out = ets.render(type_, ctx, redirect_note=_redirect_note(intended))
+    _emit(intended, out["subject"], out["html"], out["enabled"], req.id, type_)
 
 
 def notify_assignment(req):
@@ -62,40 +49,42 @@ def notify_assignment(req):
     level = f"Level {req.current_level}"
     if req.required_levels:
         level += f" of {req.required_levels}"
-    subject = f"Action needed: {req.number} awaiting your {level} approval"
-    body = (
-        f"Request {req.number} needs your {level} approval.\n\n"
-        f"{_request_facts(req)}\n\n"
-        f"Review and approve:\n{_request_url(req)}\n"
-    )
     for actor in actors:
-        send_email(actor.email, subject, body, req.id, "ASSIGNED")
+        _send_template(actor.email, "ASSIGNED", req, level=level)
 
 
-def notify_decision(req, approved):
-    verb = "approved" if approved else "rejected"
-    if approved:
-        tail = "It has been fully approved and is now with Finance for completion."
-    else:
-        tail = ("Open the request to see the reviewer's comment; you can edit and "
-                "resubmit it.")
-    body = (
-        f"Your request {req.number} ({_money(req.total_cost)}) was {verb}.\n"
-        f"{tail}\n\n"
-        f"View the request:\n{_request_url(req)}\n"
-    )
-    send_email(req.requestor.email, f"{req.number} was {verb}", body, req.id, "DECIDED")
+def notify_decision(req, approved, comment=None):
+    type_ = "APPROVED" if approved else "REJECTED"
+    _send_template(req.requestor.email, type_, req, comment=comment or "(no comment)")
 
 
 def notify_finance_ready(req):
-    subject = f"{req.number} approved — finance section pending"
-    body = (
-        f"Request {req.number} ({_money(req.total_cost)}) has been fully approved "
-        f"and needs the finance cost breakdown.\n\n"
-        f"{_request_facts(req)}\n\n"
-        f"Complete the finance section:\n{_request_url(req)}\n"
-    )
     users = db.session.query(User).filter(User.active.is_(True)).all()
     for u in users:
         if "FINANCE" in u.roles_list:
-            send_email(u.email, subject, body, req.id, "FINANCE_READY")
+            _send_template(u.email, "FINANCE_READY", req)
+
+
+def send_email(recipient, subject, body, request_id=None, type_="INFO"):
+    """Direct plain-text send (used for ad-hoc/test messages)."""
+    _emit_plain(recipient, subject, body, request_id, type_)
+
+
+def _emit_plain(intended, subject, body, request_id, type_):
+    try:
+        log.info("EMAIL to=%s subject=%s", intended, subject)
+        db.session.add(NotificationLog(request_id=request_id, recipient=intended, type=type_))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        log.exception("notification log failed for %s", intended)
+    if not current_app.config.get("EMAIL_ENABLED"):
+        return
+    redirect_to = current_app.config.get("EMAIL_REDIRECT_TO") or intended
+    note = _redirect_note(intended)
+    full = f"{note}\n\n{body}" if note else body
+    try:
+        from app.services import email_outlook
+        email_outlook.send(redirect_to, subject, full)
+    except Exception:
+        log.exception("email delivery failed (intended %s)", intended)

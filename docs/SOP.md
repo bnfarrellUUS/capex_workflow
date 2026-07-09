@@ -238,6 +238,24 @@ won't work headless. Replace `backend/app/services/email_outlook.py` with an
 lives — `notify.send_email()` and all the recipient/routing logic above stay
 unchanged.
 
+### 7.3 Editing the emails (Admin → Email Templates)
+
+Admins can customize all four emails without code changes under **Admin → Email
+Templates**. For each email type you can edit the **subject**, the **body** (a
+WYSIWYG rich-text editor — fonts, sizes, colors, lists, links), and an
+**enabled** toggle (turn an email type off). A right-hand **placeholders** panel
+lists the `{tokens}` available for that email (e.g. `{number}`, `{requestor}`,
+`{division}`, `{total_cost}`, `{link}`, plus `{level}` for the approval email
+and `{comment}` for the rejection email); click one to insert it at the cursor.
+Tokens are replaced with real values when the email is sent.
+
+Every email is wrapped in a fixed **brand frame** (navy header, "United Uptime
+Services / CAPEX Flow", brand colors) so all four stay on-brand. Buttons:
+**Save** (update the live template), **Save as Default** (capture the current
+version as your baseline), **Preview** (see it rendered with sample data), and
+**Reset to default** (revert to your saved baseline, or the shipped default if
+none was captured).
+
 ---
 
 ## 8. Administration
@@ -253,6 +271,8 @@ Under **Admin** (ADMIN role required):
 - **Approval Thresholds** — set the **max amount** for L1/L2/L3 and the **L2/L3
   approver pools**. These caps decide how many approval levels each request
   needs (§4).
+- **Email Templates** — customize the subject, body, and enabled state of the
+  four notification emails, with `{token}` placeholders and a brand frame (§7.3).
 
 **Setup checklist for a working workflow:**
 1. Create divisions and assign each an **L1 approver pool**.

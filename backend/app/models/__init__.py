@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Optional
 
 from flask_login import UserMixin
-from sqlalchemy import String, Boolean, Integer, Numeric, DateTime, ForeignKey, Text, Table, Column
+from sqlalchemy import String, Boolean, Integer, Numeric, DateTime, ForeignKey, Text, Table, Column, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
@@ -257,3 +257,16 @@ class AppSetting(db.Model):
 
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
     value: Mapped[str] = mapped_column(Text)
+
+
+class EmailTemplate(db.Model):
+    __tablename__ = "email_templates"
+
+    type: Mapped[str] = mapped_column(String(20), primary_key=True)
+    subject: Mapped[str] = mapped_column(Text)
+    body_html: Mapped[str] = mapped_column(Text)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    default_subject: Mapped[str] = mapped_column(Text)
+    default_body_html: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), onupdate=func.now())
