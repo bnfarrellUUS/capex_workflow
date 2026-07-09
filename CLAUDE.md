@@ -63,3 +63,151 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+# Project: CAPEX Flow
+
+Internal web app for **United Uptime Services** to submit, route, approve, and
+search capital-expenditure (CAPEX) requests. Product brand name: **CAPEX Flow**
+(under "United Uptime Services").
+
+## Stack
+
+- **backend/** — Flask API (Python 3.14), SQLAlchemy 2.0 (typed `Mapped`),
+  Flask-Login session auth + CSRF, Pydantic v2 request schemas, Alembic
+  migrations. **SQLite** in dev (`backend/instance/capex_dev.db`), **Azure SQL
+  Server** in prod.
+- **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
+  Query 5, Tailwind CSS v4, `lucide-react` icons. Dev server proxies `/api` →
+  `http://localhost:5000`.
+
+## Running the app
+
+**Windows gotcha:** the repo path contains `&` (`D&H United Fueling Solutions`),
+which breaks npm's default cmd script-shell and breaks running `npm run …`
+through tools that shell out. Two consequences:
+- Use **`run-app.bat`** (repo root) to start everything — it points
+  `npm_config_script_shell` at Git Bash, does first-run setup (venv, deps,
+  `flask db upgrade`, `python seed.py`), and launches both servers.
+- When running frontend tooling directly (CI, agents), call the binaries via
+  node to sidestep the shell: e.g.
+  `node ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json`,
+  `node ./node_modules/vite/bin/vite.js build`,
+  `node ./node_modules/vitest/vitest.mjs run`.
+
+Manual start:
+
+    # backend
+    cd backend && python -m venv .venv && source .venv/Scripts/activate
+    pip install -r requirements.txt && flask db upgrade && python seed.py && flask run
+    # frontend (separate Git Bash shell)
+    cd frontend && npm run dev
+
+Backend: http://localhost:5000 (`GET /api/health` → `{"status":"ok"}`) ·
+Frontend: http://localhost:5173 · Dev login: **admin / ChangeMe123!**
+
+## Testing
+
+- Backend: `cd backend && pytest -q` (currently 102 tests).
+- Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
+- Always run backend pytest + frontend typecheck after changes touching either.
+
+## Backend layout (`backend/app/`)
+
+- `models/__init__.py` — all SQLAlchemy models (see Data model below).
+- `blueprints/` — HTTP routes, one per resource, each mounted under `/api/...`:
+  `health`, `auth` (`/api/auth`), `users`, `divisions`, `thresholds`,
+  `profile`, `requests`. Routes are thin; they validate input with Pydantic
+  schemas and delegate to services.
+- `services/` — business logic: `request_service`, `workflow_service`
+  (approval routing), `auth_service`, `user_service`, `division_service`,
+  `threshold_service`, `profile_service`, `attachment_service`/`storage`,
+  `counter_service` (request numbers `CX000001…`), `notify` (writes
+  `NotificationLog`), `security`, `errors` (`ServiceError(msg, status)`).
+- `schemas/request.py` — Pydantic v2 input models. **Important:** the PATCH
+  route builds `RequestDraft(**json).model_dump(exclude_unset=True)`, so a field
+  absent from `RequestDraft` is silently dropped even if the model/serializer
+  support it. Add new editable fields to this schema.
+- `serialization.py` (`money_str`), `authz.py`, `roles.py`, `config.py`,
+  `extensions.py` (`db`, login manager, CSRF).
+
+## Data model (`capex_requests` is the core)
+
+- **User** — `username`, `email`, `name`, `password_hash`, `roles` (JSON string
+  array, see Roles), `active`, `division_id`, `delegate_id` (out-of-office
+  delegate), lockout fields, reset token. `roles_list` property parses roles.
+- **Division** — `number`, `name`, `active`, `l1_approver_id` (Level-1 approver
+  for its requests).
+- **ApprovalThreshold** — one row per `level` (1/2/3), `max_amount` (top level
+  usually null = no cap), `approver_id` (global approver for L2/L3; L1 comes
+  from the division).
+- **CapexRequest** — `number`, `status`, `requestor_id`, `assignee_id` (current
+  approver), `division_id`, `request_date`; Basic-info flags (`budgeted`,
+  `replacement`, `health_safety`, `revenue_generating`, `environmental`,
+  `competitive_bids`, `lease_recommended`); narrative (`justification`,
+  `effect_on_operations`); economic fields (`asset_life`, `irr_after_tax`,
+  `first_year_ebit`, `annual_savings`, `payback_years`, `npv_savings`); finance
+  cost breakdown (`cost_*`, `finance_completed`); `total_cost`,
+  `required_levels`, `current_level`. Money = `Numeric(18,2)`, ratios =
+  `Numeric(9,4)`.
+- **EquipmentItem** — line items (`units`, `condition` NEW/USED, `type`, `make`,
+  `model`, `cost`); sum drives `total_cost`.
+- **Attachment**, **ApprovalAction** (audit trail: SUBMITTED/APPROVED/REJECTED/
+  RESUBMITTED/FINANCE_COMPLETED, with `level`, `comment`, `acted_for_id` for
+  delegated actions), **NotificationLog**, **Counter**, **AppSetting**.
+
+## Roles & approval workflow
+
+Roles: **REQUESTOR**, **APPROVER**, **FINANCE**, **ADMIN** (a user may hold
+several).
+
+Status flow: `DRAFT` → `PENDING_L1` → `PENDING_L2` → `PENDING_L3` → `APPROVED`,
+with `REJECTED` as a side state (a rejected request can be resubmitted by its
+owner). The number of levels required (`required_levels`) is derived from
+`total_cost` vs the `ApprovalThreshold` caps. L1 approver comes from the
+request's division; L2/L3 from the threshold rows. After final approval, a
+**FINANCE** user completes the cost breakdown (`cost_*` → `finance_completed`).
+
+## Frontend layout (`frontend/src/`)
+
+- `main.tsx` (query client, 401 → redirect to /login), `App.tsx` (routes),
+  `index.css` (Tailwind v4 + design tokens + dark variant).
+- `components/AppShell.tsx` — navy grouped sidebar (icons, active pill) + header
+  (theme toggle, Sign Out). `components/ui/` — `Button` (variants
+  primary/secondary/ghost), `Input`, `Select`, `PasswordInput` (eye toggle),
+  `Card`/`StatCard`, `Badge`/`StatusBadge`. `components/Logo.tsx`,
+  `ThemeToggle.tsx`, `theme.ts`.
+- `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
+  `RequestsListPage` (+ shared `RequestsTable`), `NewRequestPage` (creates a
+  draft then redirects to the wizard), `WizardPage` (6-step request wizard:
+  Basic Info, Description, Effect on Ops, Equipment, Economic, Review — step
+  tabs are clickable and save the draft before jumping), `RequestDetailPage`,
+  `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds +
+  forms). `routes/wizard/types.ts` maps API ↔ form (`toForm`/`toPayload`).
+- `api/` — `client.ts` (fetch wrapper; obtains CSRF from `/api/auth/csrf`, sends
+  `X-CSRFToken` on mutations, `credentials: 'include'`), plus per-resource
+  modules (`auth`, `requests`, `divisions`, `users`, `thresholds`, `profileApi`).
+
+## Design system & brand
+
+- **Theming:** semantic Tailwind tokens (`bg`, `surface`, `surface-2`, `border`,
+  `fg`, `muted`, `sidebar`, `accent`) defined in `index.css`; dark mode is a
+  class-based `@custom-variant dark` that overrides the same variables. Prefer
+  these tokens over hard-coded `slate-*`. Theme persists in
+  `localStorage['capex-theme']`; an inline script in `index.html` applies it
+  before render to avoid a flash.
+- **Brand (`brand/brand_asset.pdf`, "UUS CAPEX Flow"):** palette navy `#0B2A4A`,
+  blue `#2563EB`, sky `#93BBF5`. Logo mark = direction **1d "Capital Cycle"**
+  (`components/Logo.tsx` + `public/favicon.svg`). No IBM Plex typeface (default
+  system font). The look-and-feel targets the "ARIA" reference dashboard.
+
+## Conventions & gotchas
+
+- Keep routes thin; put logic in `services/`. Raise `ServiceError(msg, status)`
+  for handled API errors.
+- New editable request fields must be added in **all** of: model, `request_out`
+  serializer, `RequestDraft` schema, frontend `CapexRequestData`/`RequestForm`,
+  and `toForm`/`toPayload` — missing the Pydantic schema silently drops the field.
+- `docs/superpowers/specs/` holds design specs; milestone/phase plans live under
+  `docs/`.
