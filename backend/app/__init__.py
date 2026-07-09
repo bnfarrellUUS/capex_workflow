@@ -1,4 +1,6 @@
-from flask import Flask, jsonify
+import os
+
+from flask import Flask, jsonify, send_from_directory, abort
 from pydantic import ValidationError
 
 from .config import DevConfig
@@ -55,5 +57,26 @@ def create_app(config_object=None):
     @app.errorhandler(ValidationError)
     def _handle_validation_error(err: ValidationError):
         return jsonify(error="Validation failed.", details=err.errors()), 400
+
+    # Serve the built React SPA from the same server as the API. `frontend/dist`
+    # is produced by `vite build`; FRONTEND_DIST overrides the location in prod.
+    repo_root = os.path.dirname(os.path.dirname(app.root_path))
+    dist = app.config.get("FRONTEND_DIST") or os.path.join(repo_root, "frontend", "dist")
+
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def serve_spa(path):
+        # /api/* is owned by the blueprints; anything unmatched there is a real
+        # 404, not the SPA shell.
+        if path.startswith("api/"):
+            abort(404)
+        target = os.path.join(dist, path)
+        if path and os.path.isfile(target):
+            return send_from_directory(dist, path)
+        index = os.path.join(dist, "index.html")
+        if os.path.isfile(index):
+            return send_from_directory(dist, "index.html")
+        # dist not built (e.g. API-only/test runs): nothing to serve here.
+        abort(404)
 
     return app

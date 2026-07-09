@@ -3,21 +3,24 @@
 Internal web app to submit, route, approve, and search capital-expenditure requests.
 
 ## Stack
-- **backend/** — Flask API (Python), SQLAlchemy, SQLite (dev) / Azure SQL Server (prod)
-- **frontend/** — React + Vite + TypeScript SPA (Tailwind, brand colors)
+- **backend/** — Flask API (Python), SQLAlchemy, SQLite (dev) / Azure SQL Server (prod).
+  Also serves the built React SPA, so the whole app runs as one server.
+- **frontend/** — React + Vite + TypeScript SPA (Tailwind, brand colors), built to
+  `frontend/dist` and served by Flask.
 
-## Run (Windows, Git Bash — the repo path contains `&`)
-Run **`.\run-app.ps1`** from a PowerShell prompt (use
-`powershell -ExecutionPolicy Bypass -File .\run-app.ps1` if execution is
-blocked), or manually:
+## Run (Windows)
+Double-click **`Start CAPEX Flow.cmd`**, or run **`.\run-app.ps1`** from a
+PowerShell prompt (use `powershell -ExecutionPolicy Bypass -File .\run-app.ps1`
+if execution is blocked). It builds the frontend and starts one server, then
+opens the browser. Manually:
 
-    # backend
-    cd backend && python -m venv .venv && source .venv/Scripts/activate
+    # build the frontend (served by Flask)
+    cd frontend && npm install && node ./node_modules/vite/bin/vite.js build
+    # backend serves the SPA + API on one port
+    cd ../backend && python -m venv .venv && source .venv/Scripts/activate
     pip install -r requirements.txt && flask db upgrade && python seed.py && flask run
-    # frontend (separate shell)
-    cd frontend && npm install && npm run dev
 
-Backend: http://localhost:5000 · Frontend: http://localhost:5173 · Login: admin / ChangeMe123!
+App: http://localhost:5000 · Login: admin / ChangeMe123!
 
 ## Test
     cd backend && pytest -q

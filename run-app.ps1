@@ -1,17 +1,15 @@
 <#
-  CAPEX Flow launcher (PowerShell).
+  CAPEX Flow launcher (PowerShell) — single-server mode.
 
-  Why this exists: the repo path contains '&' (D&H United Fueling Solutions),
-  which breaks run-app.bat — cmd mis-parses the '&' inside the spawned
-  `start cmd /k "..."` windows, so they flash and close. This script sidesteps
-  that entirely:
-    * each server is launched with its working directory set, then invoked via
-      a RELATIVE path, so the '&'/space-laden absolute path never reaches a
-      parser;
-    * the frontend runs Vite through node directly (node node_modules\vite\...)
-      instead of `npm run dev`, so npm's cmd script-shell (the thing the '&'
-      breaks) is never used and no Git Bash is required;
-    * servers open in -NoExit windows, so a startup error stays on screen.
+  The app runs as ONE Flask server on http://localhost:5000: Flask serves the
+  built React SPA (frontend/dist) alongside the /api routes. This script:
+    * does first-run setup (venv + backend deps + db upgrade + seed, and
+      frontend deps);
+    * builds the frontend (vite build) so Flask serves the current code;
+    * starts Flask via a RELATIVE path from the backend dir, so the '&'/spaces
+      in the repo path never reach a parser (that's what broke run-app.bat);
+    * opens the browser once the server responds. The server runs in a -NoExit
+      window so a startup error stays on screen.
 
   Usage (from a PowerShell prompt in the repo root):
       .\run-app.ps1
@@ -46,32 +44,35 @@ if (-not (Test-Path -LiteralPath (Join-Path $Frontend 'node_modules'))) {
   try { npm install } finally { Pop-Location }
 }
 
-# --- Launch both servers in their own windows ---
-# Paths are single-quoted string literals inside the child command, so '&' and
-# spaces are treated literally (Set-Location -LiteralPath), and each server is
-# started from its own directory via a relative path.
-$backendCmd  = "Set-Location -LiteralPath '$Backend'; & '.\.venv\Scripts\python.exe' -m flask run"
-$frontendCmd = "Set-Location -LiteralPath '$Frontend'; & node '.\node_modules\vite\bin\vite.js'"
+# --- Build the frontend so Flask serves the current code ---
+# Call Vite through node directly (not `npm run build`) so npm's cmd
+# script-shell — which the '&' in the path breaks — is never used.
+Write-Host 'Building the frontend...' -ForegroundColor Cyan
+Push-Location -LiteralPath $Frontend
+try { & node '.\node_modules\vite\bin\vite.js' build } finally { Pop-Location }
 
-Start-Process powershell -ArgumentList '-NoExit', '-Command', $backendCmd
-Start-Process powershell -ArgumentList '-NoExit', '-Command', $frontendCmd
+# --- Launch the single combined server ---
+# Path is a single-quoted literal inside the child command, so '&' and spaces
+# are treated literally; Flask is started from the backend dir via a relative
+# path.
+$serverCmd = "Set-Location -LiteralPath '$Backend'; & '.\.venv\Scripts\python.exe' -m flask run"
+Start-Process powershell -ArgumentList '-NoExit', '-Command', $serverCmd
 
-# Wait for the web server to accept connections, then open the browser.
-Write-Host 'Starting servers, opening the website when ready...' -ForegroundColor Cyan
+# Wait for the server to accept connections, then open the browser.
+Write-Host 'Starting the server, opening the website when ready...' -ForegroundColor Cyan
 $ready = $false
 for ($i = 0; $i -lt 60; $i++) {
   try {
-    Invoke-WebRequest -Uri 'http://localhost:5173' -UseBasicParsing -TimeoutSec 2 | Out-Null
+    Invoke-WebRequest -Uri 'http://localhost:5000/api/health' -UseBasicParsing -TimeoutSec 2 | Out-Null
     $ready = $true
     break
   } catch { Start-Sleep -Seconds 1 }
 }
-if ($ready) { Start-Process 'http://localhost:5173' }
-else { Write-Host 'Web server did not respond in time; check the Web window for errors.' -ForegroundColor Yellow }
+if ($ready) { Start-Process 'http://localhost:5000' }
+else { Write-Host 'Server did not respond in time; check the server window for errors.' -ForegroundColor Yellow }
 
 Write-Host ''
 Write-Host '================================================================'
-Write-Host '  Backend:  http://localhost:5000/api/health'
-Write-Host '  Frontend: http://localhost:5173   (login: admin / ChangeMe123!)'
+Write-Host '  CAPEX Flow: http://localhost:5000   (login: admin / ChangeMe123!)'
 Write-Host '================================================================'
-Write-Host 'Two windows opened (API + Web). Close them to stop the servers.'
+Write-Host 'One window opened (the server). Close it to stop the app.'

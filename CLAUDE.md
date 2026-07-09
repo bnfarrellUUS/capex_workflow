@@ -79,22 +79,27 @@ search capital-expenditure (CAPEX) requests. Product brand name: **CAPEX Flow**
   migrations. **SQLite** in dev (`backend/instance/capex_dev.db`), **Azure SQL
   Server** in prod.
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
-  Query 5, Tailwind CSS v4, `lucide-react` icons. Dev server proxies `/api` →
-  `http://localhost:5000`.
+  Query 5, Tailwind CSS v4, `lucide-react` icons. **Single-server:** the SPA is
+  built (`vite build` → `frontend/dist`) and served by Flask itself — the app
+  runs as one server on `http://localhost:5000` (Flask serves `dist` plus the
+  `/api` routes; a catch-all returns `index.html` for client-side routes). The
+  API client uses relative `/api`, so it's same-origin. There is no Vite dev
+  proxy.
 
 ## Running the app
 
 **Windows gotcha:** the repo path contains `&` (`D&H United Fueling Solutions`),
 which breaks npm's default cmd script-shell and breaks running `npm run …`
 through tools that shell out. Two consequences:
-- Use **`run-app.ps1`** (repo root) to start everything: `.\run-app.ps1` from a
-  PowerShell prompt (or `powershell -ExecutionPolicy Bypass -File .\run-app.ps1`
-  if script execution is blocked). It does first-run setup (venv, deps,
-  `flask db upgrade`, `python seed.py`) and opens both servers in their own
-  windows. It launches each server from its own directory via a *relative* path
-  and runs Vite through `node` directly, so the `&`-in-path never reaches a
-  parser. (A prior `run-app.bat` was removed — cmd's `start cmd /k` mis-parses
-  the `&` in the path, flashing the windows closed.)
+- Double-click **`Start CAPEX Flow.cmd`** (repo root), or run **`run-app.ps1`**
+  from a PowerShell prompt (`powershell -ExecutionPolicy Bypass -File
+  .\run-app.ps1` if script execution is blocked). It does first-run setup (venv,
+  deps, `flask db upgrade`, `python seed.py`), **builds the frontend**, starts
+  the single Flask server (`flask run`, port 5000) in its own window, and opens
+  the browser to `http://localhost:5000`. It launches the server from its own
+  directory via a *relative* path so the `&`-in-path never reaches a parser.
+  (A prior `run-app.bat` was removed — cmd's `start cmd /k` mis-parses the `&`
+  in the path, flashing the windows closed.)
 - When running frontend tooling directly (CI, agents), call the binaries via
   node to sidestep the shell: e.g.
   `node ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json`,
@@ -103,14 +108,16 @@ through tools that shell out. Two consequences:
 
 Manual start:
 
-    # backend
-    cd backend && python -m venv .venv && source .venv/Scripts/activate
+    # build the frontend (served by Flask)
+    cd frontend && npm install && node ./node_modules/vite/bin/vite.js build
+    # backend serves the SPA + API on one port
+    cd ../backend && python -m venv .venv && source .venv/Scripts/activate
     pip install -r requirements.txt && flask db upgrade && python seed.py && flask run
-    # frontend (separate Git Bash shell)
-    cd frontend && npm run dev
 
-Backend: http://localhost:5000 (`GET /api/health` → `{"status":"ok"}`) ·
-Frontend: http://localhost:5173 · Dev login: **admin / ChangeMe123!**
+App: http://localhost:5000 (`GET /api/health` → `{"status":"ok"}`) ·
+Dev login: **admin / ChangeMe123!**
+(To iterate on the frontend, rebuild with `node ./node_modules/vite/bin/vite.js
+build`; there is no live dev server.)
 
 ## Testing
 
