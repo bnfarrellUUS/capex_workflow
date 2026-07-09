@@ -52,9 +52,19 @@ export default function WizardPage() {
       <h1 className="text-2xl font-semibold text-fg">Request {data.number}</h1>
       <ol className="my-4 flex flex-wrap gap-2 text-xs">
         {STEPS.map((label, i) => (
-          <li key={label}
-            className={`rounded px-2 py-1 ${i === step ? 'bg-accent text-accent-fg' : 'bg-surface-2 text-muted'}`}>
-            {i + 1}. {label}
+          <li key={label}>
+            <button
+              type="button"
+              disabled={save.isPending}
+              onClick={() => { if (i !== step) saveThen(() => setStep(i)) }}
+              className={`rounded px-2 py-1 transition disabled:opacity-60 ${
+                i === step
+                  ? 'bg-accent text-accent-fg'
+                  : 'bg-surface-2 text-muted hover:bg-accent/10 hover:text-fg'
+              }`}
+            >
+              {i + 1}. {label}
+            </button>
           </li>
         ))}
       </ol>
