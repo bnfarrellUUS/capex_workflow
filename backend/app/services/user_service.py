@@ -66,18 +66,30 @@ def delete_user(user_id, actor_id):
     if user_id == actor_id:
         raise ServiceError("You can't delete your own account.")
     # Preserve the audit trail: refuse if the user is tied to any request,
-    # approval action, or attachment. Deactivate such users instead.
-    referenced = (
-        db.session.query(CapexRequest.id).filter(
-            (CapexRequest.requestor_id == user_id) | (CapexRequest.assignee_id == user_id)).first()
-        or db.session.query(ApprovalAction.id).filter(
-            (ApprovalAction.actor_id == user_id) | (ApprovalAction.acted_for_id == user_id)).first()
-        or db.session.query(Attachment.id).filter(Attachment.uploaded_by_id == user_id).first()
-    )
-    if referenced is not None:
+    # approval action, or attachment. Deactivate such users instead. Name the
+    # blocking references so the admin knows exactly what's holding the user.
+    req_numbers = [
+        n for (n,) in db.session.query(CapexRequest.number).filter(
+            (CapexRequest.requestor_id == user_id) | (CapexRequest.assignee_id == user_id)
+        ).order_by(CapexRequest.number).all()
+    ]
+    approval_count = db.session.query(ApprovalAction.id).filter(
+        (ApprovalAction.actor_id == user_id) | (ApprovalAction.acted_for_id == user_id)).count()
+    attachment_count = db.session.query(Attachment.id).filter(
+        Attachment.uploaded_by_id == user_id).count()
+    if req_numbers or approval_count or attachment_count:
+        parts = []
+        if req_numbers:
+            shown = ", ".join(req_numbers[:5])
+            extra = f" (+{len(req_numbers) - 5} more)" if len(req_numbers) > 5 else ""
+            parts.append(f"{len(req_numbers)} request(s): {shown}{extra}")
+        if approval_count:
+            parts.append(f"{approval_count} approval action(s)")
+        if attachment_count:
+            parts.append(f"{attachment_count} attachment(s)")
         raise ServiceError(
-            "This user has request or approval history and can't be deleted. "
-            "Deactivate them instead.", 409)
+            "Can't delete — this user is referenced by " + "; ".join(parts) +
+            ". Deactivate them instead.", 409)
     # Detach safe references so the delete doesn't violate foreign keys.
     db.session.query(User).filter(User.delegate_id == user_id).update({"delegate_id": None})
     db.session.execute(division_l1_approvers.delete().where(division_l1_approvers.c.user_id == user_id))
