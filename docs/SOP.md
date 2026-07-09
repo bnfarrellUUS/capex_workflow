@@ -249,8 +249,10 @@ lists the `{tokens}` available for that email (e.g. `{number}`, `{requestor}`,
 and `{comment}` for the rejection email); click one to insert it at the cursor.
 Tokens are replaced with real values when the email is sent.
 
-Every email is wrapped in a fixed **brand frame** (navy header, "United Uptime
-Services / CAPEX Flow", brand colors) so all four stay on-brand. Buttons:
+Every email is wrapped in a fixed **brand frame** (navy header with the
+Capital-Cycle logo mark, "United Uptime Services / CAPEX Flow", centered white
+card, brand colors) so all four stay on-brand, and the editor shows the same
+frame around the body while you type. Buttons:
 **Save** (update the live template), **Save as Default** (capture the current
 version as your baseline), **Preview** (see it rendered with sample data), and
 **Reset to default** (revert to your saved baseline, or the shipped default if

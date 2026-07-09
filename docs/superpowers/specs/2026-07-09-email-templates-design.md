@@ -39,28 +39,44 @@ The four email types:
 - Creating arbitrary new template types (there are exactly four).
 - Approve/reject directly from the email (token-authenticated action links).
 - Per-division or per-user template variants.
-- Image uploads, attachments, or the logo graphic in the email (brand is
-  conveyed with colors + wordmark; see Branding).
+- Image uploads and attachments in the editor.
 - Template version history / audit of edits beyond `updated_at`.
 
 ## Branding & the locked frame
 
-Emails become **HTML** (sent via Outlook `.HTMLBody`). A code-defined HTML shell
-wraps the admin's body content:
+*(Amended 2026-07-09 after the first Outlook render: the layout is table-based —
+Outlook's Word engine ignores div layout/`max-width`/padding-on-`<a>` — and the
+header now embeds the Capital-Cycle logo mark as a CID-attached PNG, per user
+request.)*
 
-- **Header band:** navy `#0B2A4A`, white wordmark "United Uptime Services" with
-  "CAPEX Flow" subtitle. No image — text + color only, so it renders identically
-  in Outlook desktop, the browser preview, and all clients.
-- **Body region:** the admin's rendered HTML.
+Emails become **HTML** (sent via Outlook `.HTMLBody`). A code-defined,
+**table-based** HTML shell wraps the admin's body content:
+
+- **Header band:** navy `#0B2A4A` with the **Capital-Cycle logo mark**
+  (`backend/app/assets/email_logo.png`, rasterized from the brand SVG geometry)
+  next to the white wordmark "United Uptime Services" + "CAPEX Flow" subtitle.
+  The Outlook sender attaches the PNG under Content-ID `capexflow-logo` and the
+  HTML references `cid:capexflow-logo`; the in-app preview substitutes a
+  base64 data-URI instead (browsers can't resolve `cid:`).
+- **Body region:** the admin's rendered HTML, in a centered 600px white card on
+  a light `#EEF3FB` background.
 - **Footer:** small muted line ("Automated message from CAPEX Flow — do not
   reply").
 - **Accent palette:** links/buttons blue `#2563EB`, hairlines/accents sky
-  `#93BBF5`. All styling is **inline CSS** (email-client requirement).
+  `#93BBF5`. All styling is **inline CSS**; buttons are table-cell based
+  (`bgcolor` + padding on the `<td>`) because Outlook ignores padding on `<a>`.
+  `border-radius` is kept for capable clients and degrades to square corners in
+  Outlook desktop.
 - **Redirect banner:** when `EMAIL_REDIRECT_TO` is set, a yellow bar is prepended
   inside the frame noting the intended recipient (replaces today's
   `[Intended recipient: …]` plain-text prefix).
 
-The frame lives in `services/email_frame.py` as `wrap(body_html, *, redirect_note=None) -> str`.
+The frame lives in `services/email_frame.py` as
+`wrap(body_html, *, redirect_note=None, logo_src="cid:capexflow-logo") -> str`.
+
+The **editor page mirrors this frame** (navy header with the React `Logo`, white
+card, footer, and email typography on the Quill surface) so WYSIWYG editing
+matches what is sent.
 
 ## Tokens
 
