@@ -3,7 +3,7 @@ import type { Division, DivisionInput } from '../../api/divisions'
 import type { AdminUser } from '../../api/users'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
-import { ApproverPicker } from '../../components/ui/ApproverPicker'
+import { TransferList } from '../../components/ui/TransferList'
 
 export function DivisionForm({
   approvers, division, pending, error, onSubmit,
@@ -25,18 +25,18 @@ export function DivisionForm({
   }
 
   return (
-    <form onSubmit={submit} className="max-w-lg space-y-4">
-      <div className="space-y-1">
+    <form onSubmit={submit} className="max-w-3xl space-y-4">
+      <div className="max-w-lg space-y-1">
         <label className="text-sm font-medium">Division number</label>
         <Input value={number} onChange={(e) => setNumber(e.target.value)} required />
       </div>
-      <div className="space-y-1">
+      <div className="max-w-lg space-y-1">
         <label className="text-sm font-medium">Name</label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div className="space-y-1">
         <label className="text-sm font-medium">Level-1 approvers (any one may approve)</label>
-        <ApproverPicker
+        <TransferList
           options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.username})` }))}
           selected={l1Ids}
           onChange={setL1Ids}

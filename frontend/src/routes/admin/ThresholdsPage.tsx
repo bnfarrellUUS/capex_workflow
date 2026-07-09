@@ -5,7 +5,7 @@ import { listUsers } from '../../api/users'
 import { ApiError } from '../../api/client'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
-import { ApproverPicker } from '../../components/ui/ApproverPicker'
+import { TransferList } from '../../components/ui/TransferList'
 
 const LABELS: Record<number, string> = {
   1: 'Level 1 (Manager)',
@@ -35,7 +35,7 @@ export default function ThresholdsPage() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <h1 className="mb-4 text-2xl font-semibold text-fg">Approval Thresholds</h1>
       <p className="mb-4 text-sm text-muted">
         A request needs approval up to the highest level whose cap it exceeds. Leave the top level's max empty for "no limit".
@@ -44,21 +44,21 @@ export default function ThresholdsPage() {
         {rows.map((r) => (
           <div key={r.level} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
             <div className="mb-2 font-medium text-fg">{LABELS[r.level]}</div>
-            <div className="flex gap-4">
-              <div className="flex-1 space-y-1">
+            <div className="space-y-3">
+              <div className="max-w-xs space-y-1">
                 <label className="text-xs text-muted">Max amount ($)</label>
                 <Input type="number" value={r.max_amount ?? ''}
                   placeholder={r.level === 3 ? 'No limit' : ''}
                   onChange={(e) => setRow(r.level, { max_amount: e.target.value === '' ? null : e.target.value })} />
               </div>
-              <div className="flex-1 space-y-1">
+              <div className="space-y-1">
                 <label className="text-xs text-muted">
                   Approvers {r.level === 1 ? '(set per division)' : '(any one may approve)'}
                 </label>
                 {r.level === 1 ? (
                   <p className="text-sm text-muted">Level-1 approvers are configured on each division.</p>
                 ) : (
-                  <ApproverPicker
+                  <TransferList
                     options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.username})` }))}
                     selected={r.approver_ids}
                     onChange={(ids) => setRow(r.level, { approver_ids: ids })}

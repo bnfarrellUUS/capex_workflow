@@ -4,8 +4,10 @@ import type { Division } from '../../api/divisions'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
+import { TransferList } from '../../components/ui/TransferList'
 
 const ALL_ROLES = ['REQUESTOR', 'APPROVER', 'FINANCE', 'ADMIN']
+const roleLabel = (r: string) => r.charAt(0) + r.slice(1).toLowerCase()
 
 export function UserForm({
   divisions, user, pending, error, onSubmit,
@@ -24,10 +26,6 @@ export function UserForm({
   const [divisionId, setDivisionId] = useState(user?.division_id ?? '')
   const [active, setActive] = useState(user?.active ?? true)
 
-  function toggleRole(r: string) {
-    setRoles((cur) => (cur.includes(r) ? cur.filter((x) => x !== r) : [...cur, r]))
-  }
-
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const body: UserInput = {
@@ -38,7 +36,7 @@ export function UserForm({
   }
 
   return (
-    <form onSubmit={submit} className="max-w-lg space-y-4">
+    <form onSubmit={submit} className="max-w-3xl space-y-4">
       <div className="space-y-1">
         <label className="text-sm font-medium">Username</label>
         <Input value={username} onChange={(e) => setUsername(e.target.value)} required />
@@ -52,21 +50,22 @@ export function UserForm({
         <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
       {!user && (
-        <div className="space-y-1">
+        <div className="max-w-lg space-y-1">
           <label className="text-sm font-medium">Temporary password (min 8)</label>
           <Input type="text" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
       )}
-      <fieldset className="space-y-1">
-        <legend className="text-sm font-medium">Roles</legend>
-        {ALL_ROLES.map((r) => (
-          <label key={r} className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={roles.includes(r)} onChange={() => toggleRole(r)} />
-            {r.charAt(0) + r.slice(1).toLowerCase()}
-          </label>
-        ))}
-      </fieldset>
       <div className="space-y-1">
+        <label className="text-sm font-medium">Roles</label>
+        <TransferList
+          options={ALL_ROLES.map((r) => ({ id: r, label: roleLabel(r) }))}
+          selected={roles}
+          onChange={setRoles}
+          availableLabel="Available roles"
+          selectedLabel="Assigned roles"
+        />
+      </div>
+      <div className="max-w-lg space-y-1">
         <label className="text-sm font-medium">Division</label>
         <Select value={divisionId} onChange={(e) => setDivisionId(e.target.value)}>
           <option value="">— None —</option>
