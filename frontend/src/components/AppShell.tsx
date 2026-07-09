@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   LayoutDashboard,
@@ -23,6 +23,8 @@ interface NavItem {
   icon: LucideIcon
   roles: string[]
   end?: boolean
+  /** Extra paths that should also mark this item active (e.g. the wizard). */
+  activePattern?: RegExp
 }
 
 const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
@@ -30,7 +32,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
     section: 'Overview',
     items: [
       { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: [], end: true },
-      { to: '/requests/new', label: 'New Request', icon: FilePlus2, roles: [] },
+      { to: '/requests/new', label: 'New Request', icon: FilePlus2, roles: [], activePattern: /^\/requests\/[^/]+\/edit$/ },
       { to: '/requests', label: 'My Requests', icon: ListChecks, roles: [], end: true },
     ],
   },
@@ -53,6 +55,7 @@ const todayLabel = new Date().toISOString().slice(0, 10)
 export function AppShell() {
   const { data: user } = useMe()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const qc = useQueryClient()
   const roles = user?.roles ?? []
   const can = (item: NavItem) => item.roles.length === 0 || item.roles.some((r) => roles.includes(r))
@@ -91,13 +94,14 @@ export function AppShell() {
                       key={item.to}
                       to={item.to}
                       end={item.end}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
-                          isActive
+                      className={({ isActive }) => {
+                        const active = isActive || (item.activePattern?.test(pathname) ?? false)
+                        return `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
+                          active
                             ? 'bg-accent text-white'
                             : 'text-sidebar-fg hover:bg-white/10 hover:text-white'
                         }`
-                      }
+                      }}
                     >
                       <Icon size={17} />
                       {item.label}
