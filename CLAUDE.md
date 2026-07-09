@@ -209,6 +209,10 @@ After final approval, a **FINANCE** user completes the cost breakdown
 
 ## Conventions & gotchas
 
+- **After each significant change, update the docs and commit.** Keep this
+  CLAUDE.md (and any relevant `docs/superpowers/specs/`) in sync with the code,
+  then make a focused git commit with a clear message describing what changed
+  and how it was verified. Don't batch several unrelated changes into one commit.
 - Keep routes thin; put logic in `services/`. Raise `ServiceError(msg, status)`
   for handled API errors.
 - New editable request fields must be added in **all** of: model, `request_out`
