@@ -152,6 +152,15 @@ def _substitute(text, context):
     return text
 
 
+def preview(type_, subject, body_html):
+    _require_type(type_)
+    ctx = sample_context(type_)
+    return {
+        "subject": _substitute(subject, ctx),
+        "html": email_frame.wrap(_substitute(body_html, ctx)),
+    }
+
+
 def render(type_, context, *, redirect_note=None):
     tmpl = get(type_)
     subject = _substitute(tmpl["subject"], context)

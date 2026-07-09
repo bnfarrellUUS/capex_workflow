@@ -10,11 +10,12 @@ bp = Blueprint("email_templates", __name__, url_prefix="/api/email-templates")
 @bp.get("")
 @require_roles("ADMIN")
 def list_templates():
-    return jsonify([
-        {"type": t, "name": ets.NAMES[t], "subject": ets.get(t)["subject"],
-         "enabled": ets.get(t)["enabled"], "is_custom": ets.get(t)["is_custom"]}
-        for t in ets.TYPES
-    ])
+    out = []
+    for t in ets.TYPES:
+        d = ets.get(t)
+        out.append({"type": t, "name": ets.NAMES[t], "subject": d["subject"],
+                    "enabled": d["enabled"], "is_custom": d["is_custom"]})
+    return jsonify(out)
 
 
 @bp.get("/<type_>")
@@ -48,9 +49,4 @@ def reset_template(type_):
 @require_roles("ADMIN")
 def preview_template(type_):
     payload = EmailTemplatePreviewIn(**(request.get_json(silent=True) or {}))
-    ets._require_type(type_)
-    ctx = ets.sample_context(type_)
-    subject = ets._substitute(payload.subject, ctx)
-    from app.services import email_frame
-    html = email_frame.wrap(ets._substitute(payload.body_html, ctx))
-    return jsonify({"subject": subject, "html": html})
+    return jsonify(ets.preview(type_, payload.subject, payload.body_html))

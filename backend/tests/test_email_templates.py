@@ -71,3 +71,10 @@ def test_save_as_default_then_reset_reverts_to_admin_default(app):
 def test_get_unknown_type_raises(app):
     with pytest.raises(ServiceError):
         ets.get("NOPE")
+
+
+def test_preview_substitutes_sample_data_and_frames(app):
+    out = ets.preview("ASSIGNED", "Re: {number}", "<p>{number} — {level}</p>")
+    assert out["subject"] == "Re: CX000042"
+    assert "CX000042" in out["html"] and "Level 2 of 3" in out["html"]
+    assert "United Uptime Services" in out["html"]      # framed
