@@ -17,7 +17,7 @@ export default function UserNewPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-brand-navy">Add user</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-fg">Add user</h1>
       <UserForm divisions={divisions} pending={mutation.isPending} error={error}
         onSubmit={(body) => mutation.mutate(body)} />
     </div>

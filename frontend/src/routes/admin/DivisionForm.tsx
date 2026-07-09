@@ -48,7 +48,7 @@ export function DivisionForm({
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active
         </label>
       )}
-      {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
       <Button type="submit" disabled={pending}>{division ? 'Save changes' : 'Create division'}</Button>
     </form>
   )

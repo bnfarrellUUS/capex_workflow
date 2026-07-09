@@ -17,7 +17,7 @@ export default function DivisionNewPage() {
   const error = mutation.error instanceof ApiError ? mutation.error.message : mutation.error ? 'Failed.' : null
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-brand-navy">Add division</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-fg">Add division</h1>
       <DivisionForm approvers={approvers} pending={mutation.isPending} error={error}
         onSubmit={(body) => mutation.mutate(body)} />
     </div>

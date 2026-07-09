@@ -10,6 +10,8 @@ import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { Card } from '../components/ui/Card'
+import { StatusBadge } from '../components/ui/Badge'
 
 const PIPELINE = ['DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED']
 
@@ -36,7 +38,7 @@ export default function RequestDetailPage() {
     }
   }
 
-  if (!req || !me) return <p className="text-sm text-slate-500">Loading…</p>
+  if (!req || !me) return <p className="text-sm text-muted">Loading…</p>
 
   const isAssignee = req.assignee_id === me.id && req.status.startsWith('PENDING_')
   const isOwner = req.requestor_id === me.id
@@ -48,13 +50,14 @@ export default function RequestDetailPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-brand-navy">Request {req.number}</h1>
-        <span className="rounded bg-slate-200 px-2 py-1 text-xs">{req.status}</span>
+        <h1 className="text-2xl font-semibold text-fg">Request {req.number}</h1>
+        <StatusBadge status={req.status} />
       </div>
 
+      <Card className="space-y-6 p-6">
       <ol className="flex flex-wrap gap-2 text-xs">
         {PIPELINE.map((s) => (
-          <li key={s} className={`rounded px-2 py-1 ${s === req.status ? 'bg-brand-blue text-white' : 'bg-slate-200 text-slate-600'}`}>{s}</li>
+          <li key={s} className={`rounded px-2 py-1 ${s === req.status ? 'bg-accent text-accent-fg' : 'bg-surface-2 text-muted'}`}>{s}</li>
         ))}
         {req.status === 'REJECTED' && <li className="rounded bg-red-600 px-2 py-1 text-white">REJECTED</li>}
       </ol>
@@ -68,55 +71,55 @@ export default function RequestDetailPage() {
       </section>
 
       <section>
-        <h2 className="mb-1 font-semibold">Equipment</h2>
+        <h2 className="mb-1 font-semibold text-fg">Equipment</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b text-left text-slate-500">
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
               <th className="py-1">Units</th><th>Type</th><th>Make</th><th>Model</th><th>Cost</th>
             </tr>
           </thead>
           <tbody>
             {req.equipment_items.map((i, idx) => (
-              <tr key={idx} className="border-b">
+              <tr key={idx} className="border-b border-border">
                 <td className="py-1">{i.units}</td><td>{i.type}</td><td>{i.make}</td><td>{i.model}</td>
                 <td>${Number(i.cost).toLocaleString()}</td>
               </tr>
             ))}
             {req.equipment_items.length === 0 && (
-              <tr><td colSpan={5} className="py-1 text-slate-500">No line items.</td></tr>
+              <tr><td colSpan={5} className="py-1 text-muted">No line items.</td></tr>
             )}
           </tbody>
         </table>
       </section>
 
       <section>
-        <h2 className="mb-1 font-semibold">Approval history</h2>
+        <h2 className="mb-1 font-semibold text-fg">Approval history</h2>
         <ul className="space-y-1 text-sm">
           {req.actions.map((a, idx) => (
-            <li key={idx} className="border-b pb-1">
+            <li key={idx} className="border-b border-border pb-1">
               <span className="font-medium">{a.action}</span>
               {a.level ? ` (L${a.level})` : ''} — {a.actor_name}
-              {a.comment ? <span className="text-slate-600"> · "{a.comment}"</span> : null}
+              {a.comment ? <span className="text-muted"> · "{a.comment}"</span> : null}
             </li>
           ))}
-          {req.actions.length === 0 && <li className="text-slate-500">No actions yet.</li>}
+          {req.actions.length === 0 && <li className="text-muted">No actions yet.</li>}
         </ul>
       </section>
 
       <section>
-        <h2 className="mb-1 font-semibold">Attachments</h2>
+        <h2 className="mb-1 font-semibold text-fg">Attachments</h2>
         <ul className="space-y-1 text-sm">
           {req.attachments.map((a) => (
             <li key={a.id} className="flex items-center gap-3">
-              <a className="text-brand-blue hover:underline" href={attachmentUrl(id, a.id)}>{a.filename}</a>
-              <span className="text-xs text-slate-500">{(a.size / 1024).toFixed(1)} KB</span>
+              <a className="text-accent hover:underline" href={attachmentUrl(id, a.id)}>{a.filename}</a>
+              <span className="text-xs text-muted">{(a.size / 1024).toFixed(1)} KB</span>
               {canEdit && (
-                <button className="text-xs text-red-600" disabled={busy}
+                <button className="text-xs text-red-600 dark:text-red-400" disabled={busy}
                   onClick={() => act(() => deleteAttachment(id, a.id))}>Remove</button>
               )}
             </li>
           ))}
-          {req.attachments.length === 0 && <li className="text-slate-500">No attachments.</li>}
+          {req.attachments.length === 0 && <li className="text-muted">No attachments.</li>}
         </ul>
         {canEdit && (
           <div className="mt-2">
@@ -129,28 +132,29 @@ export default function RequestDetailPage() {
         )}
       </section>
 
-      {err && <p className="text-sm text-red-600" role="alert">{err}</p>}
+      {err && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{err}</p>}
 
       {hasActions && (
-        <section className="space-y-3 border-t pt-4">
+        <section className="space-y-3 border-t border-border pt-4">
           {isAssignee && (
             <div className="space-y-2">
               <Input placeholder="Comment (required to reject)" value={comment}
                 onChange={(e) => setComment(e.target.value)} />
               <div className="flex gap-2">
                 <Button disabled={busy} onClick={() => act(() => approveRequest(id, comment || undefined))}>Approve</Button>
-                <Button className="bg-red-600 hover:bg-red-700" disabled={busy || !comment.trim()}
+                <Button className="bg-red-600 text-white hover:bg-red-700" disabled={busy || !comment.trim()}
                   onClick={() => act(() => rejectRequest(id, comment))}>Reject</Button>
               </div>
             </div>
           )}
-          {canEdit && <Link className="block text-brand-blue hover:underline" to={`/requests/${id}/edit`}>Edit draft</Link>}
+          {canEdit && <Link className="block text-accent hover:underline" to={`/requests/${id}/edit`}>Edit draft</Link>}
           {canResubmit && <Button disabled={busy} onClick={() => act(() => resubmitRequest(id))}>Resubmit</Button>}
           {canFinance && <FinanceForm disabled={busy} onSubmit={(costs) => act(() => completeFinance(id, costs))} />}
         </section>
       )}
+      </Card>
 
-      <button className="text-sm text-slate-500" onClick={() => navigate('/')}>← Back to dashboard</button>
+      <button className="text-sm text-muted hover:text-fg" onClick={() => navigate('/')}>← Back to dashboard</button>
     </div>
   )
 }
@@ -166,11 +170,11 @@ function FinanceForm({ onSubmit, disabled }:
   const [vals, setVals] = useState<Record<string, string>>({})
   return (
     <div className="space-y-2">
-      <h2 className="font-semibold">Complete finance cost breakdown</h2>
+      <h2 className="font-semibold text-fg">Complete finance cost breakdown</h2>
       <div className="grid grid-cols-2 gap-2">
         {FINANCE_FIELDS.map(([key, label]) => (
           <div key={key} className="space-y-1">
-            <label className="text-xs text-slate-500">{label}</label>
+            <label className="text-xs text-muted">{label}</label>
             <Input type="number" value={vals[key] ?? ''}
               onChange={(e) => setVals({ ...vals, [key]: e.target.value })} />
           </div>

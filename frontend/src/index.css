@@ -1,7 +1,48 @@
 @import "tailwindcss";
 
+/* Manual (class-based) dark mode: toggled via `.dark` on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
+  /* Brand palette (UUS CAPEX Flow brand sheet) */
   --color-brand-navy: #0B2A4A;
-  --color-brand-blue: #2E6DF0;
-  --color-brand-sky: #8FB2FF;
+  --color-brand-blue: #2563EB;
+  --color-brand-sky: #93BBF5;
+
+  /* Semantic tokens — light theme defaults. Overridden under .dark below.
+     Tailwind v4 emits these as CSS custom properties, so overriding the same
+     variable name inside .dark re-themes every token-based utility. */
+  --color-bg: #f1f5f9;          /* app content background */
+  --color-surface: #ffffff;     /* cards, panels */
+  --color-surface-2: #f8fafc;   /* subtle inset (table header, hover) */
+  --color-border: #e2e8f0;
+  --color-fg: #0f172a;          /* primary text */
+  --color-muted: #64748b;       /* secondary text */
+  --color-sidebar: #0B2A4A;
+  --color-sidebar-fg: #cbd5e1;
+  --color-sidebar-muted: #7c93b0;
+  --color-accent: #2563EB;
+  --color-accent-fg: #ffffff;
+}
+
+.dark {
+  --color-bg: #0b1220;
+  --color-surface: #1e293b;
+  --color-surface-2: #172033;
+  --color-border: #334155;
+  --color-fg: #f1f5f9;
+  --color-muted: #94a3b8;
+  --color-sidebar: #0a1f38;
+  --color-sidebar-fg: #cbd5e1;
+  --color-sidebar-muted: #64809f;
+  --color-accent: #3b7bff;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
 }

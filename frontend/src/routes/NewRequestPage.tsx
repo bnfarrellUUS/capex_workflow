@@ -12,5 +12,5 @@ export default function NewRequestPage() {
       .then((r) => navigate(`/requests/${r.id}/edit`, { replace: true }))
       .catch(() => navigate('/', { replace: true }))
   }, [navigate])
-  return <p className="text-sm text-slate-500">Creating draft…</p>
+  return <p className="text-sm text-muted">Creating draft…</p>
 }

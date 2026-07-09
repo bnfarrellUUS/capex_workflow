@@ -29,17 +29,17 @@ export default function UserEditPage() {
     onSuccess: () => { setResetMsg('Password reset.'); setNewPassword('') },
   })
 
-  if (!user) return <p className="text-sm text-slate-500">Loading…</p>
+  if (!user) return <p className="text-sm text-muted">Loading…</p>
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="mb-4 text-2xl font-semibold text-brand-navy">Edit user: {user.username}</h1>
+        <h1 className="mb-4 text-2xl font-semibold text-fg">Edit user: {user.username}</h1>
         <UserForm divisions={divisions} user={user} pending={mutation.isPending} error={error}
           onSubmit={(body) => mutation.mutate(body)} />
       </div>
-      <div className="max-w-lg border-t pt-6">
-        <h2 className="mb-2 font-semibold">Reset password</h2>
+      <div className="max-w-lg border-t border-border pt-6">
+        <h2 className="mb-2 font-semibold text-fg">Reset password</h2>
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <Input type="text" minLength={8} placeholder="New temporary password"
@@ -48,7 +48,7 @@ export default function UserEditPage() {
           <Button disabled={newPassword.length < 8 || resetMutation.isPending}
             onClick={() => resetMutation.mutate()}>Reset</Button>
         </div>
-        {resetMsg && <p className="mt-2 text-sm text-green-700">{resetMsg}</p>}
+        {resetMsg && <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{resetMsg}</p>}
       </div>
     </div>
   )

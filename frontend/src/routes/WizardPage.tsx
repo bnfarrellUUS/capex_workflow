@@ -43,33 +43,33 @@ export default function WizardPage() {
     action?.()
   }
 
-  if (!form || !data) return <p className="text-sm text-slate-500">Loading…</p>
+  if (!form || !data) return <p className="text-sm text-muted">Loading…</p>
 
   const set: Setter = (k, v) => { setForm({ ...form, [k]: v }); setSaved(false) }
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold text-brand-navy">Request {data.number}</h1>
+      <h1 className="text-2xl font-semibold text-fg">Request {data.number}</h1>
       <ol className="my-4 flex flex-wrap gap-2 text-xs">
         {STEPS.map((label, i) => (
           <li key={label}
-            className={`rounded px-2 py-1 ${i === step ? 'bg-brand-blue text-white' : 'bg-slate-200 text-slate-600'}`}>
+            className={`rounded px-2 py-1 ${i === step ? 'bg-accent text-accent-fg' : 'bg-surface-2 text-muted'}`}>
             {i + 1}. {label}
           </li>
         ))}
       </ol>
 
-      <div className="rounded-md border border-slate-200 bg-white p-6">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         {step === 0 && <BasicInfo form={form} set={set} />}
         {step === 1 && (
           <Field label="Brief description & justification">
-            <textarea className="min-h-32 w-full rounded-md border border-slate-300 p-2 text-sm"
+            <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
               value={form.justification} onChange={(e) => set('justification', e.target.value)} />
           </Field>
         )}
         {step === 2 && (
           <Field label="Effect on operations">
-            <textarea className="min-h-32 w-full rounded-md border border-slate-300 p-2 text-sm"
+            <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
               value={form.effect_on_operations} onChange={(e) => set('effect_on_operations', e.target.value)} />
           </Field>
         )}
@@ -81,12 +81,12 @@ export default function WizardPage() {
       </div>
 
       <div className="mt-4 flex items-center gap-3">
-        <Button className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+        <Button variant="secondary"
           disabled={step === 0} onClick={() => setStep(step - 1)}>Back</Button>
-        <Button className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+        <Button variant="secondary"
           disabled={save.isPending} onClick={() => save.mutate()}>Save Draft</Button>
-        {saved && !saveError && <span className="text-sm text-green-700">Saved.</span>}
-        {saveError && <span className="text-sm text-red-600" role="alert">{saveError}</span>}
+        {saved && !saveError && <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved.</span>}
+        {saveError && <span className="text-sm text-red-600 dark:text-red-400" role="alert">{saveError}</span>}
         <div className="flex-1" />
         {step < STEPS.length - 1 && (
           <Button disabled={save.isPending} onClick={() => saveThen(() => setStep(step + 1))}>Next</Button>
@@ -142,16 +142,16 @@ function Equipment({ form, set }: { form: RequestForm; set: Setter }) {
   return (
     <div className="space-y-3">
       {items.map((it, idx) => (
-        <div key={idx} className="flex flex-wrap items-end gap-2 border-b pb-2">
+        <div key={idx} className="flex flex-wrap items-end gap-2 border-b border-border pb-2">
           <LabeledInput label="Units" value={String(it.units)} onChange={(v) => update(idx, { units: Number(v) || 0 })} w="w-16" />
           <LabeledInput label="Type" value={it.type} onChange={(v) => update(idx, { type: v })} />
           <LabeledInput label="Make" value={it.make} onChange={(v) => update(idx, { make: v })} />
           <LabeledInput label="Model" value={it.model} onChange={(v) => update(idx, { model: v })} />
           <LabeledInput label="Cost" value={it.cost} onChange={(v) => update(idx, { cost: v })} w="w-28" />
-          <button className="text-sm text-red-600" onClick={() => remove(idx)}>Remove</button>
+          <button className="text-sm text-red-600 dark:text-red-400" onClick={() => remove(idx)}>Remove</button>
         </div>
       ))}
-      <button className="text-sm text-brand-blue" onClick={add}>+ Add line item</button>
+      <button className="text-sm text-accent" onClick={add}>+ Add line item</button>
       <div className="text-right font-semibold">Equipment total: ${equipmentTotal(items).toLocaleString()}</div>
     </div>
   )
@@ -161,7 +161,7 @@ function LabeledInput({ label, value, onChange, w = 'w-40' }:
   { label: string; value: string; onChange: (v: string) => void; w?: string }) {
   return (
     <div className={`space-y-1 ${w}`}>
-      <label className="text-xs text-slate-500">{label}</label>
+      <label className="text-xs text-muted">{label}</label>
       <Input value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   )
@@ -178,7 +178,7 @@ function Economic({ form, set }: { form: RequestForm; set: Setter }) {
       <LabeledInput label="First-year EBIT" value={form.first_year_ebit} onChange={(v) => set('first_year_ebit', v)} w="" />
       <LabeledInput label="Annual savings" value={form.annual_savings} onChange={(v) => set('annual_savings', v)} w="" />
       <div className="space-y-1">
-        <label className="text-xs text-slate-500">Payback (years) — auto: {autoPayback || '—'}</label>
+        <label className="text-xs text-muted">Payback (years) — auto: {autoPayback || '—'}</label>
         <Input value={form.payback_years} placeholder={autoPayback}
           onChange={(e) => set('payback_years', e.target.value)} />
       </div>
@@ -195,7 +195,7 @@ function Review({ form, onSubmit, pending, error }:
       <p><span className="font-medium">Description:</span> {form.description || '—'}</p>
       <p><span className="font-medium">Equipment lines:</span> {form.equipment_items.length}</p>
       <p><span className="font-medium">Total cost:</span> ${total.toLocaleString()}</p>
-      {error && <p className="text-red-600" role="alert">{error}</p>}
+      {error && <p className="text-red-600 dark:text-red-400" role="alert">{error}</p>}
       <Button disabled={pending} onClick={onSubmit}>Submit for approval</Button>
     </div>
   )

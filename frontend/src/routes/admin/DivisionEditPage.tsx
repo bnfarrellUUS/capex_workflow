@@ -20,10 +20,10 @@ export default function DivisionEditPage() {
   })
   const error = mutation.error instanceof ApiError ? mutation.error.message : mutation.error ? 'Failed.' : null
 
-  if (!division) return <p className="text-sm text-slate-500">Loading…</p>
+  if (!division) return <p className="text-sm text-muted">Loading…</p>
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-brand-navy">Edit division: {division.number}</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-fg">Edit division: {division.number}</h1>
       <DivisionForm approvers={approvers} division={division} pending={mutation.isPending} error={error}
         onSubmit={(body) => mutation.mutate(body)} />
     </div>
