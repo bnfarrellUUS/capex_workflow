@@ -222,8 +222,10 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
   `RequestsListPage` (+ shared `RequestsTable`), `NewRequestPage` (creates a
   draft then redirects to the wizard), `WizardPage` (6-step request wizard:
-  Basic Info, Description, Effect on Ops, Equipment, Economic, Review — step
-  tabs are clickable and save the draft before jumping), `RequestDetailPage`,
+  Basic Info, Description, Effect on Ops, Equipment, Economic, Review — styled
+  as an email-look brand card: navy header band with Logo, numbered stepper
+  [✓ done / accent active], footer action bar; stepper clicks save the draft
+  before jumping), `RequestDetailPage`,
   `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds,
   Email Templates + forms). The Email Templates editor uses `components/ui/
   QuillEditor` (Quill 2.x on a ref) with a placeholders panel and a sandboxed
