@@ -139,8 +139,15 @@ build`; there is no live dev server.)
   `counter_service` (request numbers `CX000001…`), `notify` (writes
   `NotificationLog`, renders emails via templates), `email_template_service`
   (four editable email templates: defaults, tokens, render, three-tier reset),
-  `email_frame` (brand HTML wrapper), `email_outlook` (Outlook COM sender),
-  `security`, `errors` (`ServiceError(msg, status)`).
+  `email_frame` (brand HTML wrapper; the rounded chrome — header band, CTA
+  buttons, bottom strip — is baked into `assets/*.png` because classic
+  Outlook's Word engine can't round CSS corners and mangles VML on send),
+  `email_outlook` (Outlook COM sender; attaches referenced `cid:capexflow-*`
+  assets), `security`, `errors` (`ServiceError(msg, status)`).
+  **Email gotchas:** editable template bodies must stay Quill-round-trippable
+  (no tables/bgcolor/VML — Quill strips them); preview HTML must equal sent
+  HTML (test-pinned); verify email changes against a real Outlook render, not
+  just the browser.
 - `schemas/request.py` — Pydantic v2 input models. **Important:** the PATCH
   route builds `RequestDraft(**json).model_dump(exclude_unset=True)`, so a field
   absent from `RequestDraft` is silently dropped even if the model/serializer

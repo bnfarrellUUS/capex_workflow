@@ -44,10 +44,17 @@ The four email types:
 
 ## Branding & the locked frame
 
-*(Amended 2026-07-09 after the first Outlook render: the layout is table-based —
-Outlook's Word engine ignores div layout/`max-width`/padding-on-`<a>` — and the
-header now embeds the Capital-Cycle logo mark as a CID-attached PNG, per user
-request.)*
+*(Amended 2026-07-09 after iterating against real Outlook renders: the layout
+is table-based — Outlook's Word engine ignores div layout/`max-width`/
+padding-on-`<a>` — and the **rounded chrome is baked into PNG images**
+(`backend/app/assets/email_header.png`, `email_bottom.png`, one
+`email_btn_*.png` per type) because the Word engine cannot draw rounded
+corners from CSS and mangles VML on send. The sender attaches every referenced
+asset by Content-ID (`capexflow-<name>`); the preview inlines the same PNGs as
+data-URIs — a test pins preview HTML == sent HTML. Editable bodies must be
+Quill-round-trippable (no tables/bgcolor/VML): Quill strips presentational
+markup, which once turned the CTA into invisible white-on-white text — hence
+the CTA button lives in the locked frame, one pre-rendered image per type.)*
 
 Emails become **HTML** (sent via Outlook `.HTMLBody`). A code-defined,
 **table-based** HTML shell wraps the admin's body content:

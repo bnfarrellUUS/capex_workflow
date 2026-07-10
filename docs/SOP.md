@@ -252,7 +252,12 @@ Tokens are replaced with real values when the email is sent.
 Every email is wrapped in a fixed **brand frame** (navy header with the
 Capital-Cycle logo mark, "United Uptime Services / CAPEX Flow", centered white
 card, brand colors) so all four stay on-brand, and the editor shows the same
-frame around the body while you type. Buttons:
+frame around the body while you type. The rounded header, the action button,
+and the card's bottom edge are **inline images** (classic Outlook cannot draw
+rounded corners from CSS), attached automatically to each email; the in-app
+Preview shows the exact same HTML and images as the sent email. Recipients
+whose mail client blocks pictures see the text alternative until they allow
+images. Buttons:
 **Save** (update the live template), **Save as Default** (capture the current
 version as your baseline), **Preview** (see it rendered with sample data), and
 **Reset to default** (revert to your saved baseline, or the shipped default if
