@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import timedelta
 
 
 class BaseConfig:
@@ -8,6 +9,11 @@ class BaseConfig:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = False  # overridden in prod
+    # Flask-Login remember-me cookie (login_user(remember=True)): keeps users
+    # signed in across browser restarts so email deep links don't force a login.
+    REMEMBER_COOKIE_DURATION = timedelta(days=30)
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_SECURE = False  # overridden in prod
     WTF_CSRF_TIME_LIMIT = None
     UPLOAD_ROOT = os.environ.get("UPLOAD_ROOT")  # None -> instance/uploads
 
@@ -45,3 +51,4 @@ class ProdConfig(BaseConfig):
     # (dev/test); deployment must set DATABASE_URL.
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
     SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True

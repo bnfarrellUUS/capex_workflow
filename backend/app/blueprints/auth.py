@@ -28,7 +28,9 @@ def login():
     result = authenticate(data.get("username", ""), data.get("password", ""))
     if not result.ok:
         return jsonify(error=result.error), 401
-    login_user(result.user)
+    # remember=True issues a persistent cookie so email deep links still work
+    # after the browser session ends (lifetime: REMEMBER_COOKIE_DURATION).
+    login_user(result.user, remember=True)
     return jsonify(_user_json(result.user))
 
 

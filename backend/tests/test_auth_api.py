@@ -28,6 +28,15 @@ def test_login_success_then_me(client, app):
     assert me.get_json()["roles"] == ["REQUESTOR"]
 
 
+def test_login_sets_remember_cookie(client, app):
+    # Email deep links open a fresh browser session; without a remember-me
+    # cookie the user is forced to log in on every click.
+    _seed_user()
+    r = client.post("/api/auth/login", json={"username": "jdoe", "password": "secret123"})
+    cookies = r.headers.getlist("Set-Cookie")
+    assert any(c.startswith("remember_token=") for c in cookies), cookies
+
+
 def test_login_bad_credentials(client, app):
     _seed_user()
     r = client.post("/api/auth/login", json={"username": "jdoe", "password": "wrong"})

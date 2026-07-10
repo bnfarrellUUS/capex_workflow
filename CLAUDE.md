@@ -75,8 +75,9 @@ search capital-expenditure (CAPEX) requests. Product brand name: **CAPEX Flow**
 ## Stack
 
 - **backend/** — Flask API (Python 3.14), SQLAlchemy 2.0 (typed `Mapped`),
-  Flask-Login session auth + CSRF, Pydantic v2 request schemas, Alembic
-  migrations. **SQLite** in dev (`backend/instance/capex_dev.db`), **Azure SQL
+  Flask-Login session auth + CSRF (login sets a 30-day remember-me cookie so
+  email deep links survive browser restarts; `REMEMBER_COOKIE_*` in config),
+  Pydantic v2 request schemas, Alembic migrations. **SQLite** in dev (`backend/instance/capex_dev.db`), **Azure SQL
   Server** in prod.
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
   Query 5, Tailwind CSS v4, `lucide-react` icons. **Single-server:** the SPA is
@@ -215,6 +216,10 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
 
 - `main.tsx` (query client, 401 → redirect to /login), `App.tsx` (routes),
   `index.css` (Tailwind v4 + design tokens + dark variant).
+  `auth/loginRedirect.ts` — deep-link preservation: unauthenticated visits
+  redirect to `/login?next=<path>` (set by `ProtectedLayout` and the 401
+  handler in `main.tsx`); `LoginPage` navigates to the sanitized `next`
+  (same-app absolute paths only) after sign-in.
 - `components/AppShell.tsx` — navy grouped sidebar (icons, active pill) + header
   (theme toggle, Sign Out). `components/ui/` — `Button` (variants
   primary/secondary/ghost), `Input`, `Select`, `PasswordInput` (eye toggle),

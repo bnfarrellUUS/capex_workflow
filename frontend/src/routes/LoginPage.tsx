@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { login } from '../api/auth'
+import { safeNext } from '../auth/loginRedirect'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -12,13 +13,14 @@ export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const qc = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: () => login(username, password),
     onSuccess: (user) => {
       qc.setQueryData(['me'], user)
-      navigate('/', { replace: true })
+      navigate(safeNext(searchParams.get('next')), { replace: true })
     },
   })
 
