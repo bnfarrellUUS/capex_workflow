@@ -35,18 +35,21 @@ def test_frame_logo_defaults_to_cid_and_accepts_override():
 def test_frame_is_table_based_for_outlook():
     # Outlook's Word engine needs table structure, not divs, for the card layout.
     html = email_frame.wrap("<p>x</p>")
-    assert 'width="600"' in html
+    assert 'width="640"' in html
     assert 'bgcolor="#0B2A4A"' in html
 
 
-def test_frame_button_renders_vml_and_fallback():
+def test_frame_button_is_single_plain_markup():
+    # One markup for every client. No VML: Outlook re-processes HTMLBody
+    # through Word on send, which mangled VML and truncated the label.
     html = email_frame.wrap("<p>x</p>", button_label="Review & approve",
                             button_href="http://x/r/1")
-    assert "v:roundrect" in html                       # rounded in Outlook
-    assert html.count("Review &amp; approve") == 2     # VML + <a> fallback
+    assert html.count("Review &amp; approve") == 1
+    assert 'bgcolor="#2563EB"' in html                 # color+padding on the td
     assert 'href="http://x/r/1"' in html
+    assert "roundrect" not in html
     # no button when not configured
-    assert "v:roundrect" not in email_frame.wrap("<p>x</p>")
+    assert 'bgcolor="#2563EB"' not in email_frame.wrap("<p>x</p>")
 
 
 from app.services import email_template_service as ets
@@ -118,6 +121,16 @@ def test_preview_substitutes_sample_data_and_frames(app):
     # the browser preview inlines the logo (cid: is Outlook-only)
     assert "data:image/png;base64," in out["html"]
     assert "cid:" not in out["html"]
+
+
+def test_preview_and_sent_email_share_the_same_html(app):
+    # The in-app preview must show exactly what gets sent. Only the logo
+    # reference differs: cid: for Outlook, an inline data-URI for the browser.
+    ctx = ets.sample_context("ASSIGNED")
+    tmpl = ets.get("ASSIGNED")
+    sent = ets.render("ASSIGNED", ctx)["html"]
+    prev = ets.preview("ASSIGNED", tmpl["subject"], tmpl["body_html"])["html"]
+    assert prev.replace(ets._logo_data_uri(), f"cid:{email_frame.LOGO_CID}") == sent
 
 
 def test_render_escapes_token_values_in_body(app):

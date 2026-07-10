@@ -76,7 +76,7 @@ export default function EmailTemplateEditor() {
         {/* Visual replica of the email frame so WYSIWYG editing matches what is
             sent: navy header + logo above the editable body, footer below. */}
         <div className="rounded-xl p-6" style={{ background: '#EEF3FB' }}>
-          <div className="email-editor mx-auto max-w-[600px] overflow-hidden rounded-xl border bg-white"
+          <div className="email-editor mx-auto max-w-[640px] overflow-hidden rounded-xl border bg-white"
             style={{ borderColor: '#E2E8F0' }}>
             <div className="flex items-center gap-3.5 px-7 py-5" style={{ background: '#0B2A4A' }}>
               <Logo size={40} />

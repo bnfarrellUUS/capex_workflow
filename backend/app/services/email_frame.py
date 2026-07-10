@@ -23,29 +23,20 @@ LOGO_CID = "capexflow-logo"  # Content-ID the Outlook sender attaches the logo u
 
 
 def _button(label, href):
-    """Locked CTA button below the editable body. Outlook desktop can't round
-    a CSS button (Word engine), so it gets a VML roundrect; every other client
-    gets a styled <a>. Lives in the frame, never inside Quill-editable HTML."""
+    """Locked CTA button below the editable body. One markup for every client:
+    color + padding live on the <td> (Outlook's Word engine ignores padding on
+    <a>), border-radius rounds it everywhere except Outlook desktop, which
+    cannot draw rounded corners. (A VML roundrect was tried and abandoned —
+    Outlook re-processes HTMLBody through Word on send, which mangles VML and
+    truncated the label.) Lives in the frame, never inside Quill-editable HTML."""
     label_esc = _html.escape(label)
     href_esc = _html.escape(href, quote=True)
-    width = 44 + round(8.5 * len(label))  # VML needs a fixed width
     return (
-        '<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
-        '<td style="padding:20px 0 4px;">'
-        "<!--[if mso]>"
-        '<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" '
-        'xmlns:w="urn:schemas-microsoft-com:office:word" '
-        f'href="{href_esc}" style="height:44px;v-text-anchor:middle;'
-        f'width:{width}px;" arcsize="18%" fillcolor="{BLUE}" stroke="f">'
-        "<w:anchorlock/>"
-        f'<center style="color:#ffffff;font-family:{FONT};font-size:15px;'
-        f'font-weight:bold;">{label_esc}</center></v:roundrect>'
-        "<![endif]-->"
-        "<!--[if !mso]><!-->"
-        f'<a href="{href_esc}" style="display:inline-block;background:{BLUE};'
-        f"border-radius:8px;padding:12px 22px;font:bold 15px {FONT};"
-        f'color:#ffffff;text-decoration:none;">{label_esc}</a>'
-        "<!--<![endif]-->"
+        '<table role="presentation" cellpadding="0" cellspacing="0" '
+        'style="margin:20px 0 4px;"><tr>'
+        f'<td bgcolor="{BLUE}" style="border-radius:8px;padding:12px 22px;">'
+        f'<a href="{href_esc}" style="font:bold 15px {FONT};color:#ffffff;'
+        f'text-decoration:none;">{label_esc}</a>'
         "</td></tr></table>"
     )
 
@@ -55,7 +46,7 @@ def wrap(body_html, *, redirect_note=None, logo_src=f"cid:{LOGO_CID}",
     banner = ""
     if redirect_note:
         banner = (
-            '<table role="presentation" width="600" align="center" cellpadding="0" '
+            '<table role="presentation" width="640" align="center" cellpadding="0" '
             'cellspacing="0" style="margin:0 auto 12px;"><tr>'
             '<td bgcolor="#FEF3C7" style="padding:10px 16px;border-radius:8px;'
             f'font:13px {FONT};color:#92400E;">{redirect_note}</td>'
@@ -65,7 +56,7 @@ def wrap(body_html, *, redirect_note=None, logo_src=f"cid:{LOGO_CID}",
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
         'bgcolor="#EEF3FB"><tr><td align="center" style="padding:24px;">'
         f"{banner}"
-        '<table role="presentation" width="600" cellpadding="0" cellspacing="0" '
+        '<table role="presentation" width="640" cellpadding="0" cellspacing="0" '
         'bgcolor="#ffffff" style="border:1px solid #E2E8F0;border-radius:12px;">'
         # header band: logo mark + wordmark
         f'<tr><td bgcolor="{NAVY}" style="padding:20px 28px;'
