@@ -265,10 +265,13 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   (Dashboard=`cycle`, Requests=`ascent`, Admin=`check`, Account=`uptime`).
   Secondary edit forms (User/Division forms, EmailTemplateEditor) keep plain
   headings.
-- **Brand (`brand/brand_asset.pdf`, "UUS CAPEX Flow"):** palette navy `#0B2A4A`,
-  blue `#2563EB`, sky `#93BBF5`. Logo mark = direction **1d "Capital Cycle"**
-  (`components/Logo.tsx` + `public/favicon.svg`). No IBM Plex typeface (default
-  system font). The look-and-feel targets the "ARIA" reference dashboard.
+- **Brand (`brand/`, "UUS CAPEX Flow"):** `brand_asset.pdf` plus
+  `UUS CAPEX Flow - Logo.dc.html` (the four logo-direction mockups; the old
+  ARIA placeholder assets were removed once these landed). Palette navy
+  `#0B2A4A`, blue `#2563EB`, sky `#93BBF5`. Logo mark = direction **1d
+  "Capital Cycle"** (`components/Logo.tsx` + `public/favicon.svg`). No IBM
+  Plex typeface (default system font). The look-and-feel targets the "ARIA"
+  reference dashboard.
 
 ## Conventions & gotchas
 
