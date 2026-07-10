@@ -192,7 +192,9 @@ several).
 
 Status flow: `DRAFT` → `PENDING_L1` → `PENDING_L2` → `PENDING_L3` → `APPROVED`,
 with `REJECTED` as a side state (a rejected request can be resubmitted by its
-owner). The number of levels required (`required_levels`) is derived from
+owner). Owners can delete their own drafts (`DELETE /api/requests/<id>`,
+DRAFT-only; removes stored attachment files, children cascade) — the red
+"Delete draft" action on the request detail page. The number of levels required (`required_levels`) is derived from
 `total_cost` vs the `ApprovalThreshold` caps. Each level has a **pool** of
 approvers (L1 from the request's division, L2/L3 from the threshold rows), each
 mapped through their out-of-office delegate; **any one** eligible approver may
@@ -249,6 +251,13 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   these tokens over hard-coded `slate-*`. Theme persists in
   `localStorage['capex-theme']`; an inline script in `index.html` applies it
   before render to avoid a flash.
+- **Page pattern:** every main page wraps its content in **one `BrandCard`**
+  (email-look card: navy `#0B2A4A` header band + brand mark + white title +
+  sky `#93BBF5` subtitle; optional `actions`/`subheader`/`footer` slots).
+  New pages should follow this and pick the section's `mark` variant
+  (Dashboard=`cycle`, Requests=`ascent`, Admin=`check`, Account=`uptime`).
+  Secondary edit forms (User/Division forms, EmailTemplateEditor) keep plain
+  headings.
 - **Brand (`brand/brand_asset.pdf`, "UUS CAPEX Flow"):** palette navy `#0B2A4A`,
   blue `#2563EB`, sky `#93BBF5`. Logo mark = direction **1d "Capital Cycle"**
   (`components/Logo.tsx` + `public/favicon.svg`). No IBM Plex typeface (default
