@@ -9,15 +9,29 @@ with an SMTP or Microsoft Graph backend — services/notify.py is the only calle
 
 
 import os
+import re
 
 from app.services import email_frame
 
-_LOGO_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "assets", "email_logo.png"))
+_ASSETS_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "assets"))
 
 # MAPI property for an attachment's Content-ID (PR_ATTACH_CONTENT_ID), so the
-# HTML can reference the inline logo as <img src="cid:...">.
+# HTML can reference inline images as <img src="cid:...">.
 _PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+
+_CID_RE = re.compile(rf"cid:{email_frame.CID_PREFIX}([a-z0-9-]+)")
+
+
+def _attach_inline_assets(mail, html):
+    """Attach every brand asset the HTML references, keyed by Content-ID."""
+    for name in sorted(set(_CID_RE.findall(html))):
+        filename = email_frame.ASSET_FILES.get(name)
+        if not filename:
+            continue
+        att = mail.Attachments.Add(os.path.join(_ASSETS_DIR, filename))
+        att.PropertyAccessor.SetProperty(
+            _PR_ATTACH_CONTENT_ID, f"{email_frame.CID_PREFIX}{name}")
 
 
 def send(to, subject, body, html=None):
@@ -33,10 +47,7 @@ def send(to, subject, body, html=None):
         mail.To = to
         mail.Subject = subject
         if html is not None:
-            if f"cid:{email_frame.LOGO_CID}" in html:
-                att = mail.Attachments.Add(_LOGO_PATH)
-                att.PropertyAccessor.SetProperty(
-                    _PR_ATTACH_CONTENT_ID, email_frame.LOGO_CID)
+            _attach_inline_assets(mail, html)
             mail.HTMLBody = html
         else:
             mail.Body = body

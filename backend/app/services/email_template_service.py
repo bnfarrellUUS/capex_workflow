@@ -42,12 +42,7 @@ _FACTS = (
 )
 
 # Label of the locked CTA button the frame renders below the body.
-BUTTON_LABELS = {
-    "ASSIGNED": "Review & approve",
-    "APPROVED": "View the request",
-    "REJECTED": "Open the request",
-    "FINANCE_READY": "Complete the finance section",
-}
+BUTTON_LABELS = email_frame.BUTTON_LABELS
 
 DEFAULTS = {
     "ASSIGNED": {
@@ -168,20 +163,21 @@ def _substitute(text, context, escape=False):
     return text
 
 
-_logo_data_uri_cache = None
+_asset_data_uris = {}
 
 
-def _logo_data_uri():
-    # The browser preview can't resolve the Outlook cid: reference, so inline
-    # the same PNG the sender attaches.
-    global _logo_data_uri_cache
-    if _logo_data_uri_cache is None:
+def _asset_data_uri(name):
+    # The browser preview can't resolve Outlook's cid: references, so inline
+    # the same PNGs the sender attaches.
+    if name not in _asset_data_uris:
         import base64
         import os
-        path = os.path.join(os.path.dirname(__file__), "..", "assets", "email_logo.png")
+        path = os.path.join(os.path.dirname(__file__), "..", "assets",
+                            email_frame.ASSET_FILES[name])
         with open(path, "rb") as f:
-            _logo_data_uri_cache = "data:image/png;base64," + base64.b64encode(f.read()).decode()
-    return _logo_data_uri_cache
+            _asset_data_uris[name] = ("data:image/png;base64,"
+                                      + base64.b64encode(f.read()).decode())
+    return _asset_data_uris[name]
 
 
 def preview(type_, subject, body_html):
@@ -190,9 +186,8 @@ def preview(type_, subject, body_html):
     body = _polish(_substitute(body_html, ctx, escape=True))
     return {
         "subject": _substitute(subject, ctx),
-        "html": email_frame.wrap(body, logo_src=_logo_data_uri(),
-                                 button_label=BUTTON_LABELS[type_],
-                                 button_href=ctx["link"]),
+        "html": email_frame.wrap(body, button_type=type_, button_href=ctx["link"],
+                                 asset_src=_asset_data_uri),
     }
 
 
@@ -203,7 +198,7 @@ def render(type_, context, *, redirect_note=None):
     return {
         "subject": subject,
         "html": email_frame.wrap(body, redirect_note=redirect_note,
-                                 button_label=BUTTON_LABELS[type_],
+                                 button_type=type_,
                                  button_href=context.get("link")),
         "enabled": tmpl["enabled"],
     }

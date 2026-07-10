@@ -15,8 +15,9 @@ def test_email_template_round_trips(app):
 def test_frame_wraps_body_and_shows_brand():
     html = email_frame.wrap("<p>Hello</p>")
     assert "<p>Hello</p>" in html
-    assert "United Uptime Services" in html
-    assert "#0B2A4A" in html          # navy header
+    assert "United Uptime Services" in html            # header image alt text
+    assert 'src="cid:capexflow-header"' in html        # rounded navy band image
+    assert 'src="cid:capexflow-bottom"' in html        # rounded closing strip
     assert "Intended recipient" not in html
 
 
@@ -25,10 +26,12 @@ def test_frame_redirect_note_banner():
     assert "Intended recipient: a@x.com" in html
 
 
-def test_frame_logo_defaults_to_cid_and_accepts_override():
-    assert f'src="cid:{email_frame.LOGO_CID}"' in email_frame.wrap("<p>x</p>")
-    html = email_frame.wrap("<p>x</p>", logo_src="data:image/png;base64,AAA")
-    assert 'src="data:image/png;base64,AAA"' in html
+def test_frame_asset_src_override_replaces_cids():
+    html = email_frame.wrap("<p>x</p>", button_type="ASSIGNED",
+                            button_href="http://x/r/1",
+                            asset_src=lambda name: f"data:{name}")
+    assert 'src="data:header"' in html
+    assert 'src="data:btn-assigned"' in html
     assert "cid:" not in html
 
 
@@ -36,20 +39,28 @@ def test_frame_is_table_based_for_outlook():
     # Outlook's Word engine needs table structure, not divs, for the card layout.
     html = email_frame.wrap("<p>x</p>")
     assert 'width="640"' in html
-    assert 'bgcolor="#0B2A4A"' in html
+    assert 'bgcolor="#ffffff"' in html
 
 
-def test_frame_button_is_single_plain_markup():
-    # One markup for every client. No VML: Outlook re-processes HTMLBody
-    # through Word on send, which mangled VML and truncated the label.
-    html = email_frame.wrap("<p>x</p>", button_label="Review & approve",
+def test_frame_button_is_an_image_link():
+    # Rounded corners are baked into PNGs — the only rounding classic
+    # Outlook (Word engine) can display. CSS radius and VML both failed.
+    html = email_frame.wrap("<p>x</p>", button_type="ASSIGNED",
                             button_href="http://x/r/1")
-    assert html.count("Review &amp; approve") == 1
-    assert 'bgcolor="#2563EB"' in html                 # color+padding on the td
+    assert 'src="cid:capexflow-btn-assigned"' in html
+    assert 'alt="Review &amp; approve"' in html
     assert 'href="http://x/r/1"' in html
-    assert "roundrect" not in html
     # no button when not configured
-    assert 'bgcolor="#2563EB"' not in email_frame.wrap("<p>x</p>")
+    assert "btn-assigned" not in email_frame.wrap("<p>x</p>")
+
+
+def test_every_button_asset_exists_with_recorded_size():
+    import os
+    assets = os.path.join(os.path.dirname(email_frame.__file__), "..", "assets")
+    for type_, (name, w, h, label) in email_frame.BUTTONS.items():
+        path = os.path.join(assets, email_frame.ASSET_FILES[name])
+        assert os.path.isfile(path), f"missing asset for {type_}: {path}"
+        assert w > 0 and h == 44 and label
 
 
 from app.services import email_template_service as ets
@@ -124,13 +135,16 @@ def test_preview_substitutes_sample_data_and_frames(app):
 
 
 def test_preview_and_sent_email_share_the_same_html(app):
-    # The in-app preview must show exactly what gets sent. Only the logo
-    # reference differs: cid: for Outlook, an inline data-URI for the browser.
+    # The in-app preview must show exactly what gets sent. Only the image
+    # references differ: cid: for Outlook, inline data-URIs for the browser.
     ctx = ets.sample_context("ASSIGNED")
     tmpl = ets.get("ASSIGNED")
     sent = ets.render("ASSIGNED", ctx)["html"]
     prev = ets.preview("ASSIGNED", tmpl["subject"], tmpl["body_html"])["html"]
-    assert prev.replace(ets._logo_data_uri(), f"cid:{email_frame.LOGO_CID}") == sent
+    for name in email_frame.ASSET_FILES:
+        prev = prev.replace(ets._asset_data_uri(name),
+                            f"cid:{email_frame.CID_PREFIX}{name}")
+    assert prev == sent
 
 
 def test_render_escapes_token_values_in_body(app):
