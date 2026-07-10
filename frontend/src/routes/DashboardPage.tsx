@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard } from 'lucide-react'
 import { useMe } from '../auth/useMe'
 import { listRequests, type RequestSummary } from '../api/requests'
 import { StatCard } from '../components/ui/Card'
-import { Card } from '../components/ui/Card'
+import { BrandCard } from '../components/ui/BrandCard'
 import { RequestsTable } from './RequestsListPage'
 
 const PENDING = ['PENDING_L1', 'PENDING_L2', 'PENDING_L3']
@@ -34,15 +33,7 @@ export default function DashboardPage() {
   const myApproved = mine.filter((r) => r.status === 'APPROVED')
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <LayoutDashboard className="text-accent" size={22} />
-        <div>
-          <h1 className="text-2xl font-semibold text-fg">Dashboard</h1>
-          <p className="text-sm text-muted">Welcome, {user?.name}.</p>
-        </div>
-      </div>
-
+    <BrandCard title="Dashboard" subtitle={`Welcome, ${user?.name ?? ''}`}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Pending My Approval"
@@ -59,10 +50,8 @@ export default function DashboardPage() {
         <StatCard label="Approved" value={myApproved.length} sub={`${money(sumCost(myApproved))} total`} />
       </div>
 
-      <Card className="p-5">
-        <h2 className="mb-3 font-semibold text-fg">My Approvals</h2>
-        <RequestsTable rows={approvals} />
-      </Card>
-    </div>
+      <h2 className="mb-3 mt-6 font-semibold text-fg">My Approvals</h2>
+      <RequestsTable rows={approvals} />
+    </BrandCard>
   )
 }

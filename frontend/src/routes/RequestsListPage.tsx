@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ListChecks } from 'lucide-react'
 import { listRequests, type RequestSummary } from '../api/requests'
 import { Select } from '../components/ui/Select'
-import { Card } from '../components/ui/Card'
+import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
 
 const STATUSES = ['', 'DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED', 'REJECTED']
@@ -17,42 +16,37 @@ export default function RequestsListPage() {
     queryFn: () => listRequests({ scope, status: status || undefined }),
   })
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <ListChecks className="text-accent" size={22} />
-        <h1 className="text-2xl font-semibold text-fg">Requests</h1>
+  const filters = (
+    <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface-2 px-7 py-3">
+      <div className="inline-flex rounded-md border border-border bg-surface p-0.5">
+        {(['mine', 'assigned'] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setScope(s)}
+            className={`rounded px-3 py-1 text-sm font-medium transition ${
+              scope === s ? 'bg-accent text-accent-fg' : 'text-muted hover:text-fg'
+            }`}
+          >
+            {s === 'mine' ? 'My Requests' : 'Assigned to me'}
+          </button>
+        ))}
       </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-md border border-border bg-surface p-0.5">
-          {(['mine', 'assigned'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setScope(s)}
-              className={`rounded px-3 py-1 text-sm font-medium transition ${
-                scope === s ? 'bg-accent text-accent-fg' : 'text-muted hover:text-fg'
-              }`}
-            >
-              {s === 'mine' ? 'My Requests' : 'Assigned to me'}
-            </button>
+      <div className="w-48">
+        <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s === '' ? 'All statuses' : s}
+            </option>
           ))}
-        </div>
-        <div className="w-48">
-          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s === '' ? 'All statuses' : s}
-              </option>
-            ))}
-          </Select>
-        </div>
+        </Select>
       </div>
-
-      <Card className="p-5">
-        <RequestsTable rows={rows} />
-      </Card>
     </div>
+  )
+
+  return (
+    <BrandCard title="Requests" subtitle="Capital expenditure requests" subheader={filters}>
+      <RequestsTable rows={rows} />
+    </BrandCard>
   )
 }
 

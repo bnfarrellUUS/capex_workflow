@@ -7,15 +7,11 @@ import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
-import { Logo } from '../components/Logo'
+import { BrandCard } from '../components/ui/BrandCard'
 import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, equipmentTotal } from './wizard/types'
 
 const STEPS = ['Basic Info', 'Description', 'Effect on Ops', 'Equipment', 'Economic', 'Review']
-
-// Brand constants shared with the email frame (navy band, sky subtitle).
-const NAVY = '#0B2A4A'
-const SKY = '#93BBF5'
 
 type Setter = <K extends keyof RequestForm>(k: K, v: RequestForm[K]) => void
 
@@ -55,87 +51,80 @@ export default function WizardPage() {
 
   const set: Setter = (k, v) => { setForm({ ...form, [k]: v }); setSaved(false) }
 
+  const stepper = (
+    <ol className="flex items-center gap-1 overflow-x-auto border-b border-border bg-surface-2 px-7 py-3">
+      {STEPS.map((label, i) => (
+        <li key={label} className="flex min-w-0 items-center gap-1">
+          {i > 0 && <span aria-hidden className="h-px w-4 shrink-0 bg-border sm:w-6" />}
+          <button
+            type="button"
+            disabled={save.isPending}
+            aria-current={i === step ? 'step' : undefined}
+            onClick={() => { if (i !== step) saveThen(() => setStep(i)) }}
+            className="group flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition hover:bg-accent/10 disabled:opacity-60"
+          >
+            <span
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition ${
+                i === step
+                  ? 'bg-accent text-accent-fg ring-2 ring-accent/30'
+                  : i < step
+                    ? 'bg-accent/15 text-accent'
+                    : 'border border-border bg-surface text-muted'
+              }`}
+            >
+              {i < step ? '✓' : i + 1}
+            </span>
+            <span className={`whitespace-nowrap text-xs ${
+              i === step ? 'font-semibold text-fg' : 'text-muted group-hover:text-fg'
+            }`}>
+              {label}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ol>
+  )
+
   return (
     <div className="max-w-3xl">
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-        {/* Navy brand band, mirroring the notification-email header */}
-        <div className="flex items-center gap-3.5 px-7 py-5" style={{ background: NAVY }}>
-          <Logo size={40} />
-          <div>
-            <h1 className="text-xl font-bold text-white">Request {data.number}</h1>
-            <div className="text-[13px] tracking-wide" style={{ color: SKY }}>New Capital Request</div>
-          </div>
-        </div>
-
-        {/* Stepper */}
-        <ol className="flex items-center gap-1 overflow-x-auto border-b border-border bg-surface-2 px-7 py-3">
-          {STEPS.map((label, i) => (
-            <li key={label} className="flex min-w-0 items-center gap-1">
-              {i > 0 && <span aria-hidden className="h-px w-4 shrink-0 bg-border sm:w-6" />}
-              <button
-                type="button"
-                disabled={save.isPending}
-                aria-current={i === step ? 'step' : undefined}
-                onClick={() => { if (i !== step) saveThen(() => setStep(i)) }}
-                className="group flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition hover:bg-accent/10 disabled:opacity-60"
-              >
-                <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition ${
-                    i === step
-                      ? 'bg-accent text-accent-fg ring-2 ring-accent/30'
-                      : i < step
-                        ? 'bg-accent/15 text-accent'
-                        : 'border border-border bg-surface text-muted'
-                  }`}
-                >
-                  {i < step ? '✓' : i + 1}
-                </span>
-                <span className={`whitespace-nowrap text-xs ${
-                  i === step ? 'font-semibold text-fg' : 'text-muted group-hover:text-fg'
-                }`}>
-                  {label}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ol>
-
-        {/* Step content, with the email body's generous padding */}
-        <div className="px-7 py-6">
-          {step === 0 && <BasicInfo form={form} set={set} data={data} divisions={divisions} />}
-          {step === 1 && (
-            <Field label="Brief description & justification">
-              <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
-                value={form.justification} onChange={(e) => set('justification', e.target.value)} />
-            </Field>
-          )}
-          {step === 2 && (
-            <Field label="Effect on operations">
-              <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
-                value={form.effect_on_operations} onChange={(e) => set('effect_on_operations', e.target.value)} />
-            </Field>
-          )}
-          {step === 3 && <Equipment form={form} set={set} />}
-          {step === 4 && <Economic form={form} set={set} />}
-          {step === 5 && <Review form={form}
-            onSubmit={() => saveThen(() => submit.mutate())}
-            pending={submit.isPending || save.isPending} error={submitError} />}
-        </div>
-
-        {/* Footer bar, like the email footer */}
-        <div className="flex items-center gap-3 border-t border-border px-7 py-4">
-          <Button variant="secondary"
-            disabled={step === 0} onClick={() => setStep(step - 1)}>Back</Button>
-          <Button variant="secondary"
-            disabled={save.isPending} onClick={() => save.mutate()}>Save Draft</Button>
-          {saved && !saveError && <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved.</span>}
-          {saveError && <span className="text-sm text-red-600 dark:text-red-400" role="alert">{saveError}</span>}
-          <div className="flex-1" />
-          {step < STEPS.length - 1 && (
-            <Button disabled={save.isPending} onClick={() => saveThen(() => setStep(step + 1))}>Next</Button>
-          )}
-        </div>
-      </div>
+      <BrandCard
+        title={`Request ${data.number}`}
+        subtitle="New Capital Request"
+        subheader={stepper}
+        footer={
+          <>
+            <Button variant="secondary"
+              disabled={step === 0} onClick={() => setStep(step - 1)}>Back</Button>
+            <Button variant="secondary"
+              disabled={save.isPending} onClick={() => save.mutate()}>Save Draft</Button>
+            {saved && !saveError && <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved.</span>}
+            {saveError && <span className="text-sm text-red-600 dark:text-red-400" role="alert">{saveError}</span>}
+            <div className="flex-1" />
+            {step < STEPS.length - 1 && (
+              <Button disabled={save.isPending} onClick={() => saveThen(() => setStep(step + 1))}>Next</Button>
+            )}
+          </>
+        }
+      >
+        {step === 0 && <BasicInfo form={form} set={set} data={data} divisions={divisions} />}
+        {step === 1 && (
+          <Field label="Brief description & justification">
+            <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
+              value={form.justification} onChange={(e) => set('justification', e.target.value)} />
+          </Field>
+        )}
+        {step === 2 && (
+          <Field label="Effect on operations">
+            <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
+              value={form.effect_on_operations} onChange={(e) => set('effect_on_operations', e.target.value)} />
+          </Field>
+        )}
+        {step === 3 && <Equipment form={form} set={set} />}
+        {step === 4 && <Economic form={form} set={set} />}
+        {step === 5 && <Review form={form}
+          onSubmit={() => saveThen(() => submit.mutate())}
+          pending={submit.isPending || save.isPending} error={submitError} />}
+      </BrandCard>
     </div>
   )
 }

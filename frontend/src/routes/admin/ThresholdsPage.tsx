@@ -6,6 +6,7 @@ import { ApiError } from '../../api/client'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { TransferList } from '../../components/ui/TransferList'
+import { BrandCard } from '../../components/ui/BrandCard'
 
 const LABELS: Record<number, string> = {
   1: 'Level 1 (Manager)',
@@ -36,10 +37,8 @@ export default function ThresholdsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="mb-4 text-2xl font-semibold text-fg">Approval Thresholds</h1>
-      <p className="mb-4 text-sm text-muted">
-        A request needs approval up to the highest level whose cap it exceeds. Leave the top level's max empty for "no limit".
-      </p>
+      <BrandCard title="Approval Thresholds"
+        subtitle='Approval goes up to the highest level whose cap the request exceeds — leave the top max empty for "no limit"'>
       <div className="space-y-4">
         {rows.map((r) => (
           <div key={r.level} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
@@ -72,6 +71,7 @@ export default function ThresholdsPage() {
       {error && <p className="mt-4 text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
       {saved && <p className="mt-4 text-sm text-emerald-600 dark:text-emerald-400">Saved.</p>}
       <Button className="mt-4" disabled={mutation.isPending} onClick={() => mutation.mutate()}>Save thresholds</Button>
+      </BrandCard>
     </div>
   )
 }

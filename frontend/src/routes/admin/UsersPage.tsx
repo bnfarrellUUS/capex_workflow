@@ -2,21 +2,18 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listUsers } from '../../api/users'
 import { Button } from '../../components/ui/Button'
-import { Card } from '../../components/ui/Card'
+import { BrandCard } from '../../components/ui/BrandCard'
 
 export default function UsersPage() {
   const { data: users, isLoading } = useQuery({ queryKey: ['users'], queryFn: listUsers })
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-fg">Users</h1>
-        <Link to="/admin/users/new"><Button>Add user</Button></Link>
-      </div>
+    <BrandCard title="Users" subtitle="Accounts, roles & delegates"
+      actions={<Link to="/admin/users/new"><Button>Add user</Button></Link>}
+      bodyClassName="overflow-x-auto px-7 py-6">
       {isLoading ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : (
-        <Card className="overflow-x-auto p-5">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
@@ -37,8 +34,7 @@ export default function UsersPage() {
             ))}
           </tbody>
         </table>
-        </Card>
       )}
-    </div>
+    </BrandCard>
   )
 }

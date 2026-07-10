@@ -5,6 +5,7 @@ import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { PasswordInput } from '../components/ui/PasswordInput'
 import { Select } from '../components/ui/Select'
+import { BrandCard } from '../components/ui/BrandCard'
 
 export default function ProfilePage() {
   const qc = useQueryClient()
@@ -29,12 +30,10 @@ export default function ProfilePage() {
   const pwError = pwMutation.error instanceof ApiError ? pwMutation.error.message : null
 
   return (
-    <div className="max-w-lg space-y-8">
-      <div>
-        <h1 className="mb-4 text-2xl font-semibold text-fg">My Profile</h1>
-        <p className="text-sm text-muted">{profile?.name} — {profile?.email}</p>
-      </div>
-
+    <div className="max-w-xl">
+      <BrandCard title="My Profile"
+        subtitle={profile ? `${profile.name} — ${profile.email}` : ''}
+        bodyClassName="space-y-8 px-7 py-6">
       <section className="space-y-2">
         <h2 className="font-semibold text-fg">Out-of-office delegate</h2>
         <Select value={delegate} onChange={(e) => setDelegateId(e.target.value)}>
@@ -55,6 +54,7 @@ export default function ProfilePage() {
         {pwMsg && <p className="text-sm text-emerald-600 dark:text-emerald-400">{pwMsg}</p>}
         <Button disabled={next.length < 8 || pwMutation.isPending} onClick={() => pwMutation.mutate()}>Change password</Button>
       </section>
+      </BrandCard>
     </div>
   )
 }

@@ -10,7 +10,7 @@ import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { Card } from '../components/ui/Card'
+import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
 
 const PIPELINE = ['DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED']
@@ -47,21 +47,24 @@ export default function RequestDetailPage() {
   const canFinance = me.roles.includes('FINANCE') && req.status === 'APPROVED' && !req.finance_completed
   const hasActions = isAssignee || canEdit || canResubmit || canFinance
 
+  const pipeline = (
+    <ol className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-2 px-7 py-3 text-xs">
+      {PIPELINE.map((s) => (
+        <li key={s} className={`rounded-full px-2.5 py-1 ${s === req.status ? 'bg-accent font-semibold text-accent-fg' : 'bg-surface text-muted'}`}>{s}</li>
+      ))}
+      {req.status === 'REJECTED' && <li className="rounded-full bg-red-600 px-2.5 py-1 font-semibold text-white">REJECTED</li>}
+    </ol>
+  )
+
   return (
-    <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-fg">Request {req.number}</h1>
-        <StatusBadge status={req.status} />
-      </div>
-
-      <Card className="space-y-6 p-6">
-      <ol className="flex flex-wrap gap-2 text-xs">
-        {PIPELINE.map((s) => (
-          <li key={s} className={`rounded px-2 py-1 ${s === req.status ? 'bg-accent text-accent-fg' : 'bg-surface-2 text-muted'}`}>{s}</li>
-        ))}
-        {req.status === 'REJECTED' && <li className="rounded bg-red-600 px-2 py-1 text-white">REJECTED</li>}
-      </ol>
-
+    <div className="max-w-3xl space-y-4">
+      <BrandCard
+        title={`Request ${req.number}`}
+        subtitle={req.division_name ?? 'Capital expenditure request'}
+        actions={<StatusBadge status={req.status} />}
+        subheader={pipeline}
+        bodyClassName="space-y-6 px-7 py-6"
+      >
       <section className="grid grid-cols-2 gap-2 text-sm">
         <div><span className="font-medium">Requestor:</span> {req.requestor_name}</div>
         <div><span className="font-medium">Division:</span> {req.division_name ?? '—'}</div>
@@ -152,7 +155,7 @@ export default function RequestDetailPage() {
           {canFinance && <FinanceForm disabled={busy} onSubmit={(costs) => act(() => completeFinance(id, costs))} />}
         </section>
       )}
-      </Card>
+      </BrandCard>
 
       <button className="text-sm text-muted hover:text-fg" onClick={() => navigate('/')}>← Back to dashboard</button>
     </div>

@@ -2,20 +2,17 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listDivisions } from '../../api/divisions'
 import { Button } from '../../components/ui/Button'
-import { Card } from '../../components/ui/Card'
+import { BrandCard } from '../../components/ui/BrandCard'
 
 export default function DivisionsPage() {
   const { data: divisions, isLoading } = useQuery({ queryKey: ['divisions'], queryFn: listDivisions })
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-fg">Divisions</h1>
-        <Link to="/admin/divisions/new"><Button>Add division</Button></Link>
-      </div>
+    <BrandCard title="Divisions" subtitle="Divisions & their Level-1 approver pools"
+      actions={<Link to="/admin/divisions/new"><Button>Add division</Button></Link>}
+      bodyClassName="overflow-x-auto px-7 py-6">
       {isLoading ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : (
-        <Card className="overflow-x-auto p-5">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
@@ -33,8 +30,7 @@ export default function DivisionsPage() {
             ))}
           </tbody>
         </table>
-        </Card>
       )}
-    </div>
+    </BrandCard>
   )
 }
