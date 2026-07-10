@@ -33,6 +33,13 @@ def get_request(request_id):
     return jsonify(request_service.request_out(req))
 
 
+@bp.delete("/<request_id>")
+@login_required
+def delete_request(request_id):
+    request_service.delete_draft(request_id, current_user)
+    return "", 204
+
+
 @bp.patch("/<request_id>")
 @login_required
 def update_request(request_id):

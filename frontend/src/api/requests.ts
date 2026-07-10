@@ -64,6 +64,9 @@ export function updateDraft(id: string, patch: Record<string, unknown>): Promise
 export function submitRequest(id: string): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/submit`, { method: 'POST' })
 }
+export function deleteRequest(id: string): Promise<void> {
+  return api<void>(`/requests/${id}`, { method: 'DELETE' })
+}
 export function approveRequest(id: string, comment?: string): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/approve`, { method: 'POST', body: { comment } })
 }

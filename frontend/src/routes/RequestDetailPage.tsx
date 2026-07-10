@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getRequest, approveRequest, rejectRequest, resubmitRequest, completeFinance,
-  uploadAttachment, deleteAttachment, attachmentUrl,
+  deleteRequest, uploadAttachment, deleteAttachment, attachmentUrl,
   type CapexRequestData,
 } from '../api/requests'
 import { useMe } from '../auth/useMe'
@@ -151,6 +151,23 @@ export default function RequestDetailPage() {
             </div>
           )}
           {canEdit && <Link className="block text-accent hover:underline" to={`/requests/${id}/edit`}>Edit draft</Link>}
+          {isOwner && req.status === 'DRAFT' && (
+            <Button className="bg-red-600 text-white hover:bg-red-700" disabled={busy}
+              onClick={async () => {
+                if (!window.confirm(`Delete draft ${req.number}? This cannot be undone.`)) return
+                setErr(null)
+                setBusy(true)
+                try {
+                  await deleteRequest(id)
+                  navigate('/requests', { replace: true })
+                } catch (e) {
+                  setErr(e instanceof ApiError ? e.message : 'Delete failed.')
+                  setBusy(false)
+                }
+              }}>
+              Delete draft
+            </Button>
+          )}
           {canResubmit && <Button disabled={busy} onClick={() => act(() => resubmitRequest(id))}>Resubmit</Button>}
           {canFinance && <FinanceForm disabled={busy} onSubmit={(costs) => act(() => completeFinance(id, costs))} />}
         </section>

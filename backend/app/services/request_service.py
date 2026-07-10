@@ -105,6 +105,22 @@ def update_draft(request_id, viewer, payload):
     return req
 
 
+def delete_draft(request_id, viewer):
+    req = db.session.get(CapexRequest, request_id)
+    if req is None:
+        raise ServiceError("Request not found.", 404)
+    if req.requestor_id != viewer.id:
+        raise ServiceError("You can only delete your own requests.", 403)
+    if req.status != "DRAFT":
+        raise ServiceError("Only drafts can be deleted.")
+    from app.services.storage import get_storage
+    storage = get_storage()
+    for att in req.attachments:
+        storage.delete(att.storage_path)
+    db.session.delete(req)  # equipment/attachments/actions cascade
+    db.session.commit()
+
+
 def request_out(req):
     from app.services import threshold_service, workflow_service
     approvers = []
