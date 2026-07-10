@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { listRequests, type RequestSummary } from '../api/requests'
 import { Select } from '../components/ui/Select'
 import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
+import { sortRequests, type SortDir, type SortKey } from './requestsSort'
 
 const STATUSES = ['', 'DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED', 'REJECTED']
 
@@ -50,22 +52,50 @@ export default function RequestsListPage() {
   )
 }
 
+const COLUMNS: { key: SortKey; label: string; right?: boolean }[] = [
+  { key: 'number', label: 'Number' },
+  { key: 'status', label: 'Status' },
+  { key: 'division_name', label: 'Division' },
+  { key: 'requestor_name', label: 'Requestor' },
+  { key: 'total_cost', label: 'Total', right: true },
+]
+
 export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null)
   if (rows.length === 0) return <p className="text-sm text-muted">No requests.</p>
+  const sorted = sort ? sortRequests(rows, sort.key, sort.dir) : rows
+
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => ({ key, dir: s?.key === key && s.dir === 'asc' ? 'desc' : 'asc' }))
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
-            <th className="py-2 pr-4 font-semibold">Number</th>
-            <th className="py-2 pr-4 font-semibold">Status</th>
-            <th className="py-2 pr-4 font-semibold">Division</th>
-            <th className="py-2 pr-4 font-semibold">Requestor</th>
-            <th className="py-2 pr-4 text-right font-semibold">Total</th>
+            {COLUMNS.map((col) => (
+              <th
+                key={col.key}
+                aria-sort={sort?.key === col.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
+                className={`py-2 pr-4 font-semibold ${col.right ? 'text-right' : ''}`}
+              >
+                <button
+                  onClick={() => toggleSort(col.key)}
+                  className="group inline-flex items-center gap-1 uppercase tracking-wide hover:text-fg"
+                >
+                  {col.label}
+                  {sort?.key === col.key ? (
+                    sort.dir === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronUp className="h-3.5 w-3.5 opacity-0 group-hover:opacity-40" />
+                  )}
+                </button>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {sorted.map((r) => (
             <tr key={r.id} className="border-b border-border last:border-0 hover:bg-surface-2">
               <td className="py-2.5 pr-4">
                 <Link className="font-medium text-accent hover:underline" to={`/requests/${r.id}`}>

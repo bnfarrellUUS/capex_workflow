@@ -232,7 +232,9 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   (all four brand marks; BrandCard `mark` prop maps sections: Dashboard=cycle,
   Requests=ascent, Admin=check, Profile=uptime), `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
-  `RequestsListPage` (+ shared `RequestsTable`), `NewRequestPage` (creates a
+  `RequestsListPage` (+ shared `RequestsTable`: sortable column headers,
+  client-side, comparators in `routes/requestsSort.ts` — status sorts in
+  workflow order, blanks last), `NewRequestPage` (creates a
   draft then redirects to the wizard), `WizardPage` (6-step request wizard:
   Basic Info, Description, Effect on Ops, Equipment, Economic, Review — styled
   as an email-look brand card: navy header band with Logo, numbered stepper
