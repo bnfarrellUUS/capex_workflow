@@ -61,6 +61,7 @@ export default function RequestDetailPage() {
       <BrandCard
         title={`Request ${req.number}`}
         subtitle={req.division_name ?? 'Capital expenditure request'}
+        mark="ascent"
         actions={<StatusBadge status={req.status} />}
         subheader={pipeline}
         bodyClassName="space-y-6 px-7 py-6"

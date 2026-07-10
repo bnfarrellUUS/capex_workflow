@@ -218,10 +218,12 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   primary/secondary/ghost), `Input`, `Select`, `PasswordInput` (eye toggle),
   `Card`/`StatCard`, `Badge`/`StatusBadge`, `TransferList` (dual-listbox:
   Available | Add»/«Remove | Selected + ▲▼ reorder), `BrandCard` (email-look
-  page card: navy header band + Logo + title/sky subtitle, optional
+  page card: navy header band + brand mark + title/sky subtitle, optional
   actions/subheader/footer slots — one per page; used by Dashboard, Requests
   list/detail, Wizard, Profile, and the admin list pages), `QuillEditor`.
-  `components/Logo.tsx`, `ThemeToggle.tsx`, `theme.ts`.
+  `components/Logo.tsx` (primary Capital-Cycle mark), `components/BrandMark.tsx`
+  (all four brand marks; BrandCard `mark` prop maps sections: Dashboard=cycle,
+  Requests=ascent, Admin=check, Profile=uptime), `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
   `RequestsListPage` (+ shared `RequestsTable`), `NewRequestPage` (creates a
   draft then redirects to the wizard), `WizardPage` (6-step request wizard:

@@ -44,7 +44,7 @@ export default function RequestsListPage() {
   )
 
   return (
-    <BrandCard title="Requests" subtitle="Capital expenditure requests" subheader={filters}>
+    <BrandCard title="Requests" subtitle="Capital expenditure requests" mark="ascent" subheader={filters}>
       <RequestsTable rows={rows} />
     </BrandCard>
   )

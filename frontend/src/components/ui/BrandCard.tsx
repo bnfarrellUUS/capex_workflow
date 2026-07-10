@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Logo } from '../Logo'
+import { BrandMark, type BrandMarkVariant } from '../BrandMark'
 
 // Brand constants shared with the email frame (navy band, sky subtitle).
 const NAVY = '#0B2A4A'
@@ -17,6 +17,7 @@ export function BrandCard({
   actions,
   subheader,
   footer,
+  mark = 'cycle',
   bodyClassName = 'px-7 py-6',
   className = '',
   children,
@@ -29,6 +30,8 @@ export function BrandCard({
   subheader?: ReactNode
   /** Footer action bar content; wrapper provides flex + gap + padding. */
   footer?: ReactNode
+  /** Which brand logo mark to show — one per app section. */
+  mark?: BrandMarkVariant
   bodyClassName?: string
   className?: string
   children: ReactNode
@@ -36,7 +39,7 @@ export function BrandCard({
   return (
     <div className={`overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ${className}`}>
       <div className="flex items-center gap-3.5 px-7 py-5" style={{ background: NAVY }}>
-        <Logo size={40} />
+        <BrandMark variant={mark} size={40} />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-bold text-white">{title}</h1>
           {subtitle && (

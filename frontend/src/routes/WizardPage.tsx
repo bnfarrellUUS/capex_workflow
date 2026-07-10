@@ -90,6 +90,7 @@ export default function WizardPage() {
       <BrandCard
         title={`Request ${data.number}`}
         subtitle="New Capital Request"
+        mark="ascent"
         subheader={stepper}
         footer={
           <>

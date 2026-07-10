@@ -7,7 +7,7 @@ export default function EmailTemplatesPage() {
   const { data = [] } = useQuery({ queryKey: ['email-templates'], queryFn: listEmailTemplates })
   return (
     <div className="max-w-3xl">
-      <BrandCard title="Email Templates" subtitle="Customize the emails CAPEX Flow sends to users">
+      <BrandCard title="Email Templates" subtitle="Customize the emails CAPEX Flow sends to users" mark="check">
         <div className="space-y-2">
           {data.map((t) => (
             <Link key={t.type} to={`/admin/email-templates/${t.type}`}
