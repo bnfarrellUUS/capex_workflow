@@ -33,7 +33,7 @@ export default function DashboardPage() {
   const myApproved = mine.filter((r) => r.status === 'APPROVED')
 
   return (
-    <BrandCard title="Dashboard" subtitle={`Welcome, ${user?.name ?? ''}`}>
+    <BrandCard title="Dashboard" subtitle={`Welcome, ${user?.name ?? ''}`} mark="dashboard">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Pending My Approval"

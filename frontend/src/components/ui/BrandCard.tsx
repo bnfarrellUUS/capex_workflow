@@ -1,9 +1,43 @@
 import type { ReactNode } from 'react'
-import { BrandMark, type BrandMarkVariant } from '../BrandMark'
+import {
+  DashboardIcon,
+  NewRequestIcon,
+  MyRequestsIcon,
+  UsersIcon,
+  DivisionsIcon,
+  ThresholdsIcon,
+  EmailTemplatesIcon,
+  ProfileIcon,
+  type NavIconProps,
+} from '../NavIcons'
 
 // Brand constants shared with the email frame (navy band, sky subtitle).
 const NAVY = '#0B2A4A'
 const SKY = '#93BBF5'
+// Sky-blue page mark on the navy band, in a soft rounded tile (per brand doc).
+const MARK_BLUE = '#5B9BFF'
+
+/** Per-page header mark — each page uses its own nav icon. */
+export type PageMark =
+  | 'dashboard'
+  | 'newRequest'
+  | 'requests'
+  | 'users'
+  | 'divisions'
+  | 'thresholds'
+  | 'emailTemplates'
+  | 'profile'
+
+const MARKS: Record<PageMark, React.ComponentType<NavIconProps>> = {
+  dashboard: DashboardIcon,
+  newRequest: NewRequestIcon,
+  requests: MyRequestsIcon,
+  users: UsersIcon,
+  divisions: DivisionsIcon,
+  thresholds: ThresholdsIcon,
+  emailTemplates: EmailTemplatesIcon,
+  profile: ProfileIcon,
+}
 
 /**
  * Page card matching the notification-email look: rounded card with a navy
@@ -17,7 +51,7 @@ export function BrandCard({
   actions,
   subheader,
   footer,
-  mark = 'cycle',
+  mark = 'dashboard',
   bodyClassName = 'px-7 py-6',
   className = '',
   children,
@@ -30,16 +64,22 @@ export function BrandCard({
   subheader?: ReactNode
   /** Footer action bar content; wrapper provides flex + gap + padding. */
   footer?: ReactNode
-  /** Which brand logo mark to show — one per app section. */
-  mark?: BrandMarkVariant
+  /** Which page mark to show — each page uses its own nav icon. */
+  mark?: PageMark
   bodyClassName?: string
   className?: string
   children: ReactNode
 }) {
+  const Mark = MARKS[mark]
   return (
     <div className={`overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ${className}`}>
       <div className="flex items-center gap-3.5 px-7 py-5" style={{ background: NAVY }}>
-        <BrandMark variant={mark} size={40} />
+        <div
+          className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl"
+          style={{ background: 'rgba(91,155,255,0.16)', color: MARK_BLUE }}
+        >
+          <Mark size={24} />
+        </div>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-bold text-white">{title}</h1>
           {subtitle && (

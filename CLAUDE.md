@@ -225,9 +225,12 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   primary/secondary/ghost), `Input`, `Select`, `PasswordInput` (eye toggle),
   `Card`/`StatCard`, `Badge`/`StatusBadge`, `TransferList` (dual-listbox:
   Available | Add»/«Remove | Selected + ▲▼ reorder), `BrandCard` (email-look
-  page card: navy header band + brand mark + title/sky subtitle, optional
-  actions/subheader/footer slots — one per page; used by Dashboard, Requests
-  list/detail, Wizard, Profile, and the admin list pages), `QuillEditor`.
+  page card: navy header band + per-page mark (the page's own nav icon in a
+  sky-blue rounded tile) + title/sky subtitle, optional actions/subheader/
+  footer slots — one per page; used by Dashboard, Requests list/detail, Wizard,
+  Profile, and the admin list pages. `mark` prop is a page key —
+  `dashboard`/`newRequest`/`requests`/`users`/`divisions`/`thresholds`/
+  `emailTemplates`/`profile` — mapped to the matching `NavIcons`), `QuillEditor`.
   `components/NavIcons.tsx` (custom per-page sidebar line-icons — one distinct
   symbol per nav item, 24px grid / rounded joins, `currentColor`; from
   `brand/UUS CAPEX Flow Nav Icons.html`. AppShell uses these instead of
@@ -238,9 +241,10 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   `StatusBadge` (icon inside each pill), RequestDetailPage action buttons,
   the Wizard, and the Requests list. `currentColor`, so each icon takes its
   button/badge color).
-  `components/Logo.tsx` (primary Capital-Cycle mark), `components/BrandMark.tsx`
-  (all four brand marks; BrandCard `mark` prop maps sections: Dashboard=cycle,
-  Requests=ascent, Admin=check, Profile=uptime), `ThemeToggle.tsx`, `theme.ts`.
+  `components/Logo.tsx` (primary Capital-Cycle mark, used in the sidebar/login).
+  `components/BrandMark.tsx` (the four brand logo marks — cycle/ascent/check/
+  uptime; kept as a brand asset but no longer wired into BrandCard, which now
+  uses per-page `NavIcons` marks). `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
   `RequestsListPage` (+ shared `RequestsTable`: sortable column headers and a
   trailing per-row View action; client-side, comparators + `filterRequests`
@@ -273,10 +277,11 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   `localStorage['capex-theme']`; an inline script in `index.html` applies it
   before render to avoid a flash.
 - **Page pattern:** every main page wraps its content in **one `BrandCard`**
-  (email-look card: navy `#0B2A4A` header band + brand mark + white title +
-  sky `#93BBF5` subtitle; optional `actions`/`subheader`/`footer` slots).
-  New pages should follow this and pick the section's `mark` variant
-  (Dashboard=`cycle`, Requests=`ascent`, Admin=`check`, Account=`uptime`).
+  (email-look card: navy `#0B2A4A` header band + per-page mark (the page's nav
+  icon, sky-blue in a rounded tile) + white title + sky `#93BBF5` subtitle;
+  optional `actions`/`subheader`/`footer` slots). New pages should follow this
+  and pass the matching page `mark` (`dashboard`/`newRequest`/`requests`/
+  `users`/`divisions`/`thresholds`/`emailTemplates`/`profile`).
   Secondary edit forms (User/Division forms, EmailTemplateEditor) keep plain
   headings.
 - **Brand (`brand/`, "UUS CAPEX Flow"):** `brand_asset.pdf` plus

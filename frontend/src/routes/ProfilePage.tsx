@@ -31,7 +31,7 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-xl">
-      <BrandCard title="My Profile" mark="uptime"
+      <BrandCard title="My Profile" mark="profile"
         subtitle={profile ? `${profile.name} — ${profile.email}` : ''}
         bodyClassName="space-y-8 px-7 py-6">
       <section className="space-y-2">

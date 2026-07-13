@@ -37,7 +37,7 @@ export default function ThresholdsPage() {
 
   return (
     <div className="max-w-3xl">
-      <BrandCard title="Approval Thresholds" mark="check"
+      <BrandCard title="Approval Thresholds" mark="thresholds"
         subtitle='Approval goes up to the highest level whose cap the request exceeds — leave the top max empty for "no limit"'>
       <div className="space-y-4">
         {rows.map((r) => (

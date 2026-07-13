@@ -7,7 +7,7 @@ import { BrandCard } from '../../components/ui/BrandCard'
 export default function DivisionsPage() {
   const { data: divisions, isLoading } = useQuery({ queryKey: ['divisions'], queryFn: listDivisions })
   return (
-    <BrandCard title="Divisions" subtitle="Divisions & their Level-1 approver pools" mark="check"
+    <BrandCard title="Divisions" subtitle="Divisions & their Level-1 approver pools" mark="divisions"
       actions={<Link to="/admin/divisions/new"><Button>Add division</Button></Link>}
       bodyClassName="overflow-x-auto px-7 py-6">
       {isLoading ? (

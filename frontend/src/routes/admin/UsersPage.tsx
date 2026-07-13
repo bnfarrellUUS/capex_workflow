@@ -8,7 +8,7 @@ export default function UsersPage() {
   const { data: users, isLoading } = useQuery({ queryKey: ['users'], queryFn: listUsers })
 
   return (
-    <BrandCard title="Users" subtitle="Accounts, roles & delegates" mark="check"
+    <BrandCard title="Users" subtitle="Accounts, roles & delegates" mark="users"
       actions={<Link to="/admin/users/new"><Button>Add user</Button></Link>}
       bodyClassName="overflow-x-auto px-7 py-6">
       {isLoading ? (
