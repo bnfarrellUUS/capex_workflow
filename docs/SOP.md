@@ -3,7 +3,7 @@
 **Application:** CAPEX Flow (United Uptime Services)
 **Purpose:** Submit, route, approve, and complete capital-expenditure (CAPEX) requests.
 **Audience:** Requestors, Approvers, Finance, and Administrators.
-**Last updated:** 2026-07-09
+**Last updated:** 2026-07-13
 
 ---
 
@@ -109,8 +109,14 @@ produce the list of people who may actually act. **Any one** of them can approve
 
 ### 6.1 Requestor — create and submit
 
-1. **New Request** — creates a draft and opens the 6-step wizard.
-2. Complete the wizard steps (step tabs are clickable and save as you go):
+1. **New Request** — opens the 6-step wizard with a blank form. **No draft is
+   saved yet:** nothing is written to the system until you click **Save Draft**
+   or **Submit**, so opening New Request and leaving creates nothing. (The
+   request number is assigned when the draft is first saved.)
+2. Complete the wizard steps (the numbered stepper lets you jump between steps —
+   for a brand-new request the steps navigate without saving until your first
+   Save Draft/Submit; once the draft exists, and whenever editing an existing
+   draft, moving between steps auto-saves):
    1. **Basic Info** — division, flags (budgeted, replacement, health & safety,
       revenue-generating, environmental, competitive bids, lease recommended).
    2. **Description**
@@ -137,11 +143,15 @@ produce the list of people who may actually act. **Any one** of them can approve
 3. **Reject** — **a comment is required.** The request moves to **REJECTED** and
    the requestor is notified.
 
-### 6.3 Requestor — resubmit a rejected request
+### 6.3 Requestor — edit & resubmit a rejected request
 
-1. Open the rejected request (it's editable again).
-2. Fix what the rejection comment called out.
-3. **Resubmit** — routing is recomputed from scratch and the request re-enters
+A rejected request is editable again, and there are two ways to resubmit it:
+
+1. On the request detail page, click **Edit draft** to reopen it in the wizard,
+   fix what the rejection comment called out, and click **Resubmit for approval**
+   on the Review step (or **Save Draft** to keep working). *Or* — if no changes
+   are needed — click **Resubmit** on the detail page to send it back as-is.
+2. Either way, routing is recomputed from scratch and the request re-enters
    **PENDING_L1**.
 
 ### 6.4 Finance — complete the cost breakdown
@@ -209,19 +219,28 @@ running the app (`backend/app/services/email_outlook.py`, via COM automation).
 No SMTP credentials or Azure app registration are needed — the mail goes out as
 the signed-in Outlook account.
 
-> **⚠️ Redirected while testing.** Every message is currently **redirected to
-> `EMAIL_REDIRECT_TO`** (default `bryan.farrell@uniteduptime.com`) instead of the
-> real recipient. The intended recipient is written at the top of the body as
-> `[Intended recipient: …]`. This lets you exercise the full flow without
-> emailing real approvers. To deliver to real recipients, set the config value
-> `EMAIL_REDIRECT_TO` to empty.
+> **⚙️ Test vs Live delivery (runtime toggle).** Delivery mode is switched from
+> **Admin → Email Templates** (a control at the top of both the templates list
+> and the editor) — no config change or redeploy needed:
+> - **Test** (default) — every message is **redirected to a single test
+>   recipient** (default `bryan.farrell@uniteduptime.com`, **editable in the
+>   UI**) instead of the real recipient, and the intended recipient is shown in
+>   the email as an `Intended recipient: … (redirected while testing)` banner.
+>   Use this to exercise the full flow without emailing real approvers.
+> - **Live** — messages go to their **real recipients** (approvers, requestors,
+>   Finance). Switching to Live asks you to **confirm** first; switching back to
+>   Test is immediate.
+>
+> The chosen mode and test recipient are stored in the database and take effect
+> on the next notification. `EMAIL_ENABLED` is separate and still governs
+> whether Outlook sends at all (mode only decides **who** receives).
 
 **Configuration** (env vars, read in `backend/app/config.py`):
 
 | Var | Default (dev) | Meaning |
 |-----|---------------|---------|
-| `EMAIL_ENABLED` | `1` (on) | Set `0` to log/record only and not send. |
-| `EMAIL_REDIRECT_TO` | `bryan.farrell@uniteduptime.com` | Where all mail is sent during testing. Clear it to send to real recipients. |
+| `EMAIL_ENABLED` | `1` (on) | Set `0` to log/record only and not send. Master send switch, independent of Test/Live mode. |
+| `EMAIL_REDIRECT_TO` | `bryan.farrell@uniteduptime.com` | **Default** test recipient. The live Test/Live choice and the test address are now set in the UI (stored in the DB); this env var only seeds the default before anything is set. |
 | `APP_BASE_URL` | `http://localhost:5000` | Base URL used for the deep link in every email. Set to the real hostname on the server. |
 
 **Requirements to actually send:**
@@ -263,6 +282,12 @@ version as your baseline), **Preview** (see it rendered with sample data), and
 **Reset to default** (revert to your saved baseline, or the shipped default if
 none was captured).
 
+The four templates appear as **tabs** across the top of the editor, so you can
+switch between them in place without returning to the list (switching with
+unsaved edits asks you to confirm). The **email delivery mode** control
+(Test/Live — see §7.2) sits at the top of both the Email Templates list and the
+editor.
+
 ---
 
 ## 8. Administration
@@ -279,7 +304,8 @@ Under **Admin** (ADMIN role required):
   approver pools**. These caps decide how many approval levels each request
   needs (§4).
 - **Email Templates** — customize the subject, body, and enabled state of the
-  four notification emails, with `{token}` placeholders and a brand frame (§7.3).
+  four notification emails, with `{token}` placeholders and a brand frame (§7.3),
+  and switch email delivery between **Test** and **Live** mode (§7.2).
 
 **Setup checklist for a working workflow:**
 1. Create divisions and assign each an **L1 approver pool**.
@@ -306,8 +332,9 @@ when.
 |---------|------|
 | Approval routing / level logic / transitions | `backend/app/services/workflow_service.py` |
 | Notification recipients & delivery gate | `backend/app/services/notify.py` |
+| Email delivery mode (Test/Live) + test recipient | `backend/app/services/settings_service.py` |
 | Outlook COM send backend ("for now") | `backend/app/services/email_outlook.py` |
-| Email config (`EMAIL_ENABLED`, `EMAIL_REDIRECT_TO`) | `backend/app/config.py` |
+| Email config (`EMAIL_ENABLED`, `EMAIL_REDIRECT_TO` default) | `backend/app/config.py` |
 | Draft create/edit, serialization | `backend/app/services/request_service.py` |
 | Threshold caps & pools | `backend/app/services/threshold_service.py` |
 | HTTP routes (where notifications are triggered) | `backend/app/blueprints/requests.py` |
