@@ -8,6 +8,7 @@ import type { CapexRequestData } from '../api/requests'
 
 vi.mock('../api/requests', () => ({
   getRequest: vi.fn(),
+  createDraft: vi.fn(() => Promise.resolve({ id: 'new-1' })),
   updateDraft: vi.fn(() => Promise.resolve({})),
   submitRequest: vi.fn(() => Promise.resolve({})),
   resubmitRequest: vi.fn(() => Promise.resolve({})),
@@ -15,8 +16,11 @@ vi.mock('../api/requests', () => ({
 vi.mock('../api/divisions', () => ({
   listDivisions: vi.fn(() => Promise.resolve([])),
 }))
+vi.mock('../auth/useMe', () => ({
+  useMe: () => ({ data: { id: 'me', name: 'Me', roles: ['REQUESTOR'], division_id: 'div-1' } }),
+}))
 
-import { getRequest, submitRequest, resubmitRequest } from '../api/requests'
+import { getRequest, createDraft, updateDraft, submitRequest, resubmitRequest } from '../api/requests'
 
 function makeRequest(status: string): CapexRequestData {
   return {
@@ -36,12 +40,13 @@ function makeRequest(status: string): CapexRequestData {
   }
 }
 
-function renderWizard() {
+function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/requests/req-1/edit']}>
+      <MemoryRouter initialEntries={[path]}>
         <Routes>
+          <Route path="/requests/new" element={<WizardPage />} />
           <Route path="/requests/:id/edit" element={<WizardPage />} />
           <Route path="/requests/:id" element={<div>Detail</div>} />
         </Routes>
@@ -50,28 +55,70 @@ function renderWizard() {
   )
 }
 
-async function submitFromReviewStep() {
-  await screen.findByText('Request CX000042')
-  fireEvent.click(await screen.findByRole('button', { name: /Review/ }))
-  fireEvent.click(await screen.findByRole('button', { name: /for approval/i }))
-}
+describe('WizardPage — submit routing (existing draft)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getRequest).mockResolvedValue(makeRequest('DRAFT'))
+  })
 
-describe('WizardPage submit routing', () => {
-  beforeEach(() => vi.clearAllMocks())
+  async function submitFromReviewStep() {
+    await screen.findByText('Request CX000042')
+    fireEvent.click(await screen.findByRole('button', { name: /Review/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /for approval/i }))
+  }
 
   it('resubmits a REJECTED request via the resubmit endpoint', async () => {
     vi.mocked(getRequest).mockResolvedValue(makeRequest('REJECTED'))
-    renderWizard()
+    renderAt('/requests/req-1/edit')
     await submitFromReviewStep()
     await waitFor(() => expect(resubmitRequest).toHaveBeenCalledWith('req-1'))
     expect(submitRequest).not.toHaveBeenCalled()
   })
 
   it('submits a DRAFT request via the submit endpoint', async () => {
-    vi.mocked(getRequest).mockResolvedValue(makeRequest('DRAFT'))
-    renderWizard()
+    renderAt('/requests/req-1/edit')
     await submitFromReviewStep()
     await waitFor(() => expect(submitRequest).toHaveBeenCalledWith('req-1'))
     expect(resubmitRequest).not.toHaveBeenCalled()
+  })
+})
+
+describe('WizardPage — new request defers draft creation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getRequest).mockResolvedValue(makeRequest('DRAFT'))
+  })
+
+  it('does not create a draft just by opening the New Request screen', async () => {
+    renderAt('/requests/new')
+    await screen.findByText('New Request')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(createDraft).not.toHaveBeenCalled()
+  })
+
+  it('does not create a draft when clicking Next', async () => {
+    renderAt('/requests/new')
+    await screen.findByText('New Request')
+    fireEvent.click(await screen.findByRole('button', { name: /^Next$/ }))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(createDraft).not.toHaveBeenCalled()
+  })
+
+  it('creates then updates the draft on Save Draft', async () => {
+    renderAt('/requests/new')
+    await screen.findByText('New Request')
+    fireEvent.click(await screen.findByRole('button', { name: /Save Draft/i }))
+    await waitFor(() => expect(createDraft).toHaveBeenCalledOnce())
+    await waitFor(() => expect(updateDraft).toHaveBeenCalledWith('new-1', expect.anything()))
+  })
+
+  it('creates, updates, then submits on Submit', async () => {
+    renderAt('/requests/new')
+    await screen.findByText('New Request')
+    fireEvent.click(await screen.findByRole('button', { name: /Review/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /for approval/i }))
+    await waitFor(() => expect(createDraft).toHaveBeenCalledOnce())
+    await waitFor(() => expect(updateDraft).toHaveBeenCalledWith('new-1', expect.anything()))
+    await waitFor(() => expect(submitRequest).toHaveBeenCalledWith('new-1'))
   })
 })

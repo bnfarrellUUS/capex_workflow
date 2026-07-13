@@ -25,7 +25,9 @@ def test_login_success_then_me(client, app):
     assert r.get_json()["username"] == "jdoe"
     me = client.get("/api/auth/me")
     assert me.status_code == 200
-    assert me.get_json()["roles"] == ["REQUESTOR"]
+    body = me.get_json()
+    assert body["roles"] == ["REQUESTOR"]
+    assert "division_id" in body            # wizard prefills the new-request division from this
 
 
 def test_login_sets_remember_cookie(client, app):

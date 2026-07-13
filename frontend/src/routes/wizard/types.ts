@@ -22,6 +22,17 @@ export interface RequestForm {
   equipment_items: EquipItem[]
 }
 
+export function blankForm(divisionId: string, requestDate: string): RequestForm {
+  return {
+    description: '', budgeted: false, replacement: false, health_safety: false,
+    revenue_generating: false, environmental: false, competitive_bids: false,
+    lease_recommended: false, justification: '', effect_on_operations: '',
+    asset_life: '', irr_after_tax: '', first_year_ebit: '', annual_savings: '',
+    payback_years: '', npv_savings: '', division_id: divisionId,
+    request_date: requestDate, equipment_items: [],
+  }
+}
+
 export function toForm(r: CapexRequestData): RequestForm {
   return {
     description: r.description ?? '',

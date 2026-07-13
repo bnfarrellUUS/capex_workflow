@@ -6,6 +6,7 @@ export interface CurrentUser {
   name: string
   email: string
   roles: string[]
+  division_id: string | null
 }
 
 export function fetchMe(): Promise<CurrentUser> {

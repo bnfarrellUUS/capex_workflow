@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { getRequest, updateDraft, submitRequest, resubmitRequest, type CapexRequestData } from '../api/requests'
+import { getRequest, createDraft, updateDraft, submitRequest, resubmitRequest } from '../api/requests'
 import { listDivisions, type Division } from '../api/divisions'
+import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -10,46 +11,83 @@ import { Select } from '../components/ui/Select'
 import { BrandCard } from '../components/ui/BrandCard'
 import { AddIcon, DeleteIcon, SubmitIcon } from '../components/ActionIcons'
 import type { RequestForm } from './wizard/types'
-import { toForm, toPayload, equipmentTotal } from './wizard/types'
+import { toForm, toPayload, blankForm, equipmentTotal } from './wizard/types'
 
 const STEPS = ['Basic Info', 'Description', 'Effect on Ops', 'Equipment', 'Economic', 'Review']
 
 type Setter = <K extends keyof RequestForm>(k: K, v: RequestForm[K]) => void
 
+const today = () => new Date().toISOString().slice(0, 10)
+
 export default function WizardPage() {
-  const { id = '' } = useParams()
-  const { data } = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id) })
+  const { id: routeId } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { data: me } = useMe()
+  // Existing draft: load it. New request (no id): stay unsaved until first save.
+  const { data } = useQuery({
+    queryKey: ['request', routeId],
+    queryFn: () => getRequest(routeId!),
+    enabled: !!routeId,
+  })
   const { data: divisions = [] } = useQuery({ queryKey: ['divisions'], queryFn: listDivisions })
   const [form, setForm] = useState<RequestForm | null>(null)
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState<number>((location.state as { step?: number } | null)?.step ?? 0)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => { if (data && !form) setForm(toForm(data)) }, [data, form])
-
-  const navigate = useNavigate()
-  const save = useMutation({
-    mutationFn: () => updateDraft(id, toPayload(form!)),
-    onSuccess: () => setSaved(true),
-  })
+  const isNew = !routeId
   const isRejected = data?.status === 'REJECTED'
+
+  // Seed the form once: from the loaded draft (edit) or a blank form (new).
+  useEffect(() => {
+    if (form) return
+    if (routeId) { if (data) setForm(toForm(data)) }
+    else if (me) setForm(blankForm(me.division_id ?? '', today()))
+  }, [routeId, data, me, form])
+
+  // Persist the form: for a new request this creates the draft first (so merely
+  // opening the wizard writes nothing); for an existing draft it just updates.
+  async function persist(): Promise<string> {
+    if (routeId) {
+      await updateDraft(routeId, toPayload(form!))
+      return routeId
+    }
+    const created = await createDraft()
+    await updateDraft(created.id, toPayload(form!))
+    return created.id
+  }
+
+  const save = useMutation({
+    mutationFn: persist,
+    onSuccess: (savedId) => {
+      setSaved(true)
+      if (isNew) navigate(`/requests/${savedId}/edit`, { replace: true, state: { step } })
+    },
+  })
   const submit = useMutation({
-    mutationFn: () => (isRejected ? resubmitRequest(id) : submitRequest(id)),
-    onSuccess: () => navigate(`/requests/${id}`, { replace: true }),
+    mutationFn: async () => {
+      const theId = await persist()
+      await (isRejected ? resubmitRequest(theId) : submitRequest(theId))
+      return theId
+    },
+    onSuccess: (theId) => navigate(`/requests/${theId}`, { replace: true }),
   })
   const submitError = submit.error instanceof ApiError ? submit.error.message : null
   const saveError = save.error instanceof ApiError ? save.error.message : null
 
-  // Save first; only advance / submit if the save actually persisted.
-  async function saveThen(action?: () => void) {
+  // Existing drafts auto-save when moving between steps; a brand-new request
+  // navigates locally and only persists on Save Draft / Submit.
+  async function goToStep(i: number) {
+    if (isNew) { setStep(i); return }
     try {
       await save.mutateAsync()
     } catch {
       return // error surfaced via saveError; stay put
     }
-    action?.()
+    setStep(i)
   }
 
-  if (!form || !data) return <p className="text-sm text-muted">Loading…</p>
+  if (!form) return <p className="text-sm text-muted">Loading…</p>
 
   const set: Setter = (k, v) => { setForm({ ...form, [k]: v }); setSaved(false) }
 
@@ -62,7 +100,7 @@ export default function WizardPage() {
             type="button"
             disabled={save.isPending}
             aria-current={i === step ? 'step' : undefined}
-            onClick={() => { if (i !== step) saveThen(() => setStep(i)) }}
+            onClick={() => { if (i !== step) goToStep(i) }}
             className="group flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition hover:bg-accent/10 disabled:opacity-60"
           >
             <span
@@ -90,7 +128,7 @@ export default function WizardPage() {
   return (
     <div className="max-w-3xl">
       <BrandCard
-        title={`Request ${data.number}`}
+        title={data ? `Request ${data.number}` : 'New Request'}
         subtitle="New Capital Request"
         mark="newRequest"
         subheader={stepper}
@@ -104,12 +142,14 @@ export default function WizardPage() {
             {saveError && <span className="text-sm text-red-600 dark:text-red-400" role="alert">{saveError}</span>}
             <div className="flex-1" />
             {step < STEPS.length - 1 && (
-              <Button disabled={save.isPending} onClick={() => saveThen(() => setStep(step + 1))}>Next</Button>
+              <Button disabled={save.isPending} onClick={() => goToStep(step + 1)}>Next</Button>
             )}
           </>
         }
       >
-        {step === 0 && <BasicInfo form={form} set={set} data={data} divisions={divisions} />}
+        {step === 0 && <BasicInfo form={form} set={set}
+          number={data?.number} requestorName={data?.requestor_name ?? me?.name ?? ''}
+          divisions={divisions} />}
         {step === 1 && (
           <Field label="Brief description & justification">
             <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
@@ -125,7 +165,7 @@ export default function WizardPage() {
         {step === 3 && <Equipment form={form} set={set} />}
         {step === 4 && <Economic form={form} set={set} />}
         {step === 5 && <Review form={form}
-          onSubmit={() => saveThen(() => submit.mutate())}
+          onSubmit={() => submit.mutate()}
           pending={submit.isPending || save.isPending} error={submitError}
           submitLabel={isRejected ? 'Resubmit for approval' : 'Submit for approval'} />}
       </BrandCard>
@@ -149,21 +189,21 @@ const FLAGS: [keyof RequestForm, string][] = [
   ['lease_recommended', 'Recommended for lease rather than purchase (attach explanation & evaluation; note any manufacturer/dealer financing)'],
 ]
 
-function BasicInfo({ form, set, data, divisions }:
-  { form: RequestForm; set: Setter; data: CapexRequestData; divisions: Division[] }) {
+function BasicInfo({ form, set, number, requestorName, divisions }:
+  { form: RequestForm; set: Setter; number?: string; requestorName: string; divisions: Division[] }) {
   const readOnlyClass = 'cursor-default bg-surface-2 text-muted'
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Capital request no.">
-          <Input value={data.number} readOnly className={readOnlyClass} />
+          <Input value={number ?? '(assigned on save)'} readOnly className={readOnlyClass} />
         </Field>
         <Field label="Date">
           <Input type="date" value={form.request_date}
             onChange={(e) => set('request_date', e.target.value)} />
         </Field>
         <Field label="Requested by">
-          <Input value={data.requestor_name ?? ''} readOnly className={readOnlyClass} />
+          <Input value={requestorName} readOnly className={readOnlyClass} />
         </Field>
       </div>
       <Field label="Equipment / project description">

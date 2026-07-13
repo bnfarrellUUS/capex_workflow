@@ -13,7 +13,6 @@ import ThresholdsPage from './routes/admin/ThresholdsPage'
 import EmailTemplatesPage from './routes/admin/EmailTemplatesPage'
 import EmailTemplateEditor from './routes/admin/EmailTemplateEditor'
 import ProfilePage from './routes/ProfilePage'
-import NewRequestPage from './routes/NewRequestPage'
 import WizardPage from './routes/WizardPage'
 import RequestDetailPage from './routes/RequestDetailPage'
 import RequestsListPage from './routes/RequestsListPage'
@@ -26,7 +25,7 @@ export default function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/requests" element={<RequestsListPage />} />
-        <Route path="/requests/new" element={<NewRequestPage />} />
+        <Route path="/requests/new" element={<WizardPage />} />
         <Route path="/requests/:id/edit" element={<WizardPage />} />
         <Route path="/requests/:id" element={<RequestDetailPage />} />
         <Route element={<AdminLayout />}>

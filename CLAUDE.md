@@ -260,12 +260,16 @@ whether Outlook sends at all. Defaults live in
   trailing per-row View action; client-side, comparators + `filterRequests`
   in `routes/requestsSort.ts` — status sorts in workflow order, blanks last;
   the list page adds a client-side search box over number/division/requestor),
-  `NewRequestPage` (creates a
-  draft then redirects to the wizard), `WizardPage` (6-step request wizard:
+  `WizardPage` (6-step request wizard:
   Basic Info, Description, Effect on Ops, Equipment, Economic, Review — styled
   as an email-look brand card: navy header band with Logo, numbered stepper
-  [✓ done / accent active], footer action bar; stepper clicks save the draft
-  before jumping. The wizard edits both DRAFT and REJECTED requests (owners can
+  [✓ done / accent active], footer action bar. Runs in two modes keyed on the
+  route: **new** (`/requests/new`, no id) starts from a blank form (`blankForm`,
+  division prefilled from `useMe().division_id`, date today) and **creates
+  nothing** until the first Save Draft / Submit — those call `createDraft` then
+  `updateDraft` and swap the URL to `/requests/:id/edit`; **edit**
+  (`/requests/:id/edit`) loads the draft and, as before, auto-saves on
+  Next/stepper. The wizard edits both DRAFT and REJECTED requests (owners can
   fix a rejected request and resubmit); the Review-step action calls `resubmit`
   when the loaded request is REJECTED, otherwise `submit`), `RequestDetailPage`,
   `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds,
