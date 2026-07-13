@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sortRequests } from './requestsSort'
+import { sortRequests, filterRequests } from './requestsSort'
 import type { RequestSummary } from '../api/requests'
 
 function row(over: Partial<RequestSummary>): RequestSummary {
@@ -32,5 +32,33 @@ describe('sortRequests', () => {
     const rows = [row({ id: 'a', number: 'CX000002' }), row({ id: 'b', number: 'CX000001' })]
     sortRequests(rows, 'number', 'asc')
     expect(rows.map(r => r.id)).toEqual(['a', 'b'])
+  })
+})
+
+describe('filterRequests', () => {
+  const rows = [
+    row({ id: 'a', number: 'CX000001', division_name: '20 — Corporate', requestor_name: 'Alice' }),
+    row({ id: 'b', number: 'CX000042', division_name: '10 — Field Services', requestor_name: 'Bob' }),
+  ]
+
+  it('returns all rows for a blank or whitespace query', () => {
+    expect(filterRequests(rows, '').map(r => r.id)).toEqual(['a', 'b'])
+    expect(filterRequests(rows, '   ').map(r => r.id)).toEqual(['a', 'b'])
+  })
+
+  it('matches by number, division, or requestor, case-insensitively', () => {
+    expect(filterRequests(rows, 'cx000042').map(r => r.id)).toEqual(['b'])
+    expect(filterRequests(rows, 'corporate').map(r => r.id)).toEqual(['a'])
+    expect(filterRequests(rows, 'BOB').map(r => r.id)).toEqual(['b'])
+  })
+
+  it('returns empty when nothing matches', () => {
+    expect(filterRequests(rows, 'zzz')).toEqual([])
+  })
+
+  it('tolerates null fields', () => {
+    const withNulls = [row({ id: 'c', number: 'CX000009', division_name: null, requestor_name: null })]
+    expect(filterRequests(withNulls, 'cx000009').map(r => r.id)).toEqual(['c'])
+    expect(filterRequests(withNulls, 'corporate')).toEqual([])
   })
 })

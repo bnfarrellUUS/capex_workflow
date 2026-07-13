@@ -232,13 +232,21 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   symbol per nav item, 24px grid / rounded joins, `currentColor`; from
   `brand/UUS CAPEX Flow Nav Icons.html`. AppShell uses these instead of
   lucide for nav; lucide still supplies non-nav glyphs like Sign Out).
+  `components/ActionIcons.tsx` (same-style in-page icons from the same doc:
+  approval actions Approve/Reject/Submit, row controls View/Edit/Delete/
+  Download/Search/Filter/Add/Upload, and workflow-status icons. Used by
+  `StatusBadge` (icon inside each pill), RequestDetailPage action buttons,
+  the Wizard, and the Requests list. `currentColor`, so each icon takes its
+  button/badge color).
   `components/Logo.tsx` (primary Capital-Cycle mark), `components/BrandMark.tsx`
   (all four brand marks; BrandCard `mark` prop maps sections: Dashboard=cycle,
   Requests=ascent, Admin=check, Profile=uptime), `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
-  `RequestsListPage` (+ shared `RequestsTable`: sortable column headers,
-  client-side, comparators in `routes/requestsSort.ts` — status sorts in
-  workflow order, blanks last), `NewRequestPage` (creates a
+  `RequestsListPage` (+ shared `RequestsTable`: sortable column headers and a
+  trailing per-row View action; client-side, comparators + `filterRequests`
+  in `routes/requestsSort.ts` — status sorts in workflow order, blanks last;
+  the list page adds a client-side search box over number/division/requestor),
+  `NewRequestPage` (creates a
   draft then redirects to the wizard), `WizardPage` (6-step request wizard:
   Basic Info, Description, Effect on Ops, Equipment, Economic, Review — styled
   as an email-look brand card: navy header band with Logo, numbered stepper

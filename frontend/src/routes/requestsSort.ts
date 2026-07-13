@@ -6,6 +6,14 @@ export type SortDir = 'asc' | 'desc'
 // Workflow order, not alphabetical.
 const STATUS_ORDER = ['DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED', 'REJECTED']
 
+export function filterRequests(rows: RequestSummary[], query: string): RequestSummary[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return rows
+  return rows.filter((r) =>
+    [r.number, r.division_name, r.requestor_name].some((f) => f?.toLowerCase().includes(q)),
+  )
+}
+
 export function sortRequests(rows: RequestSummary[], key: SortKey, dir: SortDir): RequestSummary[] {
   const sign = dir === 'asc' ? 1 : -1
   return [...rows].sort((a, b) => {

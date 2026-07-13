@@ -1,4 +1,10 @@
 import type { ReactNode } from 'react'
+import {
+  DraftIcon,
+  PendingIcon,
+  ApprovedIcon,
+  RejectedIcon,
+} from '../ActionIcons'
 
 type Tone = 'slate' | 'blue' | 'amber' | 'green' | 'red'
 
@@ -10,11 +16,12 @@ const TONES: Record<Tone, string> = {
   red: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
 }
 
-export function Badge({ tone = 'slate', children }: { tone?: Tone; children: ReactNode }) {
+export function Badge({ tone = 'slate', icon, children }: { tone?: Tone; icon?: ReactNode; children: ReactNode }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${TONES[tone]}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${TONES[tone]}`}
     >
+      {icon}
       {children}
     </span>
   )
@@ -38,6 +45,19 @@ const STATUS_LABEL: Record<string, string> = {
   REJECTED: 'Rejected',
 }
 
+const STATUS_ICON: Record<string, ReactNode> = {
+  DRAFT: <DraftIcon size={13} strokeWidth={2} />,
+  PENDING_L1: <PendingIcon size={13} strokeWidth={2} />,
+  PENDING_L2: <PendingIcon size={13} strokeWidth={2} />,
+  PENDING_L3: <PendingIcon size={13} strokeWidth={2} />,
+  APPROVED: <ApprovedIcon size={13} strokeWidth={2.4} />,
+  REJECTED: <RejectedIcon size={13} strokeWidth={2.4} />,
+}
+
 export function StatusBadge({ status }: { status: string }) {
-  return <Badge tone={STATUS_TONE[status] ?? 'blue'}>{STATUS_LABEL[status] ?? status}</Badge>
+  return (
+    <Badge tone={STATUS_TONE[status] ?? 'blue'} icon={STATUS_ICON[status]}>
+      {STATUS_LABEL[status] ?? status}
+    </Badge>
+  )
 }

@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { BrandCard } from '../components/ui/BrandCard'
+import { AddIcon, DeleteIcon, SubmitIcon } from '../components/ActionIcons'
 import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, equipmentTotal } from './wizard/types'
 
@@ -210,10 +211,14 @@ function Equipment({ form, set }: { form: RequestForm; set: Setter }) {
           <LabeledInput label="Make" value={it.make} onChange={(v) => update(idx, { make: v })} />
           <LabeledInput label="Model" value={it.model} onChange={(v) => update(idx, { model: v })} />
           <LabeledInput label="Cost" value={it.cost} onChange={(v) => update(idx, { cost: v })} w="w-28" />
-          <button className="text-sm text-red-600 dark:text-red-400" onClick={() => remove(idx)}>Remove</button>
+          <button className="inline-flex items-center gap-1 text-sm text-red-600 dark:text-red-400" onClick={() => remove(idx)}>
+            <DeleteIcon size={15} />Remove
+          </button>
         </div>
       ))}
-      <button className="text-sm text-accent" onClick={add}>+ Add line item</button>
+      <button className="inline-flex items-center gap-1.5 text-sm text-accent" onClick={add}>
+        <AddIcon size={16} />Add line item
+      </button>
       <div className="text-right font-semibold">Equipment total: ${equipmentTotal(items).toLocaleString()}</div>
     </div>
   )
@@ -258,7 +263,7 @@ function Review({ form, onSubmit, pending, error, submitLabel }:
       <p><span className="font-medium">Equipment lines:</span> {form.equipment_items.length}</p>
       <p><span className="font-medium">Total cost:</span> ${total.toLocaleString()}</p>
       {error && <p className="text-red-600 dark:text-red-400" role="alert">{error}</p>}
-      <Button disabled={pending} onClick={onSubmit}>{submitLabel}</Button>
+      <Button disabled={pending} onClick={onSubmit}><SubmitIcon size={16} />{submitLabel}</Button>
     </div>
   )
 }

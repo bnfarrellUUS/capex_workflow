@@ -6,13 +6,15 @@ import { listRequests, type RequestSummary } from '../api/requests'
 import { Select } from '../components/ui/Select'
 import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
-import { sortRequests, type SortDir, type SortKey } from './requestsSort'
+import { SearchIcon, FilterIcon, ViewIcon } from '../components/ActionIcons'
+import { sortRequests, filterRequests, type SortDir, type SortKey } from './requestsSort'
 
 const STATUSES = ['', 'DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED', 'REJECTED']
 
 export default function RequestsListPage() {
   const [scope, setScope] = useState('mine')
   const [status, setStatus] = useState('')
+  const [query, setQuery] = useState('')
   const { data: rows = [] } = useQuery({
     queryKey: ['requests', scope, status],
     queryFn: () => listRequests({ scope, status: status || undefined }),
@@ -33,21 +35,37 @@ export default function RequestsListPage() {
           </button>
         ))}
       </div>
-      <div className="w-48">
-        <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s === '' ? 'All statuses' : s}
-            </option>
-          ))}
-        </Select>
+      <div className="relative">
+        <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted">
+          <SearchIcon size={16} />
+        </span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search requests…"
+          aria-label="Search requests"
+          className="w-56 rounded-md border border-border bg-surface py-1.5 pl-8 pr-3 text-sm text-fg outline-none focus:border-accent"
+        />
+      </div>
+      <div className="flex items-center gap-1.5 text-muted">
+        <FilterIcon size={16} />
+        <div className="w-48">
+          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s === '' ? 'All statuses' : s}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
     </div>
   )
 
   return (
     <BrandCard title="Requests" subtitle="Capital expenditure requests" mark="ascent" subheader={filters}>
-      <RequestsTable rows={rows} />
+      <RequestsTable rows={filterRequests(rows, query)} />
     </BrandCard>
   )
 }
@@ -92,6 +110,7 @@ export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
                 </button>
               </th>
             ))}
+            <th className="py-2 pr-2 text-right font-semibold"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
@@ -109,6 +128,16 @@ export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
               <td className="py-2.5 pr-4 text-fg">{r.requestor_name}</td>
               <td className="py-2.5 pr-4 text-right font-medium text-fg">
                 ${Number(r.total_cost ?? 0).toLocaleString()}
+              </td>
+              <td className="py-2.5 pr-2 text-right">
+                <Link
+                  to={`/requests/${r.id}`}
+                  aria-label={`View ${r.number}`}
+                  title="View"
+                  className="inline-flex text-muted hover:text-accent"
+                >
+                  <ViewIcon size={18} />
+                </Link>
               </td>
             </tr>
           ))}

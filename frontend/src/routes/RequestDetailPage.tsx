@@ -12,6 +12,9 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
+import {
+  ApproveIcon, RejectIcon, SubmitIcon, EditIcon, DeleteIcon, UploadIcon, DownloadIcon,
+} from '../components/ActionIcons'
 
 const PIPELINE = ['DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED']
 
@@ -115,11 +118,13 @@ export default function RequestDetailPage() {
         <ul className="space-y-1 text-sm">
           {req.attachments.map((a) => (
             <li key={a.id} className="flex items-center gap-3">
-              <a className="text-accent hover:underline" href={attachmentUrl(id, a.id)}>{a.filename}</a>
+              <a className="inline-flex items-center gap-1.5 text-accent hover:underline" href={attachmentUrl(id, a.id)}>
+                <DownloadIcon size={15} />{a.filename}
+              </a>
               <span className="text-xs text-muted">{(a.size / 1024).toFixed(1)} KB</span>
               {canEdit && (
-                <button className="text-xs text-red-600 dark:text-red-400" disabled={busy}
-                  onClick={() => act(() => deleteAttachment(id, a.id))}>Remove</button>
+                <button className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400" disabled={busy}
+                  onClick={() => act(() => deleteAttachment(id, a.id))}><DeleteIcon size={13} />Remove</button>
               )}
             </li>
           ))}
@@ -131,7 +136,7 @@ export default function RequestDetailPage() {
             <Button className="ml-2" disabled={busy} onClick={() => {
               const f = fileRef.current?.files?.[0]
               if (f) act(() => uploadAttachment(id, f))
-            }}>Upload</Button>
+            }}><UploadIcon size={16} />Upload</Button>
           </div>
         )}
       </section>
@@ -145,13 +150,21 @@ export default function RequestDetailPage() {
               <Input placeholder="Comment (required to reject)" value={comment}
                 onChange={(e) => setComment(e.target.value)} />
               <div className="flex gap-2">
-                <Button disabled={busy} onClick={() => act(() => approveRequest(id, comment || undefined))}>Approve</Button>
+                <Button disabled={busy} onClick={() => act(() => approveRequest(id, comment || undefined))}>
+                  <ApproveIcon size={16} />Approve
+                </Button>
                 <Button className="bg-red-600 text-white hover:bg-red-700" disabled={busy || !comment.trim()}
-                  onClick={() => act(() => rejectRequest(id, comment))}>Reject</Button>
+                  onClick={() => act(() => rejectRequest(id, comment))}>
+                  <RejectIcon size={16} />Reject
+                </Button>
               </div>
             </div>
           )}
-          {canEdit && <Link className="block text-accent hover:underline" to={`/requests/${id}/edit`}>Edit draft</Link>}
+          {canEdit && (
+            <Link className="inline-flex items-center gap-1.5 text-accent hover:underline" to={`/requests/${id}/edit`}>
+              <EditIcon size={16} />Edit draft
+            </Link>
+          )}
           {isOwner && req.status === 'DRAFT' && (
             <Button className="bg-red-600 text-white hover:bg-red-700" disabled={busy}
               onClick={async () => {
@@ -166,10 +179,14 @@ export default function RequestDetailPage() {
                   setBusy(false)
                 }
               }}>
-              Delete draft
+              <DeleteIcon size={16} />Delete draft
             </Button>
           )}
-          {canResubmit && <Button disabled={busy} onClick={() => act(() => resubmitRequest(id))}>Resubmit</Button>}
+          {canResubmit && (
+            <Button disabled={busy} onClick={() => act(() => resubmitRequest(id))}>
+              <SubmitIcon size={16} />Resubmit
+            </Button>
+          )}
           {canFinance && <FinanceForm disabled={busy} onSubmit={(costs) => act(() => completeFinance(id, costs))} />}
         </section>
       )}
