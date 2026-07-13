@@ -260,8 +260,11 @@ whether Outlook sends at all. Defaults live in
   trailing per-row View action; client-side, comparators + `filterRequests`
   in `routes/requestsSort.ts` — status sorts in workflow order, blanks last;
   the list page adds a client-side search box over number/division/requestor),
-  `WizardPage` (6-step request wizard:
-  Basic Info, Description, Effect on Ops, Equipment, Economic, Review — styled
+  `WizardPage` (7-step request wizard:
+  Basic Info, Description, Effect on Ops, Equipment, Economic, Attachments,
+  Review — the Attachments step uploads/removes files via the existing
+  attachment API; on a new request the first upload lazily creates the draft
+  (persist) then attaches. Styled
   as an email-look brand card: navy header band with Logo, numbered stepper
   [✓ done / accent active], footer action bar. Runs in two modes keyed on the
   route: **new** (`/requests/new`, no id) starts from a blank form (`blankForm`,

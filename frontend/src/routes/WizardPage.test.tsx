@@ -12,6 +12,9 @@ vi.mock('../api/requests', () => ({
   updateDraft: vi.fn(() => Promise.resolve({})),
   submitRequest: vi.fn(() => Promise.resolve({})),
   resubmitRequest: vi.fn(() => Promise.resolve({})),
+  uploadAttachment: vi.fn(() => Promise.resolve({})),
+  deleteAttachment: vi.fn(() => Promise.resolve({})),
+  attachmentUrl: (id: string, attId: string) => `/api/requests/${id}/attachments/${attId}`,
 }))
 vi.mock('../api/divisions', () => ({
   listDivisions: vi.fn(() => Promise.resolve([])),
@@ -20,7 +23,7 @@ vi.mock('../auth/useMe', () => ({
   useMe: () => ({ data: { id: 'me', name: 'Me', roles: ['REQUESTOR'], division_id: 'div-1' } }),
 }))
 
-import { getRequest, createDraft, updateDraft, submitRequest, resubmitRequest } from '../api/requests'
+import { getRequest, createDraft, updateDraft, submitRequest, resubmitRequest, uploadAttachment } from '../api/requests'
 
 function makeRequest(status: string): CapexRequestData {
   return {
@@ -120,5 +123,38 @@ describe('WizardPage — new request defers draft creation', () => {
     await waitFor(() => expect(createDraft).toHaveBeenCalledOnce())
     await waitFor(() => expect(updateDraft).toHaveBeenCalledWith('new-1', expect.anything()))
     await waitFor(() => expect(submitRequest).toHaveBeenCalledWith('new-1'))
+  })
+
+  it('uploading on the Attachments step creates the draft then attaches', async () => {
+    renderAt('/requests/new')
+    await screen.findByText('New Request')
+    fireEvent.click(await screen.findByRole('button', { name: /Attachments/ }))
+    const uploadBtn = await screen.findByRole('button', { name: /Upload/i })
+    const file = new File(['data'], 'quote.pdf', { type: 'application/pdf' })
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [file] } })
+    fireEvent.click(uploadBtn)
+    await waitFor(() => expect(createDraft).toHaveBeenCalledOnce())
+    await waitFor(() => expect(uploadAttachment).toHaveBeenCalledWith('new-1', file))
+  })
+})
+
+describe('WizardPage — attachments on an existing draft', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getRequest).mockResolvedValue(makeRequest('DRAFT'))
+  })
+
+  it('uploads to the existing request without creating a new draft', async () => {
+    renderAt('/requests/req-1/edit')
+    await screen.findByText('Request CX000042')
+    fireEvent.click(await screen.findByRole('button', { name: /Attachments/ }))
+    const uploadBtn = await screen.findByRole('button', { name: /Upload/i })
+    const file = new File(['data'], 'quote.pdf', { type: 'application/pdf' })
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [file] } })
+    fireEvent.click(uploadBtn)
+    await waitFor(() => expect(uploadAttachment).toHaveBeenCalledWith('req-1', file))
+    expect(createDraft).not.toHaveBeenCalled()
   })
 })

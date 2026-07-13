@@ -109,10 +109,11 @@ produce the list of people who may actually act. **Any one** of them can approve
 
 ### 6.1 Requestor — create and submit
 
-1. **New Request** — opens the 6-step wizard with a blank form. **No draft is
+1. **New Request** — opens the 7-step wizard with a blank form. **No draft is
    saved yet:** nothing is written to the system until you click **Save Draft**
-   or **Submit**, so opening New Request and leaving creates nothing. (The
-   request number is assigned when the draft is first saved.)
+   or **Submit** (or attach a file — see step 6), so opening New Request and
+   leaving creates nothing. (The request number is assigned when the draft is
+   first saved.)
 2. Complete the wizard steps (the numbered stepper lets you jump between steps —
    for a brand-new request the steps navigate without saving until your first
    Save Draft/Submit; once the draft exists, and whenever editing an existing
@@ -126,7 +127,13 @@ produce the list of people who may actually act. **Any one** of them can approve
       becomes the total cost that drives routing.
    5. **Economic** — asset life, IRR, first-year EBIT, annual savings, payback,
       NPV.
-   6. **Review** — check everything, then **Submit**.
+   6. **Attachments** — upload supporting documents (quotes, evaluations, etc.)
+      and remove them. Any file type is accepted. On a brand-new request the
+      **first upload saves the draft first**, then attaches the file.
+      Attachments can also be managed later from the request's detail page while
+      it is a draft or rejected.
+   7. **Review** — check everything (including the attachment count), then
+      **Submit**.
 3. On submit the request moves to **PENDING_L1** and the L1 approver pool is
    notified (see §7).
 

@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { getRequest, createDraft, updateDraft, submitRequest, resubmitRequest } from '../api/requests'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  getRequest, createDraft, updateDraft, submitRequest, resubmitRequest,
+  uploadAttachment, deleteAttachment, attachmentUrl,
+} from '../api/requests'
 import { listDivisions, type Division } from '../api/divisions'
 import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
@@ -9,11 +12,11 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { BrandCard } from '../components/ui/BrandCard'
-import { AddIcon, DeleteIcon, SubmitIcon } from '../components/ActionIcons'
+import { AddIcon, DeleteIcon, SubmitIcon, UploadIcon, DownloadIcon } from '../components/ActionIcons'
 import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, blankForm, equipmentTotal } from './wizard/types'
 
-const STEPS = ['Basic Info', 'Description', 'Effect on Ops', 'Equipment', 'Economic', 'Review']
+const STEPS = ['Basic Info', 'Description', 'Effect on Ops', 'Equipment', 'Economic', 'Attachments', 'Review']
 
 type Setter = <K extends keyof RequestForm>(k: K, v: RequestForm[K]) => void
 
@@ -72,8 +75,30 @@ export default function WizardPage() {
     },
     onSuccess: (theId) => navigate(`/requests/${theId}`, { replace: true }),
   })
+
+  const qc = useQueryClient()
+  // Attaching a file on a brand-new request creates the draft first (persist),
+  // then uploads; for an existing draft it just uploads to it.
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const theId = await persist()
+      const updated = await uploadAttachment(theId, file)
+      return { id: theId, updated }
+    },
+    onSuccess: ({ id, updated }) => {
+      qc.setQueryData(['request', id], updated)
+      setSaved(true)
+      if (isNew) navigate(`/requests/${id}/edit`, { replace: true, state: { step } })
+    },
+  })
+  const removeAttachment = useMutation({
+    mutationFn: (attId: string) => deleteAttachment(routeId!, attId),
+    onSuccess: (updated) => qc.setQueryData(['request', routeId], updated),
+  })
   const submitError = submit.error instanceof ApiError ? submit.error.message : null
   const saveError = save.error instanceof ApiError ? save.error.message : null
+  const attachError = [upload, removeAttachment].find((m) => m.error)?.error
+  const attachErrorText = attachError instanceof ApiError ? attachError.message : null
 
   // Existing drafts auto-save when moving between steps; a brand-new request
   // navigates locally and only persists on Save Draft / Submit.
@@ -164,7 +189,15 @@ export default function WizardPage() {
         )}
         {step === 3 && <Equipment form={form} set={set} />}
         {step === 4 && <Economic form={form} set={set} />}
-        {step === 5 && <Review form={form}
+        {step === 5 && <Attachments
+          items={data?.attachments ?? []}
+          requestId={routeId}
+          pending={upload.isPending || removeAttachment.isPending}
+          error={attachErrorText}
+          onUpload={(f) => upload.mutate(f)}
+          onRemove={(attId) => removeAttachment.mutate(attId)} />}
+        {step === 6 && <Review form={form}
+          attachmentCount={data?.attachments?.length ?? 0}
           onSubmit={() => submit.mutate()}
           pending={submit.isPending || save.isPending} error={submitError}
           submitLabel={isRejected ? 'Resubmit for approval' : 'Submit for approval'} />}
@@ -294,14 +327,57 @@ function Economic({ form, set }: { form: RequestForm; set: Setter }) {
   )
 }
 
-function Review({ form, onSubmit, pending, error, submitLabel }:
-  { form: RequestForm; onSubmit: () => void; pending: boolean; error: string | null; submitLabel: string }) {
+type AttItem = { id: string; filename: string; content_type: string; size: number }
+
+function Attachments({ items, requestId, pending, error, onUpload, onRemove }: {
+  items: AttItem[]
+  requestId?: string
+  pending: boolean
+  error: string | null
+  onUpload: (f: File) => void
+  onRemove: (attId: string) => void
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  return (
+    <div className="space-y-3">
+      <ul className="space-y-1 text-sm">
+        {items.map((a) => (
+          <li key={a.id} className="flex items-center gap-3">
+            <a className="inline-flex items-center gap-1.5 text-accent hover:underline"
+              href={requestId ? attachmentUrl(requestId, a.id) : undefined}>
+              <DownloadIcon size={15} />{a.filename}
+            </a>
+            <span className="text-xs text-muted">{(a.size / 1024).toFixed(1)} KB</span>
+            <button className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400"
+              disabled={pending} onClick={() => onRemove(a.id)}>
+              <DeleteIcon size={13} />Remove
+            </button>
+          </li>
+        ))}
+        {items.length === 0 && <li className="text-muted">No attachments yet.</li>}
+      </ul>
+      <div className="flex items-center gap-2">
+        <input type="file" ref={fileRef} className="text-sm" />
+        <Button variant="secondary" disabled={pending} onClick={() => {
+          const f = fileRef.current?.files?.[0]
+          if (f) { onUpload(f); if (fileRef.current) fileRef.current.value = '' }
+        }}><UploadIcon size={16} />Upload</Button>
+      </div>
+      {error && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
+      <p className="text-xs text-muted">Uploading saves the draft first, then attaches the file to this request.</p>
+    </div>
+  )
+}
+
+function Review({ form, attachmentCount, onSubmit, pending, error, submitLabel }:
+  { form: RequestForm; attachmentCount: number; onSubmit: () => void; pending: boolean; error: string | null; submitLabel: string }) {
   const total = equipmentTotal(form.equipment_items)
   return (
     <div className="space-y-3 text-sm">
       <p><span className="font-medium">Description:</span> {form.description || '—'}</p>
       <p><span className="font-medium">Equipment lines:</span> {form.equipment_items.length}</p>
       <p><span className="font-medium">Total cost:</span> ${total.toLocaleString()}</p>
+      <p><span className="font-medium">Attachments:</span> {attachmentCount}</p>
       {error && <p className="text-red-600 dark:text-red-400" role="alert">{error}</p>}
       <Button disabled={pending} onClick={onSubmit}><SubmitIcon size={16} />{submitLabel}</Button>
     </div>
