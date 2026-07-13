@@ -1,17 +1,17 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { LogOut } from 'lucide-react'
 import {
-  LayoutDashboard,
-  FilePlus2,
-  ListChecks,
-  Users,
-  Building2,
-  SlidersHorizontal,
-  Mail,
-  UserCircle,
-  LogOut,
-  type LucideIcon,
-} from 'lucide-react'
+  DashboardIcon,
+  NewRequestIcon,
+  MyRequestsIcon,
+  UsersIcon,
+  DivisionsIcon,
+  ThresholdsIcon,
+  EmailTemplatesIcon,
+  ProfileIcon,
+  type NavIconProps,
+} from './NavIcons'
 import { useMe } from '../auth/useMe'
 import { logout } from '../api/auth'
 import { Button } from './ui/Button'
@@ -21,7 +21,7 @@ import { Logo } from './Logo'
 interface NavItem {
   to: string
   label: string
-  icon: LucideIcon
+  icon: React.ComponentType<NavIconProps>
   roles: string[]
   end?: boolean
   /** Extra paths that should also mark this item active (e.g. the wizard). */
@@ -32,23 +32,23 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
   {
     section: 'Overview',
     items: [
-      { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: [], end: true },
-      { to: '/requests/new', label: 'New Request', icon: FilePlus2, roles: [], activePattern: /^\/requests\/[^/]+\/edit$/ },
-      { to: '/requests', label: 'My Requests', icon: ListChecks, roles: [], end: true },
+      { to: '/', label: 'Dashboard', icon: DashboardIcon, roles: [], end: true },
+      { to: '/requests/new', label: 'New Request', icon: NewRequestIcon, roles: [], activePattern: /^\/requests\/[^/]+\/edit$/ },
+      { to: '/requests', label: 'My Requests', icon: MyRequestsIcon, roles: [], end: true },
     ],
   },
   {
     section: 'Admin',
     items: [
-      { to: '/admin/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
-      { to: '/admin/divisions', label: 'Divisions', icon: Building2, roles: ['ADMIN'] },
-      { to: '/admin/thresholds', label: 'Approval Thresholds', icon: SlidersHorizontal, roles: ['ADMIN'] },
-      { to: '/admin/email-templates', label: 'Email Templates', icon: Mail, roles: ['ADMIN'] },
+      { to: '/admin/users', label: 'Users', icon: UsersIcon, roles: ['ADMIN'] },
+      { to: '/admin/divisions', label: 'Divisions', icon: DivisionsIcon, roles: ['ADMIN'] },
+      { to: '/admin/thresholds', label: 'Approval Thresholds', icon: ThresholdsIcon, roles: ['ADMIN'] },
+      { to: '/admin/email-templates', label: 'Email Templates', icon: EmailTemplatesIcon, roles: ['ADMIN'] },
     ],
   },
   {
     section: 'Account',
-    items: [{ to: '/profile', label: 'My Profile', icon: UserCircle, roles: [] }],
+    items: [{ to: '/profile', label: 'My Profile', icon: ProfileIcon, roles: [] }],
   },
 ]
 

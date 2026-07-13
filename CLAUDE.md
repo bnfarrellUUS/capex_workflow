@@ -228,6 +228,10 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   page card: navy header band + brand mark + title/sky subtitle, optional
   actions/subheader/footer slots — one per page; used by Dashboard, Requests
   list/detail, Wizard, Profile, and the admin list pages), `QuillEditor`.
+  `components/NavIcons.tsx` (custom per-page sidebar line-icons — one distinct
+  symbol per nav item, 24px grid / rounded joins, `currentColor`; from
+  `brand/UUS CAPEX Flow Nav Icons.html`. AppShell uses these instead of
+  lucide for nav; lucide still supplies non-nav glyphs like Sign Out).
   `components/Logo.tsx` (primary Capital-Cycle mark), `components/BrandMark.tsx`
   (all four brand marks; BrandCard `mark` prop maps sections: Dashboard=cycle,
   Requests=ascent, Admin=check, Profile=uptime), `ThemeToggle.tsx`, `theme.ts`.
