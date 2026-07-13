@@ -13,6 +13,14 @@ export interface EmailTemplate extends EmailTemplateSummary {
   button_label: string
 }
 export interface Preview { subject: string; html: string }
+export interface EmailSettings { mode: 'test' | 'live'; test_recipient: string }
+
+export function getEmailSettings(): Promise<EmailSettings> {
+  return api('/email-templates/settings')
+}
+export function saveEmailSettings(body: EmailSettings): Promise<EmailSettings> {
+  return api('/email-templates/settings', { method: 'PUT', body })
+}
 
 export function listEmailTemplates(): Promise<EmailTemplateSummary[]> {
   return api('/email-templates')

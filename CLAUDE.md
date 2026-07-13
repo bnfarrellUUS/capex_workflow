@@ -138,7 +138,11 @@ build`; there is no live dev server.)
   (approval routing), `auth_service`, `user_service`, `division_service`,
   `threshold_service`, `profile_service`, `attachment_service`/`storage`,
   `counter_service` (request numbers `CX000001…`), `notify` (writes
-  `NotificationLog`, renders emails via templates), `email_template_service`
+  `NotificationLog`, renders emails via templates; asks `settings_service`
+  for the delivery mode to pick the recipient), `settings_service`
+  (app-wide settings in the `AppSetting` table — the email delivery mode:
+  Test redirects all mail to a test recipient, Live sends to real
+  recipients; defaults to Test + `EMAIL_REDIRECT_TO`), `email_template_service`
   (four editable email templates: defaults, tokens, render, three-tier reset),
   `email_frame` (brand HTML wrapper; the rounded chrome — header band, CTA
   buttons, bottom strip — is baked into `assets/*.png` because classic
@@ -208,8 +212,14 @@ Each transition sends a notification email (assignment/decision/finance-ready).
 Emails are **editable HTML templates** — admins customize the subject, body
 (WYSIWYG), and enabled flag per type under **Admin → Email Templates**, with
 `{token}` placeholders substituted at send time and a brand-styled locked frame.
-Sent via the local Outlook desktop app (`email_outlook`); redirected to
-`EMAIL_REDIRECT_TO` while testing. Defaults live in
+Sent via the local Outlook desktop app (`email_outlook`). A runtime
+**delivery mode** (Test/Live) — toggled from the Email Templates page and
+editor (`components/admin/EmailDeliveryMode.tsx`), stored in `AppSetting` via
+`settings_service`, exposed at `GET/PUT /api/email-templates/settings` — picks
+the recipient: **Test** redirects every message to a configurable test
+recipient (default `EMAIL_REDIRECT_TO`) and adds a "redirected while testing"
+banner; **Live** sends to the real recipients. `EMAIL_ENABLED` still gates
+whether Outlook sends at all. Defaults live in
 `email_template_service.DEFAULTS`.
 
 ## Frontend layout (`frontend/src/`)

@@ -40,6 +40,7 @@ function renderAt(startType = 'ASSIGNED') {
 describe('EmailTemplateEditor', () => {
   beforeEach(() => {
     vi.mocked(apiMod.listEmailTemplates).mockResolvedValue(TEMPLATES as never)
+    vi.mocked(apiMod.getEmailSettings).mockResolvedValue({ mode: 'test', test_recipient: 'tester@uus.com' })
     vi.mocked(apiMod.getEmailTemplate).mockImplementation((type: string) =>
       Promise.resolve(tmpl(type, TEMPLATES.find((t) => t.type === type)!.name) as never))
   })
@@ -72,7 +73,7 @@ describe('EmailTemplateEditor', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     renderAt()
     await waitFor(() => expect(screen.getByRole('tab', { name: /Rejected/ })).toBeInTheDocument())
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'edited subject' } })
+    fireEvent.change(screen.getByDisplayValue('S'), { target: { value: 'edited subject' } })
     fireEvent.click(screen.getByRole('tab', { name: /Rejected/ }))
     expect(confirmSpy).toHaveBeenCalledOnce()
     expect(apiMod.getEmailTemplate).not.toHaveBeenCalledWith('REJECTED')
@@ -83,7 +84,7 @@ describe('EmailTemplateEditor', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderAt()
     await waitFor(() => expect(screen.getByRole('tab', { name: /Rejected/ })).toBeInTheDocument())
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'edited subject' } })
+    fireEvent.change(screen.getByDisplayValue('S'), { target: { value: 'edited subject' } })
     fireEvent.click(screen.getByRole('tab', { name: /Rejected/ }))
     await waitFor(() => expect(apiMod.getEmailTemplate).toHaveBeenCalledWith('REJECTED'))
     confirmSpy.mockRestore()

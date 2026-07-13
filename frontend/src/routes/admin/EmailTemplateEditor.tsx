@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { QuillEditor } from '../../components/ui/QuillEditor'
 import { Logo } from '../../components/Logo'
+import { EmailDeliveryMode } from '../../components/admin/EmailDeliveryMode'
 
 const EMAIL_FONT = 'Arial, Helvetica, sans-serif'
 
@@ -56,6 +57,7 @@ export default function EmailTemplateEditor() {
 
   return (
     <div>
+      <EmailDeliveryMode />
       <TemplateTabs templates={templates} activeType={type} dirty={dirty} />
       {data && (
     <div className="flex gap-4">

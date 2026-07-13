@@ -4,15 +4,27 @@ from flask import current_app
 
 from app.extensions import db
 from app.models import NotificationLog, User
+from app.services import settings_service
 
 log = logging.getLogger("capex.notify")
 
 
+def _delivery(intended):
+    """Resolve (recipient, redirect_note) from the current email mode.
+
+    Test mode redirects everything to the configured test recipient and adds a
+    banner naming the intended recipient; Live mode sends to the real one.
+    """
+    settings = settings_service.get_email_settings()
+    if settings["mode"] == "test":
+        to = settings["test_recipient"] or intended
+        note = f"Intended recipient: {intended} (redirected while testing)"
+        return to, note
+    return intended, None
+
+
 def _redirect_note(intended):
-    if not (current_app.config.get("EMAIL_ENABLED")
-            and current_app.config.get("EMAIL_REDIRECT_TO")):
-        return None
-    return f"Intended recipient: {intended} (redirected while testing)"
+    return _delivery(intended)[1]
 
 
 def _emit(intended, subject, html, enabled, request_id, type_):
@@ -26,7 +38,7 @@ def _emit(intended, subject, html, enabled, request_id, type_):
         log.exception("notification log failed for %s", intended)
     if not enabled or not current_app.config.get("EMAIL_ENABLED"):
         return
-    redirect_to = current_app.config.get("EMAIL_REDIRECT_TO") or intended
+    redirect_to = _delivery(intended)[0]
     try:
         from app.services import email_outlook
         email_outlook.send(redirect_to, subject, "", html=html)
@@ -80,8 +92,7 @@ def _emit_plain(intended, subject, body, request_id, type_):
         log.exception("notification log failed for %s", intended)
     if not current_app.config.get("EMAIL_ENABLED"):
         return
-    redirect_to = current_app.config.get("EMAIL_REDIRECT_TO") or intended
-    note = _redirect_note(intended)
+    redirect_to, note = _delivery(intended)
     full = f"{note}\n\n{body}" if note else body
     try:
         from app.services import email_outlook

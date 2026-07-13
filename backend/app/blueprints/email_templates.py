@@ -2,9 +2,24 @@ from flask import Blueprint, jsonify, request
 
 from app.authz import require_roles
 from app.schemas.email_template import EmailTemplateIn, EmailTemplatePreviewIn
+from app.schemas.email_settings import EmailSettingsIn
 from app.services import email_template_service as ets
+from app.services import settings_service
 
 bp = Blueprint("email_templates", __name__, url_prefix="/api/email-templates")
+
+
+@bp.get("/settings")
+@require_roles("ADMIN")
+def get_settings():
+    return jsonify(settings_service.get_email_settings())
+
+
+@bp.put("/settings")
+@require_roles("ADMIN")
+def put_settings():
+    payload = EmailSettingsIn(**(request.get_json(silent=True) or {}))
+    return jsonify(settings_service.set_email_settings(payload.mode, payload.test_recipient))
 
 
 @bp.get("")
