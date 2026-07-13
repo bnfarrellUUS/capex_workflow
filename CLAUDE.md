@@ -261,7 +261,10 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds,
   Email Templates + forms). The Email Templates editor uses `components/ui/
   QuillEditor` (Quill 2.x on a ref) with a placeholders panel and a sandboxed
-  iframe preview. Approver pools (division L1, threshold L2/L3) and user roles
+  iframe preview, and a tab bar (`TemplateTabs`) across the top to switch
+  between the four templates in place — switching while there are unsaved
+  edits prompts a discard confirm. (The list page is still the sidebar
+  landing.) Approver pools (division L1, threshold L2/L3) and user roles
   are assigned with the `TransferList` dual-listbox, not checkboxes.
   `routes/wizard/types.ts` maps API ↔ form (`toForm`/`toPayload`).
 - `api/` — `client.ts` (fetch wrapper; obtains CSRF from `/api/auth/csrf`, sends

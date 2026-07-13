@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  getEmailTemplate, saveEmailTemplate, saveAsDefault, resetEmailTemplate,
-  previewEmailTemplate, type EmailTemplate,
+  getEmailTemplate, listEmailTemplates, saveEmailTemplate, saveAsDefault, resetEmailTemplate,
+  previewEmailTemplate, type EmailTemplate, type EmailTemplateSummary,
 } from '../../api/emailTemplates'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -16,6 +16,7 @@ export default function EmailTemplateEditor() {
   const { type = '' } = useParams()
   const qc = useQueryClient()
   const { data } = useQuery({ queryKey: ['email-templates', type], queryFn: () => getEmailTemplate(type) })
+  const { data: templates = [] } = useQuery({ queryKey: ['email-templates'], queryFn: listEmailTemplates })
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [enabled, setEnabled] = useState(true)
@@ -53,8 +54,10 @@ export default function EmailTemplateEditor() {
   const failure = [save, asDefault, reset, doPreview].find((m) => m.error)?.error
   const errorText = failure instanceof Error ? failure.message : null
 
-  if (!data) return null
   return (
+    <div>
+      <TemplateTabs templates={templates} activeType={type} dirty={dirty} />
+      {data && (
     <div className="flex gap-4">
       <div className="min-w-0 flex-1">
         <div className="mb-4 flex items-center justify-between">
@@ -130,6 +133,47 @@ export default function EmailTemplateEditor() {
           </div>
         </div>
       )}
+    </div>
+      )}
+    </div>
+  )
+}
+
+function TemplateTabs({ templates, activeType, dirty }: {
+  templates: EmailTemplateSummary[]
+  activeType: string
+  dirty: boolean
+}) {
+  const navigate = useNavigate()
+  const switchTo = (type: string) => {
+    if (type === activeType) return
+    if (dirty && !window.confirm('You have unsaved changes. Discard them and switch?')) return
+    navigate(`/admin/email-templates/${type}`)
+  }
+  return (
+    <div role="tablist" className="mb-4 flex flex-wrap gap-1 border-b border-border">
+      {templates.map((t) => {
+        const active = t.type === activeType
+        return (
+          <button
+            key={t.type}
+            role="tab"
+            type="button"
+            aria-selected={active}
+            onClick={() => switchTo(t.type)}
+            className={`-mb-px flex items-center gap-1.5 rounded-t-md border-b-2 px-3 py-2 text-sm font-medium transition ${
+              active
+                ? 'border-accent text-accent'
+                : 'border-transparent text-muted hover:text-fg'
+            }`}
+          >
+            {t.name}
+            {!t.enabled && (
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500" title="Disabled" aria-label="Disabled" />
+            )}
+          </button>
+        )
+      })}
     </div>
   )
 }
