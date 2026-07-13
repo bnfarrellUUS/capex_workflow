@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { getRequest, updateDraft, submitRequest, type CapexRequestData } from '../api/requests'
+import { getRequest, updateDraft, submitRequest, resubmitRequest, type CapexRequestData } from '../api/requests'
 import { listDivisions, type Division } from '../api/divisions'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -30,8 +30,9 @@ export default function WizardPage() {
     mutationFn: () => updateDraft(id, toPayload(form!)),
     onSuccess: () => setSaved(true),
   })
+  const isRejected = data?.status === 'REJECTED'
   const submit = useMutation({
-    mutationFn: () => submitRequest(id),
+    mutationFn: () => (isRejected ? resubmitRequest(id) : submitRequest(id)),
     onSuccess: () => navigate(`/requests/${id}`, { replace: true }),
   })
   const submitError = submit.error instanceof ApiError ? submit.error.message : null
@@ -124,7 +125,8 @@ export default function WizardPage() {
         {step === 4 && <Economic form={form} set={set} />}
         {step === 5 && <Review form={form}
           onSubmit={() => saveThen(() => submit.mutate())}
-          pending={submit.isPending || save.isPending} error={submitError} />}
+          pending={submit.isPending || save.isPending} error={submitError}
+          submitLabel={isRejected ? 'Resubmit for approval' : 'Submit for approval'} />}
       </BrandCard>
     </div>
   )
@@ -247,8 +249,8 @@ function Economic({ form, set }: { form: RequestForm; set: Setter }) {
   )
 }
 
-function Review({ form, onSubmit, pending, error }:
-  { form: RequestForm; onSubmit: () => void; pending: boolean; error: string | null }) {
+function Review({ form, onSubmit, pending, error, submitLabel }:
+  { form: RequestForm; onSubmit: () => void; pending: boolean; error: string | null; submitLabel: string }) {
   const total = equipmentTotal(form.equipment_items)
   return (
     <div className="space-y-3 text-sm">
@@ -256,7 +258,7 @@ function Review({ form, onSubmit, pending, error }:
       <p><span className="font-medium">Equipment lines:</span> {form.equipment_items.length}</p>
       <p><span className="font-medium">Total cost:</span> ${total.toLocaleString()}</p>
       {error && <p className="text-red-600 dark:text-red-400" role="alert">{error}</p>}
-      <Button disabled={pending} onClick={onSubmit}>Submit for approval</Button>
+      <Button disabled={pending} onClick={onSubmit}>{submitLabel}</Button>
     </div>
   )
 }

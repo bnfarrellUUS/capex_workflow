@@ -239,7 +239,9 @@ Sent via the local Outlook desktop app (`email_outlook`); redirected to
   Basic Info, Description, Effect on Ops, Equipment, Economic, Review — styled
   as an email-look brand card: navy header band with Logo, numbered stepper
   [✓ done / accent active], footer action bar; stepper clicks save the draft
-  before jumping), `RequestDetailPage`,
+  before jumping. The wizard edits both DRAFT and REJECTED requests (owners can
+  fix a rejected request and resubmit); the Review-step action calls `resubmit`
+  when the loaded request is REJECTED, otherwise `submit`), `RequestDetailPage`,
   `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds,
   Email Templates + forms). The Email Templates editor uses `components/ui/
   QuillEditor` (Quill 2.x on a ref) with a placeholders panel and a sandboxed
