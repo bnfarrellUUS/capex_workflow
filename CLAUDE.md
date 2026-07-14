@@ -210,7 +210,9 @@ After final approval, a **FINANCE** user completes the cost breakdown
 request is APPROVED (each save logs a `FINANCE_COMPLETED` action). The request
 detail page shows the breakdown read-only to all viewers of an approved
 request, renders the finance form prefilled with decimal text inputs for
-FINANCE users, and lists the approval history as a table with a local-time
+FINANCE users (dollar amounts; client-side validated in
+`routes/financeCosts.ts` — accepts `$`/commas, names the bad field on error),
+and lists the approval history as a table with a local-time
 Date column (`created_at` treated as UTC).
 
 Each transition sends a notification email (assignment/decision/finance-ready).

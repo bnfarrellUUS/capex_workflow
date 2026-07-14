@@ -6,6 +6,7 @@ import {
   deleteRequest, uploadAttachment, deleteAttachment, attachmentUrl,
   type CapexRequestData,
 } from '../api/requests'
+import { FINANCE_FIELDS, parseFinanceCosts, financeFormValues } from './financeCosts'
 import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -232,15 +233,6 @@ export default function RequestDetailPage() {
   )
 }
 
-type CostField = 'cost_autos_trucks' | 'cost_machinery' | 'cost_improvements'
-  | 'cost_furniture' | 'cost_permits' | 'cost_misc'
-
-const FINANCE_FIELDS: [CostField, string][] = [
-  ['cost_autos_trucks', 'Autos & Trucks'], ['cost_machinery', 'Machinery & Equipment'],
-  ['cost_improvements', 'Improvements'], ['cost_furniture', 'Furniture & Fixtures'],
-  ['cost_permits', 'Permits'], ['cost_misc', 'Misc'],
-]
-
 function formatActionDate(iso: string | null): string {
   if (!iso) return '—'
   // Backend timestamps are UTC; older rows may arrive without a zone marker.
@@ -256,21 +248,31 @@ function FinanceForm({ req, onSubmit, disabled }: {
   onSubmit: (costs: Record<string, string | null>) => void
   disabled: boolean
 }) {
-  const [vals, setVals] = useState<Record<string, string>>(() =>
-    Object.fromEntries(FINANCE_FIELDS.map(([key]) => [key, req[key] ?? ''])))
+  const [vals, setVals] = useState<Record<string, string>>(() => financeFormValues(req))
+  const [formErr, setFormErr] = useState<string | null>(null)
   return (
     <div className="space-y-2">
+      <p className="text-sm text-muted">Allocate the total cost across categories, in dollars.</p>
       <div className="grid grid-cols-2 gap-2">
         {FINANCE_FIELDS.map(([key, label]) => (
           <div key={key} className="space-y-1">
-            <label className="text-xs text-muted">{label}</label>
-            <Input inputMode="decimal" value={vals[key] ?? ''}
+            <label className="text-xs text-muted">{label} ($)</label>
+            <Input inputMode="decimal" placeholder="0.00" value={vals[key] ?? ''}
               onChange={(e) => setVals({ ...vals, [key]: e.target.value })} />
           </div>
         ))}
       </div>
+      {formErr && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{formErr}</p>}
       <Button disabled={disabled}
-        onClick={() => onSubmit(Object.fromEntries(FINANCE_FIELDS.map(([k]) => [k, vals[k]?.trim() ? vals[k] : null])))}>
+        onClick={() => {
+          const { costs, invalid } = parseFinanceCosts(vals)
+          if (invalid.length) {
+            setFormErr(`Enter dollar amounts only — check: ${invalid.join(', ')}.`)
+            return
+          }
+          setFormErr(null)
+          onSubmit(costs)
+        }}>
         {req.finance_completed ? 'Update finance section' : 'Save finance section'}
       </Button>
     </div>
