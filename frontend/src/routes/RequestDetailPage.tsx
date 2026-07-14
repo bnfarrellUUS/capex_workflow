@@ -83,7 +83,7 @@ export default function RequestDetailPage() {
         <h2 className="mb-1 font-semibold text-fg">Equipment</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-brand-navy text-left text-xs uppercase tracking-wide text-white [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
+            <tr className="border-b border-border bg-brand-sky/25 text-left text-xs uppercase tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
               <th className="py-1">Units</th><th>Type</th><th>Make</th><th>Model</th><th>Cost</th>
             </tr>
           </thead>
@@ -105,7 +105,7 @@ export default function RequestDetailPage() {
         <h2 className="mb-1 font-semibold text-fg">Approval history</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-brand-navy text-left text-xs uppercase tracking-wide text-white [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
+            <tr className="border-b border-border bg-brand-sky/25 text-left text-xs uppercase tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
               <th className="py-1">Action</th><th>Level</th><th>By</th><th>Date</th><th>Comment</th>
             </tr>
           </thead>

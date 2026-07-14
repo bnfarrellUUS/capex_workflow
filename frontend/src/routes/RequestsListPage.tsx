@@ -90,7 +90,7 @@ export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="bg-brand-navy text-left text-xs uppercase tracking-wide text-white [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
+          <tr className="border-b border-border bg-brand-sky/25 text-left text-xs uppercase tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
             {COLUMNS.map((col) => (
               <th
                 key={col.key}
@@ -99,7 +99,7 @@ export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
               >
                 <button
                   onClick={() => toggleSort(col.key)}
-                  className="group inline-flex items-center gap-1 uppercase tracking-wide hover:text-brand-sky"
+                  className="group inline-flex items-center gap-1 uppercase tracking-wide hover:text-accent"
                 >
                   {col.label}
                   {sort?.key === col.key ? (
