@@ -90,7 +90,7 @@ export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
+          <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
             {COLUMNS.map((col) => (
               <th
                 key={col.key}

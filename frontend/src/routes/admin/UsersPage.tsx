@@ -16,7 +16,7 @@ export default function UsersPage() {
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
+            <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
               <th className="py-2 pr-4 font-semibold">Username</th><th className="pr-4 font-semibold">Name</th><th className="pr-4 font-semibold">Email</th>
               <th className="pr-4 font-semibold">Roles</th><th className="pr-4 font-semibold">Active</th><th></th>
             </tr>

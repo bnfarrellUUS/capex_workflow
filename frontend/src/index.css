@@ -47,6 +47,13 @@ body {
   color: var(--color-fg);
 }
 
+/* Edge/IE render their own password-reveal eye inside the input, which
+   duplicates the PasswordInput toggle. Hide the native one. */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* Email template editor: make the Quill surface look like the email body
    (the frame chrome around it is rendered by EmailTemplateEditor). Emails are
    always light, so the editing surface stays white in dark mode too. */

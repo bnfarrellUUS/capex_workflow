@@ -357,11 +357,14 @@ function Attachments({ items, requestId, pending, error, onUpload, onRemove }: {
         {items.length === 0 && <li className="text-muted">No attachments yet.</li>}
       </ul>
       <div className="flex items-center gap-2">
-        <input type="file" ref={fileRef} className="text-sm" />
-        <Button variant="secondary" disabled={pending} onClick={() => {
-          const f = fileRef.current?.files?.[0]
-          if (f) { onUpload(f); if (fileRef.current) fileRef.current.value = '' }
-        }}><UploadIcon size={16} />Upload</Button>
+        <input type="file" ref={fileRef} className="hidden" onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) onUpload(f)
+          e.target.value = ''
+        }} />
+        <Button variant="secondary" disabled={pending} onClick={() => fileRef.current?.click()}>
+          <UploadIcon size={16} />Attach file
+        </Button>
       </div>
       {error && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
       <p className="text-xs text-muted">Uploading saves the draft first, then attaches the file to this request.</p>

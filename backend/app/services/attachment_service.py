@@ -11,14 +11,21 @@ from app.services.storage import get_storage
 _EDITABLE = ("DRAFT", "REJECTED")
 
 
+def _can_modify(req, user):
+    """The requestor manages attachments while the request is editable;
+    Finance manages them once the request is approved."""
+    if req.requestor_id == user.id and req.status in _EDITABLE:
+        return True
+    return "FINANCE" in user.roles_list and req.status == "APPROVED"
+
+
 def add_attachment(request_id, uploader, filename, content_type, data):
     req = db.session.get(CapexRequest, request_id)
     if req is None:
         raise ServiceError("Request not found.", 404)
-    if req.requestor_id != uploader.id:
-        raise ServiceError("Only the requestor can attach files.", 403)
-    if req.status not in _EDITABLE:
-        raise ServiceError("Attachments can only be changed while the request is editable.")
+    if not _can_modify(req, uploader):
+        raise ServiceError(
+            "Only the requestor (while editable) or Finance (once approved) can attach files.", 403)
     # Sanitize the client-supplied name before it touches the filesystem
     # (path traversal). Keep the original for display.
     safe_name = secure_filename(filename) or "file"
@@ -44,10 +51,9 @@ def delete_attachment(att_id, viewer):
     att = db.session.get(Attachment, att_id)
     if att is None:
         raise ServiceError("Attachment not found.", 404)
-    if att.request.requestor_id != viewer.id:
-        raise ServiceError("Only the requestor can delete attachments.", 403)
-    if att.request.status not in _EDITABLE:
-        raise ServiceError("Attachments can only be changed while the request is editable.")
+    if not _can_modify(att.request, viewer):
+        raise ServiceError(
+            "Only the requestor (while editable) or Finance (once approved) can delete attachments.", 403)
     get_storage().delete(att.storage_path)
     db.session.delete(att)
     db.session.commit()

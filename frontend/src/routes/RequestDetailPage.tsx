@@ -49,6 +49,7 @@ export default function RequestDetailPage() {
   const canEdit = isOwner && (req.status === 'DRAFT' || req.status === 'REJECTED')
   const canResubmit = isOwner && req.status === 'REJECTED'
   const canFinance = me.roles.includes('FINANCE') && req.status === 'APPROVED'
+  const canAttach = canEdit || canFinance
   const hasActions = isAssignee || canEdit || canResubmit
 
   const pipeline = (
@@ -82,7 +83,7 @@ export default function RequestDetailPage() {
         <h2 className="mb-1 font-semibold text-fg">Equipment</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
+            <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
               <th className="py-1">Units</th><th>Type</th><th>Make</th><th>Model</th><th>Cost</th>
             </tr>
           </thead>
@@ -104,7 +105,7 @@ export default function RequestDetailPage() {
         <h2 className="mb-1 font-semibold text-fg">Approval history</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
+            <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
               <th className="py-1">Action</th><th>Level</th><th>By</th><th>Date</th><th>Comment</th>
             </tr>
           </thead>
@@ -157,7 +158,7 @@ export default function RequestDetailPage() {
                 <DownloadIcon size={15} />{a.filename}
               </a>
               <span className="text-xs text-muted">{(a.size / 1024).toFixed(1)} KB</span>
-              {canEdit && (
+              {canAttach && (
                 <button className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400" disabled={busy}
                   onClick={() => act(() => deleteAttachment(id, a.id))}><DeleteIcon size={13} />Remove</button>
               )}
@@ -165,13 +166,16 @@ export default function RequestDetailPage() {
           ))}
           {req.attachments.length === 0 && <li className="text-muted">No attachments.</li>}
         </ul>
-        {canEdit && (
+        {canAttach && (
           <div className="mt-2">
-            <input type="file" ref={fileRef} className="text-sm" />
-            <Button className="ml-2" disabled={busy} onClick={() => {
-              const f = fileRef.current?.files?.[0]
+            <input type="file" ref={fileRef} className="hidden" onChange={(e) => {
+              const f = e.target.files?.[0]
               if (f) act(() => uploadAttachment(id, f))
-            }}><UploadIcon size={16} />Upload</Button>
+              e.target.value = ''
+            }} />
+            <Button disabled={busy} onClick={() => fileRef.current?.click()}>
+              <UploadIcon size={16} />Attach file
+            </Button>
           </div>
         )}
       </section>

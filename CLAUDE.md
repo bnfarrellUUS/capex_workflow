@@ -122,7 +122,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 150 tests).
+- Backend: `cd backend && pytest -q` (currently 153 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -213,7 +213,11 @@ request, renders the finance form prefilled with decimal text inputs for
 FINANCE users (dollar amounts; client-side validated in
 `routes/financeCosts.ts` — accepts `$`/commas, names the bad field on error),
 and lists the approval history as a table with a local-time
-Date column (`created_at` treated as UTC).
+Date column (`created_at` treated as UTC). Attachment permissions
+(`attachment_service._can_modify`): the requestor manages attachments while
+DRAFT/REJECTED; FINANCE users manage them once APPROVED. Attach-file UI
+(wizard + detail page) is a button over a hidden file input — picking a file
+uploads immediately.
 
 Each transition sends a notification email (assignment/decision/finance-ready).
 Emails are **editable HTML templates** — admins customize the subject, body
