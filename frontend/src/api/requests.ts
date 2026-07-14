@@ -32,6 +32,12 @@ export interface CapexRequestData {
   annual_savings: string | null
   payback_years: string | null
   npv_savings: string | null
+  cost_autos_trucks: string | null
+  cost_machinery: string | null
+  cost_improvements: string | null
+  cost_furniture: string | null
+  cost_permits: string | null
+  cost_misc: string | null
   total_cost: string | null
   requestor_id: string
   assignee_id: string | null

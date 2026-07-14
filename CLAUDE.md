@@ -122,7 +122,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 111 tests).
+- Backend: `cd backend && pytest -q` (currently 150 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -206,7 +206,12 @@ mapped through their out-of-office delegate; **any one** eligible approver may
 approve (advances) or reject. The pool appears on every member's "assigned"
 worklist; `assignee_id` is just a display hint (the first current approver).
 After final approval, a **FINANCE** user completes the cost breakdown
-(`cost_*` → `finance_completed`).
+(`cost_*` → `finance_completed`); Finance can re-save it anytime while the
+request is APPROVED (each save logs a `FINANCE_COMPLETED` action). The request
+detail page shows the breakdown read-only to all viewers of an approved
+request, renders the finance form prefilled with decimal text inputs for
+FINANCE users, and lists the approval history as a table with a local-time
+Date column (`created_at` treated as UTC).
 
 Each transition sends a notification email (assignment/decision/finance-ready).
 Emails are **editable HTML templates** — admins customize the subject, body

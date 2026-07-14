@@ -190,8 +190,6 @@ def complete_finance(request_id, actor_id, costs):
         raise ServiceError("The Finance role is required.", 403)
     if req.status != "APPROVED":
         raise ServiceError("Only approved requests can be completed by Finance.")
-    if req.finance_completed:
-        raise ServiceError("The Finance section is already completed.")
     for field in _FINANCE_FIELDS:
         setattr(req, field, costs.get(field))
     req.finance_completed = True

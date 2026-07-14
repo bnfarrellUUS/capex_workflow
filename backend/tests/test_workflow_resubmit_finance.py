@@ -68,6 +68,21 @@ def test_complete_finance_sets_costs(app):
     assert action is not None
 
 
+def test_complete_finance_can_resave_after_completion(app):
+    requestor, l1, finance, req = _approved_request()
+    complete_finance(req.id, finance.id, {"cost_machinery": Decimal("30000")})
+    result = complete_finance(req.id, finance.id, {
+        "cost_machinery": Decimal("25000"),
+        "cost_permits": Decimal("5000"),
+    })
+    assert result.finance_completed is True
+    assert result.cost_machinery == Decimal("25000")
+    assert result.cost_permits == Decimal("5000")
+    actions = db.session.query(ApprovalAction).filter_by(
+        request_id=req.id, action="FINANCE_COMPLETED").count()
+    assert actions == 2
+
+
 def test_complete_finance_requires_finance_role(app):
     requestor, l1, finance, req = _approved_request()
     with pytest.raises(ServiceError):

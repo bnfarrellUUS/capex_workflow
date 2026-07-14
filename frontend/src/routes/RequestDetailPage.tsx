@@ -47,8 +47,8 @@ export default function RequestDetailPage() {
   const isOwner = req.requestor_id === me.id
   const canEdit = isOwner && (req.status === 'DRAFT' || req.status === 'REJECTED')
   const canResubmit = isOwner && req.status === 'REJECTED'
-  const canFinance = me.roles.includes('FINANCE') && req.status === 'APPROVED' && !req.finance_completed
-  const hasActions = isAssignee || canEdit || canResubmit || canFinance
+  const canFinance = me.roles.includes('FINANCE') && req.status === 'APPROVED'
+  const hasActions = isAssignee || canEdit || canResubmit
 
   const pipeline = (
     <ol className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-2 px-7 py-3 text-xs">
@@ -101,17 +101,51 @@ export default function RequestDetailPage() {
 
       <section>
         <h2 className="mb-1 font-semibold text-fg">Approval history</h2>
-        <ul className="space-y-1 text-sm">
-          {req.actions.map((a, idx) => (
-            <li key={idx} className="border-b border-border pb-1">
-              <span className="font-medium">{a.action}</span>
-              {a.level ? ` (L${a.level})` : ''} — {a.actor_name}
-              {a.comment ? <span className="text-muted"> · "{a.comment}"</span> : null}
-            </li>
-          ))}
-          {req.actions.length === 0 && <li className="text-muted">No actions yet.</li>}
-        </ul>
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
+              <th className="py-1">Action</th><th>Level</th><th>By</th><th>Date</th><th>Comment</th>
+            </tr>
+          </thead>
+          <tbody>
+            {req.actions.map((a, idx) => (
+              <tr key={idx} className="border-b border-border">
+                <td className="py-1 font-medium">{a.action}</td>
+                <td>{a.level ? `L${a.level}` : '—'}</td>
+                <td>{a.actor_name ?? '—'}</td>
+                <td>{formatActionDate(a.created_at)}</td>
+                <td className="text-muted">{a.comment || '—'}</td>
+              </tr>
+            ))}
+            {req.actions.length === 0 && (
+              <tr><td colSpan={5} className="py-1 text-muted">No actions yet.</td></tr>
+            )}
+          </tbody>
+        </table>
       </section>
+
+      {req.status === 'APPROVED' && (
+        <section>
+          <h2 className="mb-1 font-semibold text-fg">Finance cost breakdown</h2>
+          {canFinance ? (
+            <FinanceForm req={req} disabled={busy} onSubmit={(costs) => act(() => completeFinance(id, costs))} />
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {FINANCE_FIELDS.map(([key, label]) => (
+                  <div key={key}>
+                    <span className="font-medium">{label}:</span>{' '}
+                    {req[key] != null ? `$${Number(req[key]).toLocaleString()}` : '—'}
+                  </div>
+                ))}
+              </div>
+              {!req.finance_completed && (
+                <p className="mt-1 text-sm text-muted">Not completed by Finance yet.</p>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       <section>
         <h2 className="mb-1 font-semibold text-fg">Attachments</h2>
@@ -189,7 +223,6 @@ export default function RequestDetailPage() {
               )}
             </div>
           )}
-          {canFinance && <FinanceForm disabled={busy} onSubmit={(costs) => act(() => completeFinance(id, costs))} />}
         </section>
       )}
       </BrandCard>
@@ -199,30 +232,46 @@ export default function RequestDetailPage() {
   )
 }
 
-const FINANCE_FIELDS: [string, string][] = [
+type CostField = 'cost_autos_trucks' | 'cost_machinery' | 'cost_improvements'
+  | 'cost_furniture' | 'cost_permits' | 'cost_misc'
+
+const FINANCE_FIELDS: [CostField, string][] = [
   ['cost_autos_trucks', 'Autos & Trucks'], ['cost_machinery', 'Machinery & Equipment'],
   ['cost_improvements', 'Improvements'], ['cost_furniture', 'Furniture & Fixtures'],
   ['cost_permits', 'Permits'], ['cost_misc', 'Misc'],
 ]
 
-function FinanceForm({ onSubmit, disabled }:
-  { onSubmit: (costs: Record<string, string | null>) => void; disabled: boolean }) {
-  const [vals, setVals] = useState<Record<string, string>>({})
+function formatActionDate(iso: string | null): string {
+  if (!iso) return '—'
+  // Backend timestamps are UTC; older rows may arrive without a zone marker.
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  })
+}
+
+function FinanceForm({ req, onSubmit, disabled }: {
+  req: CapexRequestData
+  onSubmit: (costs: Record<string, string | null>) => void
+  disabled: boolean
+}) {
+  const [vals, setVals] = useState<Record<string, string>>(() =>
+    Object.fromEntries(FINANCE_FIELDS.map(([key]) => [key, req[key] ?? ''])))
   return (
     <div className="space-y-2">
-      <h2 className="font-semibold text-fg">Complete finance cost breakdown</h2>
       <div className="grid grid-cols-2 gap-2">
         {FINANCE_FIELDS.map(([key, label]) => (
           <div key={key} className="space-y-1">
             <label className="text-xs text-muted">{label}</label>
-            <Input type="number" value={vals[key] ?? ''}
+            <Input inputMode="decimal" value={vals[key] ?? ''}
               onChange={(e) => setVals({ ...vals, [key]: e.target.value })} />
           </div>
         ))}
       </div>
       <Button disabled={disabled}
         onClick={() => onSubmit(Object.fromEntries(FINANCE_FIELDS.map(([k]) => [k, vals[k]?.trim() ? vals[k] : null])))}>
-        Save finance section
+        {req.finance_completed ? 'Update finance section' : 'Save finance section'}
       </Button>
     </div>
   )
