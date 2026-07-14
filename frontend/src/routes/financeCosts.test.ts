@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseFinanceCosts } from './financeCosts'
+import { parseFinanceCosts, financeTotalCents } from './financeCosts'
 
 describe('parseFinanceCosts', () => {
   it('passes through plain numbers and nulls blanks', () => {
@@ -30,5 +30,19 @@ describe('parseFinanceCosts', () => {
   it('rejects negative amounts', () => {
     const { invalid } = parseFinanceCosts({ cost_improvements: '-5' })
     expect(invalid).toEqual(['Improvements'])
+  })
+})
+
+describe('financeTotalCents', () => {
+  it('sums valid amounts in cents, skipping blanks and invalid text', () => {
+    expect(financeTotalCents({
+      cost_autos_trucks: '45,600.50', cost_permits: '250', cost_misc: 'oops',
+    })).toBe(4585050)
+  })
+
+  it('avoids float drift on cent values', () => {
+    expect(financeTotalCents({
+      cost_permits: '0.10', cost_misc: '0.20',
+    })).toBe(30)
   })
 })

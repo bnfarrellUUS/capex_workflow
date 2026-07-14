@@ -15,7 +15,7 @@ export default function DivisionsPage() {
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
+            <tr className="bg-brand-navy text-left text-xs uppercase tracking-wide text-white [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
               <th className="py-2 pr-4 font-semibold">Number</th><th className="pr-4 font-semibold">Name</th><th className="pr-4 font-semibold">Active</th><th></th>
             </tr>
           </thead>

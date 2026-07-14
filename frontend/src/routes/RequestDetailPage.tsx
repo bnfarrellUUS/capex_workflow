@@ -6,7 +6,7 @@ import {
   deleteRequest, uploadAttachment, deleteAttachment, attachmentUrl,
   type CapexRequestData,
 } from '../api/requests'
-import { FINANCE_FIELDS, parseFinanceCosts, financeFormValues } from './financeCosts'
+import { FINANCE_FIELDS, parseFinanceCosts, financeFormValues, financeTotalCents, dollars } from './financeCosts'
 import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -83,7 +83,7 @@ export default function RequestDetailPage() {
         <h2 className="mb-1 font-semibold text-fg">Equipment</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
+            <tr className="bg-brand-navy text-left text-xs uppercase tracking-wide text-white [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
               <th className="py-1">Units</th><th>Type</th><th>Make</th><th>Model</th><th>Cost</th>
             </tr>
           </thead>
@@ -105,7 +105,7 @@ export default function RequestDetailPage() {
         <h2 className="mb-1 font-semibold text-fg">Approval history</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
+            <tr className="bg-brand-navy text-left text-xs uppercase tracking-wide text-white [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
               <th className="py-1">Action</th><th>Level</th><th>By</th><th>Date</th><th>Comment</th>
             </tr>
           </thead>
@@ -141,6 +141,7 @@ export default function RequestDetailPage() {
                   </div>
                 ))}
               </div>
+              <BreakdownTotal vals={financeFormValues(req)} requestTotal={req.total_cost} />
               {!req.finance_completed && (
                 <p className="mt-1 text-sm text-muted">Not completed by Finance yet.</p>
               )}
@@ -247,6 +248,29 @@ function formatActionDate(iso: string | null): string {
   })
 }
 
+function BreakdownTotal({ vals, requestTotal }: {
+  vals: Record<string, string>
+  requestTotal: string | null
+}) {
+  const totalCents = financeTotalCents(vals)
+  const requestCents = Math.round(Number(requestTotal ?? 0) * 100)
+  const matches = totalCents === requestCents
+  return (
+    <div className="text-sm">
+      <p>
+        Breakdown total: <span className="font-medium">${dollars(totalCents)}</span>
+        {' '}· CAPEX total: <span className="font-medium">${dollars(requestCents)}</span>
+        {matches
+          ? <span className="ml-2 font-medium text-green-600 dark:text-green-400">✓ Matches</span>
+          : <span className="ml-2 text-amber-600 dark:text-amber-400">
+              ${dollars(Math.abs(requestCents - totalCents))} {totalCents < requestCents ? 'left to allocate' : 'over the CAPEX total'}
+            </span>}
+      </p>
+      <p className="text-xs text-muted">The CAPEX total is the sum of the equipment line items.</p>
+    </div>
+  )
+}
+
 function FinanceForm({ req, onSubmit, disabled }: {
   req: CapexRequestData
   onSubmit: (costs: Record<string, string | null>) => void
@@ -266,6 +290,7 @@ function FinanceForm({ req, onSubmit, disabled }: {
           </div>
         ))}
       </div>
+      <BreakdownTotal vals={vals} requestTotal={req.total_cost} />
       {formErr && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{formErr}</p>}
       <Button disabled={disabled}
         onClick={() => {

@@ -34,3 +34,15 @@ export function parseFinanceCosts(vals: Record<string, string>): {
 export function financeFormValues(req: CapexRequestData): Record<string, string> {
   return Object.fromEntries(FINANCE_FIELDS.map(([key]) => [key, req[key] ?? '']))
 }
+
+/** Sum the valid dollar amounts in the form values, in cents (invalid or
+ * blank fields count as 0). Cents avoid float drift when comparing totals. */
+export function financeTotalCents(vals: Record<string, string>): number {
+  const { costs } = parseFinanceCosts(vals)
+  return Object.values(costs).reduce(
+    (sum, v) => sum + (v ? Math.round(Number(v) * 100) : 0), 0)
+}
+
+export function dollars(cents: number): string {
+  return (cents / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })
+}
