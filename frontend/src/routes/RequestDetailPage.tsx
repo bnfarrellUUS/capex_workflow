@@ -145,6 +145,14 @@ export default function RequestDetailPage() {
                 ))}
               </div>
               <BreakdownTotal vals={financeFormValues(req)} requestTotal={req.total_cost} />
+              <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border pt-2 text-sm">
+                {ASSET_FIELDS.map(([key, label]) => (
+                  <div key={key}>
+                    <span className="font-medium">{label}:</span>{' '}
+                    {key === 'in_service_date' ? (req[key]?.slice(0, 10) ?? '—') : (req[key] ?? '—')}
+                  </div>
+                ))}
+              </div>
               {!req.finance_completed && (
                 <p className="mt-1 text-sm text-muted">Not completed by Finance yet.</p>
               )}
@@ -342,12 +350,25 @@ function BreakdownTotal({ vals, requestTotal }: {
   )
 }
 
+type AssetField = 'asset_number' | 'gl_account' | 'po_number' | 'in_service_date'
+
+const ASSET_FIELDS: [AssetField, string][] = [
+  ['asset_number', 'Asset number'], ['gl_account', 'GL account'],
+  ['po_number', 'PO number'], ['in_service_date', 'In-service date'],
+]
+
 function FinanceForm({ req, onSubmit, disabled }: {
   req: CapexRequestData
   onSubmit: (costs: Record<string, string | null>) => void
   disabled: boolean
 }) {
   const [vals, setVals] = useState<Record<string, string>>(() => financeFormValues(req))
+  const [info, setInfo] = useState<Record<AssetField, string>>(() => ({
+    asset_number: req.asset_number ?? '',
+    gl_account: req.gl_account ?? '',
+    po_number: req.po_number ?? '',
+    in_service_date: req.in_service_date?.slice(0, 10) ?? '',
+  }))
   const [formErr, setFormErr] = useState<string | null>(null)
   return (
     <div className="space-y-2">
@@ -362,6 +383,15 @@ function FinanceForm({ req, onSubmit, disabled }: {
         ))}
       </div>
       <BreakdownTotal vals={vals} requestTotal={req.total_cost} />
+      <div className="grid grid-cols-2 gap-2 border-t border-border pt-2">
+        {ASSET_FIELDS.map(([key, label]) => (
+          <div key={key} className="space-y-1">
+            <label className="text-xs text-muted">{label}</label>
+            <Input type={key === 'in_service_date' ? 'date' : 'text'} value={info[key]}
+              onChange={(e) => setInfo({ ...info, [key]: e.target.value })} />
+          </div>
+        ))}
+      </div>
       {formErr && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{formErr}</p>}
       <Button disabled={disabled}
         onClick={() => {
@@ -371,7 +401,9 @@ function FinanceForm({ req, onSubmit, disabled }: {
             return
           }
           setFormErr(null)
-          onSubmit(costs)
+          const details = Object.fromEntries(
+            ASSET_FIELDS.map(([k]) => [k, info[k].trim() ? info[k].trim() : null]))
+          onSubmit({ ...costs, ...details })
         }}>
         {req.finance_completed ? 'Update finance section' : 'Save finance section'}
       </Button>

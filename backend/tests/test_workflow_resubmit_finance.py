@@ -83,6 +83,22 @@ def test_complete_finance_can_resave_after_completion(app):
     assert actions == 2
 
 
+def test_complete_finance_stores_asset_details(app):
+    from datetime import datetime
+    requestor, l1, finance, req = _approved_request()
+    result = complete_finance(req.id, finance.id, {
+        "cost_machinery": Decimal("30000"),
+        "asset_number": "FA-1001",
+        "gl_account": "1600-20",
+        "po_number": "PO-778",
+        "in_service_date": datetime(2026, 8, 1),
+    })
+    assert result.asset_number == "FA-1001"
+    assert result.gl_account == "1600-20"
+    assert result.po_number == "PO-778"
+    assert result.in_service_date == datetime(2026, 8, 1)
+
+
 def test_complete_finance_requires_finance_role(app):
     requestor, l1, finance, req = _approved_request()
     with pytest.raises(ServiceError):

@@ -36,6 +36,7 @@ function makeRequest(status: string): CapexRequestData {
     annual_savings: null, payback_years: null, npv_savings: null,
     cost_autos_trucks: null, cost_machinery: null, cost_improvements: null,
     cost_furniture: null, cost_permits: null, cost_misc: null,
+    asset_number: null, gl_account: null, po_number: null, in_service_date: null,
     total_cost: '30000', requestor_id: 'me', assignee_id: null,
     requestor_name: 'Me', assignee_name: null,
     current_approver_ids: [], current_approver_names: [], division_name: '10 — Ops',

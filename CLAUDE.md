@@ -122,7 +122,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 153 tests).
+- Backend: `cd backend && pytest -q` (currently 154 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -177,7 +177,8 @@ build`; there is no live dev server.)
   `competitive_bids`, `lease_recommended`); narrative (`justification`,
   `effect_on_operations`); economic fields (`asset_life`, `irr_after_tax`,
   `first_year_ebit`, `annual_savings`, `payback_years`, `npv_savings`); finance
-  cost breakdown (`cost_*`, `finance_completed`); `total_cost`,
+  cost breakdown (`cost_*`, asset details `asset_number`/`gl_account`/
+`po_number`/`in_service_date`, `finance_completed`); `total_cost`,
   `required_levels`, `current_level`. Money = `Numeric(18,2)`, ratios =
   `Numeric(9,4)`.
 - **EquipmentItem** — line items (`units`, `condition` NEW/USED, `type`, `make`,

@@ -38,6 +38,10 @@ export interface CapexRequestData {
   cost_furniture: string | null
   cost_permits: string | null
   cost_misc: string | null
+  asset_number: string | null
+  gl_account: string | null
+  po_number: string | null
+  in_service_date: string | null
   total_cost: string | null
   requestor_id: string
   assignee_id: string | null

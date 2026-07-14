@@ -159,6 +159,10 @@ class CapexRequest(db.Model):
     cost_furniture: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
     cost_permits: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
     cost_misc: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
+    asset_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    gl_account: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    po_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    in_service_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     finance_completed: Mapped[bool] = mapped_column(Boolean, default=False)
 
     total_cost: Mapped[Decimal] = mapped_column(MONEY, default=0)
