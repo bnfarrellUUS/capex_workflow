@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getRequest, approveRequest, rejectRequest, resubmitRequest, completeFinance,
@@ -79,23 +80,25 @@ export default function RequestDetailPage() {
         <div className="col-span-2"><span className="font-medium">Description:</span> {req.description || '—'}</div>
       </section>
 
+      <FullDetails req={req} />
+
       <section>
         <h2 className="mb-1 font-semibold text-fg">Equipment</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border bg-brand-sky/25 text-left text-xs uppercase tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
-              <th className="py-1">Units</th><th>Type</th><th>Make</th><th>Model</th><th>Cost</th>
+              <th className="py-1">Units</th><th>Condition</th><th>Type</th><th>Make</th><th>Model</th><th>Cost</th>
             </tr>
           </thead>
           <tbody>
             {req.equipment_items.map((i, idx) => (
               <tr key={idx} className="border-b border-border">
-                <td className="py-1">{i.units}</td><td>{i.type}</td><td>{i.make}</td><td>{i.model}</td>
+                <td className="py-1">{i.units}</td><td>{i.condition}</td><td>{i.type}</td><td>{i.make}</td><td>{i.model}</td>
                 <td>${Number(i.cost).toLocaleString()}</td>
               </tr>
             ))}
             {req.equipment_items.length === 0 && (
-              <tr><td colSpan={5} className="py-1 text-muted">No line items.</td></tr>
+              <tr><td colSpan={6} className="py-1 text-muted">No line items.</td></tr>
             )}
           </tbody>
         </table>
@@ -235,6 +238,74 @@ export default function RequestDetailPage() {
 
       <button className="text-sm text-muted hover:text-fg" onClick={() => navigate('/')}>← Back to dashboard</button>
     </div>
+  )
+}
+
+type FlagField = 'budgeted' | 'replacement' | 'health_safety' | 'revenue_generating'
+  | 'environmental' | 'competitive_bids' | 'lease_recommended'
+type EconField = 'asset_life' | 'irr_after_tax' | 'first_year_ebit'
+  | 'annual_savings' | 'payback_years' | 'npv_savings'
+
+const FLAG_FIELDS: [FlagField, string][] = [
+  ['budgeted', 'Budgeted'], ['replacement', 'Replacement'],
+  ['health_safety', 'Health & Safety'], ['revenue_generating', 'Revenue generating'],
+  ['environmental', 'Environmental'], ['competitive_bids', 'Competitive bids'],
+  ['lease_recommended', 'Lease recommended'],
+]
+
+const ECONOMIC_FIELDS: { key: EconField; label: string; money?: boolean }[] = [
+  { key: 'asset_life', label: 'Asset / project life' },
+  { key: 'irr_after_tax', label: 'IRR after tax (%)' },
+  { key: 'first_year_ebit', label: 'First-year EBIT', money: true },
+  { key: 'annual_savings', label: 'Annual savings', money: true },
+  { key: 'payback_years', label: 'Payback (years)' },
+  { key: 'npv_savings', label: 'NPV of future savings', money: true },
+]
+
+function FullDetails({ req }: { req: CapexRequestData }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <section>
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open}
+        className="inline-flex items-center gap-1.5 font-semibold text-fg hover:text-accent">
+        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        Full request details
+      </button>
+      {open && (
+        <div className="mt-2 space-y-4 rounded-md border border-border bg-surface-2 p-4 text-sm">
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Basic info</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+              <div><span className="font-medium">Request date:</span> {req.request_date ? req.request_date.slice(0, 10) : '—'}</div>
+              {FLAG_FIELDS.map(([key, label]) => (
+                <div key={key}><span className="font-medium">{label}:</span> {req[key] ? 'Yes' : 'No'}</div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Justification</h3>
+            <p className="whitespace-pre-wrap">{req.justification || '—'}</p>
+          </div>
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Effect on operations</h3>
+            <p className="whitespace-pre-wrap">{req.effect_on_operations || '—'}</p>
+          </div>
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Economic analysis</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+              {ECONOMIC_FIELDS.map(({ key, label, money }) => (
+                <div key={key}>
+                  <span className="font-medium">{label}:</span>{' '}
+                  {req[key] != null && req[key] !== ''
+                    ? `${money ? '$' : ''}${money ? Number(req[key]).toLocaleString() : req[key]}`
+                    : '—'}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
 

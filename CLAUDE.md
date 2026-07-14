@@ -213,7 +213,10 @@ request, renders the finance form prefilled with decimal text inputs for
 FINANCE users (dollar amounts; client-side validated in
 `routes/financeCosts.ts` — accepts `$`/commas, names the bad field on error),
 and lists the approval history as a table with a local-time
-Date column (`created_at` treated as UTC). Attachment permissions
+Date column (`created_at` treated as UTC). A collapsed-by-default
+"Full request details" toggle (`FullDetails`) exposes everything captured in
+the wizard — basic-info flags, justification, effect on operations, economic
+fields — so approvers can review the whole request before acting. Attachment permissions
 (`attachment_service._can_modify`): the requestor manages attachments while
 DRAFT/REJECTED; FINANCE users manage them once APPROVED. Attach-file UI
 (wizard + detail page) is a button over a hidden file input — picking a file
