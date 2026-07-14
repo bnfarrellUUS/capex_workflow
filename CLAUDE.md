@@ -212,8 +212,11 @@ request is APPROVED (each save logs a `FINANCE_COMPLETED` action). The request
 detail page shows the breakdown read-only to all viewers of an approved
 request, renders the finance form prefilled with decimal text inputs for
 FINANCE users (dollar amounts; client-side validated in
-`routes/financeCosts.ts` — accepts `$`/commas, names the bad field on error),
-and lists the approval history as a table with a local-time
+`routes/financeCosts.ts` — accepts `$`/commas, names the bad field on error).
+Both finance views show a live **breakdown total vs. CAPEX total** line
+(`BreakdownTotal`; sums in cents via `financeTotalCents` — green "✓ Matches"
+or the amber difference) plus the asset detail fields. The page also lists
+the approval history as a table with a local-time
 Date column (`created_at` treated as UTC). A collapsed-by-default
 "Full request details" toggle (`FullDetails`) exposes everything captured in
 the wizard — basic-info flags, justification, effect on operations, economic
@@ -319,6 +322,10 @@ whether Outlook sends at all. Defaults live in
   `users`/`divisions`/`thresholds`/`emailTemplates`/`profile`).
   Secondary edit forms (User/Division forms, EmailTemplateEditor) keep plain
   headings.
+- **Table headers:** data-table `thead` rows use the sky brand tint —
+  `bg-brand-sky/25 text-brand-navy` (light) / `dark:bg-brand-sky/10
+  dark:text-brand-sky` — uppercase `text-xs`. Bryan found plain `surface-2`
+  too subtle and solid navy too bold; new tables should match this.
 - **Brand (`brand/`, "UUS CAPEX Flow"):** `brand_asset.pdf` plus
   `UUS CAPEX Flow - Logo.dc.html` (the four logo-direction mockups; the old
   ARIA placeholder assets were removed once these landed). Palette navy
@@ -338,5 +345,11 @@ whether Outlook sends at all. Defaults live in
 - New editable request fields must be added in **all** of: model, `request_out`
   serializer, `RequestDraft` schema, frontend `CapexRequestData`/`RequestForm`,
   and `toForm`/`toPayload` — missing the Pydantic schema silently drops the field.
+  **Finance-section fields** follow a parallel path instead: model + migration,
+  `FinanceIn` schema, `workflow_service._FINANCE_FIELDS`, `request_out`,
+  frontend `CapexRequestData` + the `FinanceForm`/read-only views in
+  `RequestDetailPage` (and its test mocks, which build full objects).
+- `index.css` hides the Edge/IE native password-reveal eye (`::-ms-reveal`) —
+  `PasswordInput` provides its own toggle; without this users see two eyes.
 - `docs/superpowers/specs/` holds design specs; milestone/phase plans live under
   `docs/`.
