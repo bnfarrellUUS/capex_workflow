@@ -3,7 +3,7 @@
 **Application:** CAPEX Flow (United Uptime Services)
 **Purpose:** Submit, route, approve, and complete capital-expenditure (CAPEX) requests.
 **Audience:** Requestors, Approvers, Finance, and Administrators.
-**Last updated:** 2026-07-13
+**Last updated:** 2026-07-14
 
 ---
 
@@ -28,7 +28,7 @@ A single user may hold more than one role.
 |------|--------|
 | **REQUESTOR** | Create a draft, fill in the 6-step wizard, submit, and resubmit their own rejected requests. |
 | **APPROVER** | Approve or reject requests currently assigned to a level whose approver pool they belong to. |
-| **FINANCE** | After a request is fully approved, complete the finance cost breakdown. Can also view all requests. |
+| **FINANCE** | After a request is fully approved, complete the finance cost breakdown and asset details — editable and re-saveable anytime while the request is APPROVED. Can also attach/remove files on approved requests and view all requests. |
 | **ADMIN** | Manage users, divisions, and approval thresholds. Can view all requests. |
 
 **Delegate (out-of-office):** Every user may name a `delegate`. When an approver
@@ -127,11 +127,13 @@ produce the list of people who may actually act. **Any one** of them can approve
       becomes the total cost that drives routing.
    5. **Economic** — asset life, IRR, first-year EBIT, annual savings, payback,
       NPV.
-   6. **Attachments** — upload supporting documents (quotes, evaluations, etc.)
-      and remove them. Any file type is accepted. On a brand-new request the
+   6. **Attachments** — click **Attach file** to pick a document from your
+      computer (quotes, evaluations, etc.); the upload starts as soon as you
+      choose the file. Any file type is accepted. On a brand-new request the
       **first upload saves the draft first**, then attaches the file.
-      Attachments can also be managed later from the request's detail page while
-      it is a draft or rejected.
+      Attachments can also be managed later from the request's detail page —
+      by the requestor while it is a draft or rejected, and by **Finance**
+      once it is approved.
    7. **Review** — check everything (including the attachment count), then
       **Submit**.
 3. On submit the request moves to **PENDING_L1** and the L1 approver pool is
@@ -145,9 +147,14 @@ produce the list of people who may actually act. **Any one** of them can approve
 ### 6.2 Approver — approve or reject
 
 1. Open a request from **"Assigned to me"** (or the dashboard approvals table).
-2. **Approve** — optional comment. The request advances to the next required
+2. Review the request. The detail page shows the summary, equipment lines, and
+   approval history; expand **Full request details** (collapsed by default,
+   just below the summary) to see everything captured in the wizard — the
+   basic-info flags, justification, effect on operations, and the economic
+   analysis — before deciding.
+3. **Approve** — optional comment. The request advances to the next required
    level, or becomes **APPROVED** if this was the last required level.
-3. **Reject** — **a comment is required.** The request moves to **REJECTED** and
+4. **Reject** — **a comment is required.** The request moves to **REJECTED** and
    the requestor is notified.
 
 ### 6.3 Requestor — edit & resubmit a rejected request
@@ -164,10 +171,25 @@ A rejected request is editable again, and there are two ways to resubmit it:
 ### 6.4 Finance — complete the cost breakdown
 
 1. After a request is **APPROVED**, all Finance users are notified it's pending.
-2. Open the request and fill in the finance cost breakdown:
-   autos/trucks, machinery, improvements, furniture, permits, misc.
-3. **Complete** — sets `finance_completed`. This can only be done once, only by a
-   Finance user, and only on an APPROVED request.
+2. Open the request. The **Finance cost breakdown** section shows six dollar
+   fields — autos/trucks, machinery, improvements, furniture, permits, misc —
+   used to **allocate the request's total cost across accounting categories**.
+   A live total under the fields compares your allocation against the CAPEX
+   total (the sum of the equipment line items): a green **✓ Matches** when they
+   agree, otherwise the amber difference still to allocate (or over). Amounts
+   accept `$` and comma formatting; non-numeric entries are rejected with the
+   offending field named.
+3. Below the amounts, fill in the **asset details** (all optional):
+   **asset number**, **GL account**, **PO number**, and **in-service date**.
+4. **Save finance section** — sets `finance_completed`. Only a Finance user can
+   do this, and only on an APPROVED request. The section stays **editable**:
+   Finance can reopen the request and **Update finance section** at any time
+   while it is APPROVED; every save is recorded in the approval history as a
+   `FINANCE_COMPLETED` action with a timestamp.
+5. Everyone else viewing an approved request sees the breakdown and asset
+   details **read-only**, with a "Not completed by Finance yet" note until the
+   first save. Finance can also **attach or remove files** on the approved
+   request (e.g. final invoices) from the Attachments section.
 
 ---
 
@@ -189,6 +211,11 @@ Notifications are triggered by the request routes at each transition:
 Recipients are always resolved through the **delegate** mapping — an approver
 who is out of office and has a delegate set will have their delegate notified
 instead.
+
+> **Note:** saving or updating the **finance section does not send any email**.
+> The `FINANCE_READY` emails all go out once, at the moment of final approval —
+> one per active Finance user (in Test mode every copy is redirected to the
+> test recipient, which is why several arrive in one inbox).
 
 Notifications are **best-effort**: a notification failure is caught and logged
 and will **never** block or roll back the workflow transition itself.
@@ -326,10 +353,13 @@ Under **Admin** (ADMIN role required):
 ## 9. Audit trail
 
 Every action is recorded in **`ApprovalAction`** and shown on the request detail
-page: `SUBMITTED`, `APPROVED`, `REJECTED`, `RESUBMITTED`, `FINANCE_COMPLETED`,
-each with the level, actor, optional comment, and — for delegated actions —
-whom the actor **acted for**. This is the system of record for who did what and
-when.
+page as the **Approval history table** (Action | Level | By | Date | Comment):
+`SUBMITTED`, `APPROVED`, `REJECTED`, `RESUBMITTED`, `FINANCE_COMPLETED`,
+each with the level, actor, the **date/time it happened (shown in your local
+time zone)**, optional comment, and — for delegated actions — whom the actor
+**acted for**. Finance edits append a new `FINANCE_COMPLETED` row per save, so
+the history also shows when finance data changed. This is the system of record
+for who did what and when.
 
 ---
 
