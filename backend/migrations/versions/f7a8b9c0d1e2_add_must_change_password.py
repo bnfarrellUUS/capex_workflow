@@ -23,4 +23,4 @@ def upgrade():
 
 def downgrade():
     with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.drop_column('must_change_password')
+        batch_op.drop_column('must_change_password', mssql_drop_default=True)

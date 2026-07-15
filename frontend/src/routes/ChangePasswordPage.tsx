@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { setPassword } from '../api/auth'
+import { logout, setPassword } from '../api/auth'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { PasswordInput } from '../components/ui/PasswordInput'
@@ -59,6 +59,11 @@ export default function ChangePasswordPage() {
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending ? 'Saving…' : 'Set password'}
           </Button>
+          <button type="button"
+            className="w-full text-center text-sm text-muted hover:text-fg hover:underline"
+            onClick={async () => { await logout(); navigate('/login', { replace: true }) }}>
+            Sign out instead
+          </button>
         </form>
       </div>
     </main>

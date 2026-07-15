@@ -19,7 +19,7 @@ def create_app(config_object=None):
 
     # A user flagged must_change_password may only hit the endpoints needed
     # to set a new password (or leave); everything else on the API is 403.
-    exempt = {"auth.set_password", "auth.me", "auth.csrf_token", "auth.logout"}
+    exempt = {"auth.set_password", "auth.me", "auth.csrf_token", "auth.logout", "auth.login"}
 
     @app.before_request
     def _require_password_change():

@@ -30,6 +30,7 @@ def test_flagged_user_is_gated_to_403(client, app):
     r = client.get("/api/requests")
     assert r.status_code == 403
     assert r.get_json()["code"] == "PASSWORD_CHANGE_REQUIRED"
+    assert r.get_json()["error"] == "You must set a new password before continuing."
 
 
 def test_flagged_user_can_still_use_exempt_endpoints(client, app):
@@ -73,6 +74,18 @@ def test_set_password_requires_flag(client, app):
     _login(client, app)
     assert client.post("/api/auth/set-password",
                        json={"new_password": "MyOwnPass1"}).status_code == 400
+
+
+def test_login_as_other_user_is_not_gated(client, app):
+    _flagged_user(app)
+    _login(client, app)
+    other = User(email="other@x.com", name="Other",
+                 password_hash=hash_password("OtherPass1"), roles='["REQUESTOR"]')
+    db.session.add(other)
+    db.session.commit()
+    r = client.post("/api/auth/login", json={"email": "other@x.com", "password": "OtherPass1"})
+    assert r.status_code == 200
+    assert client.get("/api/requests").status_code == 200
 
 
 def test_logout_stays_available_while_flagged(client, app):

@@ -30,6 +30,7 @@ export default function UserEditPage() {
   const [resetMsg, setResetMsg] = useState<string | null>(null)
   const resetMutation = useMutation({
     mutationFn: () => resetUserPassword(id),
+    onMutate: () => setResetMsg(null),
     onSuccess: () => setResetMsg('Password reset to the default. The user must choose a new one at next sign-in.'),
   })
 
@@ -53,6 +54,9 @@ export default function UserEditPage() {
             if (window.confirm(`Reset ${user.email} to the default password?`)) resetMutation.mutate()
           }}>Reset to default password</Button>
         {resetMsg && <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{resetMsg}</p>}
+        {resetMutation.error instanceof ApiError && (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">{resetMutation.error.message}</p>
+        )}
       </div>
       <div className="max-w-lg border-t border-border pt-6">
         <h2 className="mb-1 font-semibold text-fg">Delete user</h2>
