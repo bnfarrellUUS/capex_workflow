@@ -2,8 +2,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from flask import current_app
+
 from app.extensions import db
 from app.models import User
+from app.services.errors import ServiceError
 from app.services.security import verify_password, hash_password
 
 MAX_FAILED_LOGINS = 5
@@ -55,3 +58,15 @@ def authenticate(email: str, password: str) -> AuthResult:
     user.locked_until = None
     db.session.commit()
     return AuthResult(ok=True, user=user)
+
+
+def set_initial_password(user_id: str, new_password: str) -> User:
+    user = db.session.get(User, user_id)
+    if not user.must_change_password:
+        raise ServiceError("Password change is not required for this account.")
+    if new_password == current_app.config["DEFAULT_PASSWORD"]:
+        raise ServiceError("Choose a password different from the default one.")
+    user.password_hash = hash_password(new_password)
+    user.must_change_password = False
+    db.session.commit()
+    return user

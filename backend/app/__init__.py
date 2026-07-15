@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, jsonify, send_from_directory, abort
+from flask import Flask, jsonify, send_from_directory, abort, request
 from pydantic import ValidationError
 
 from .config import DevConfig
@@ -16,6 +16,20 @@ def create_app(config_object=None):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
+
+    # A user flagged must_change_password may only hit the endpoints needed
+    # to set a new password (or leave); everything else on the API is 403.
+    exempt = {"auth.set_password", "auth.me", "auth.csrf_token", "auth.logout"}
+
+    @app.before_request
+    def _require_password_change():
+        from flask_login import current_user
+        if (request.blueprint is not None
+                and current_user.is_authenticated
+                and current_user.must_change_password
+                and request.endpoint not in exempt):
+            return jsonify(error="You must set a new password before continuing.",
+                           code="PASSWORD_CHANGE_REQUIRED"), 403
 
     @login_manager.user_loader
     def load_user(user_id):

@@ -2,7 +2,8 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_wtf.csrf import generate_csrf
 
-from app.services.auth_service import authenticate
+from app.schemas.auth import SetPasswordIn
+from app.services.auth_service import authenticate, set_initial_password
 
 bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -47,3 +48,11 @@ def logout():
 @login_required
 def me():
     return jsonify(_user_json(current_user))
+
+
+@bp.post("/set-password")
+@login_required
+def set_password():
+    data = SetPasswordIn(**(request.get_json(silent=True) or {}))
+    user = set_initial_password(current_user.id, data.new_password)
+    return jsonify(_user_json(user))

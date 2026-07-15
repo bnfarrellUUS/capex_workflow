@@ -9,6 +9,7 @@ def change_password(user_id, current, new):
     if not verify_password(current, user.password_hash):
         raise ServiceError("Current password is incorrect.")
     user.password_hash = hash_password(new)
+    user.must_change_password = False
     db.session.commit()
 
 
