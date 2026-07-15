@@ -2,7 +2,6 @@ import { api } from './client'
 
 export interface Profile {
   id: string
-  username: string
   name: string
   email: string
   roles: string[]

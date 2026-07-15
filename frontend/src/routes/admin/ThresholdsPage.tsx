@@ -58,7 +58,7 @@ export default function ThresholdsPage() {
                   <p className="text-sm text-muted">Level-1 approvers are configured on each division.</p>
                 ) : (
                   <TransferList
-                    options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.username})` }))}
+                    options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.email})` }))}
                     selected={r.approver_ids}
                     onChange={(ids) => setRow(r.level, { approver_ids: ids })}
                   />

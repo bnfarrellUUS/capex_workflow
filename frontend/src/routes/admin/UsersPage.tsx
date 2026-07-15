@@ -17,15 +17,14 @@ export default function UsersPage() {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border bg-brand-sky/25 text-left text-xs uppercase tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
-              <th className="py-2 pr-4 font-semibold">Username</th><th className="pr-4 font-semibold">Name</th><th className="pr-4 font-semibold">Email</th>
+              <th className="py-2 pr-4 font-semibold">Name</th><th className="pr-4 font-semibold">Email</th>
               <th className="pr-4 font-semibold">Roles</th><th className="pr-4 font-semibold">Active</th><th></th>
             </tr>
           </thead>
           <tbody>
             {users?.map((u) => (
               <tr key={u.id} className="border-b border-border last:border-0 hover:bg-surface-2">
-                <td className="py-2.5 pr-4">{u.username}</td>
-                <td className="pr-4">{u.name}</td>
+                <td className="py-2.5 pr-4">{u.name}</td>
                 <td className="pr-4">{u.email}</td>
                 <td className="pr-4">{u.roles.join(', ')}</td>
                 <td className="pr-4">{u.active ? 'Yes' : 'No'}</td>

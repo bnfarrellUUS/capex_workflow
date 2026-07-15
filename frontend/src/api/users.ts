@@ -2,7 +2,6 @@ import { api } from './client'
 
 export interface AdminUser {
   id: string
-  username: string
   email: string
   name: string
   roles: string[]
@@ -11,10 +10,8 @@ export interface AdminUser {
 }
 
 export interface UserInput {
-  username?: string
   email: string
   name: string
-  password?: string
   roles: string[]
   division_id: string | null
   active?: boolean
@@ -29,8 +26,8 @@ export function createUser(body: UserInput): Promise<AdminUser> {
 export function updateUser(id: string, body: UserInput): Promise<AdminUser> {
   return api<AdminUser>(`/users/${id}`, { method: 'PATCH', body })
 }
-export function resetUserPassword(id: string, password: string): Promise<void> {
-  return api(`/users/${id}/reset-password`, { method: 'POST', body: { password } })
+export function resetUserPassword(id: string): Promise<void> {
+  return api(`/users/${id}/reset-password`, { method: 'POST' })
 }
 export function deleteUser(id: string): Promise<void> {
   return api(`/users/${id}`, { method: 'DELETE' })

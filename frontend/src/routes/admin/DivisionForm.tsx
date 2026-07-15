@@ -37,7 +37,7 @@ export function DivisionForm({
       <div className="space-y-1">
         <label className="text-sm font-medium">Level-1 approvers (any one may approve)</label>
         <TransferList
-          options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.username})` }))}
+          options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.email})` }))}
           selected={l1Ids}
           onChange={setL1Ids}
         />

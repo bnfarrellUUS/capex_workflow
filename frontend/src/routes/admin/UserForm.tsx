@@ -18,10 +18,8 @@ export function UserForm({
   error: string | null
   onSubmit: (body: UserInput) => void
 }) {
-  const [username, setUsername] = useState(user?.username ?? '')
   const [name, setName] = useState(user?.name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
-  const [password, setPassword] = useState('')
   const [roles, setRoles] = useState<string[]>(user?.roles ?? ['REQUESTOR'])
   const [divisionId, setDivisionId] = useState(user?.division_id ?? '')
   const [active, setActive] = useState(user?.active ?? true)
@@ -29,18 +27,14 @@ export function UserForm({
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const body: UserInput = {
-      username, email, name, roles, division_id: divisionId || null,
-      ...(user ? { active } : { password }),
+      email, name, roles, division_id: divisionId || null,
+      ...(user ? { active } : {}),
     }
     onSubmit(body)
   }
 
   return (
     <form onSubmit={submit} className="max-w-3xl space-y-4">
-      <div className="space-y-1">
-        <label className="text-sm font-medium">Username</label>
-        <Input value={username} onChange={(e) => setUsername(e.target.value)} required />
-      </div>
       <div className="space-y-1">
         <label className="text-sm font-medium">Full name</label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required />
@@ -50,10 +44,10 @@ export function UserForm({
         <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
       {!user && (
-        <div className="max-w-lg space-y-1">
-          <label className="text-sm font-medium">Temporary password (min 8)</label>
-          <Input type="text" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </div>
+        <p className="max-w-lg text-sm text-muted">
+          New accounts start with the default password <span className="font-medium">Welcome@1</span> and
+          must choose their own the first time they sign in.
+        </p>
       )}
       <div className="space-y-1">
         <label className="text-sm font-medium">Roles</label>

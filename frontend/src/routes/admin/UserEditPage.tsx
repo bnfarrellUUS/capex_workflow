@@ -6,7 +6,6 @@ import { listDivisions } from '../../api/divisions'
 import { ApiError } from '../../api/client'
 import { UserForm } from './UserForm'
 import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/Input'
 
 export default function UserEditPage() {
   const { id = '' } = useParams()
@@ -28,11 +27,10 @@ export default function UserEditPage() {
   })
   const deleteError = deleteMutation.error instanceof ApiError ? deleteMutation.error.message : null
 
-  const [newPassword, setNewPassword] = useState('')
   const [resetMsg, setResetMsg] = useState<string | null>(null)
   const resetMutation = useMutation({
-    mutationFn: () => resetUserPassword(id, newPassword),
-    onSuccess: () => { setResetMsg('Password reset.'); setNewPassword('') },
+    mutationFn: () => resetUserPassword(id),
+    onSuccess: () => setResetMsg('Password reset to the default. The user must choose a new one at next sign-in.'),
   })
 
   if (!user) return <p className="text-sm text-muted">Loading…</p>
@@ -40,20 +38,20 @@ export default function UserEditPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="mb-4 text-2xl font-semibold text-fg">Edit user: {user.username}</h1>
+        <h1 className="mb-4 text-2xl font-semibold text-fg">Edit user: {user.name}</h1>
         <UserForm divisions={divisions} user={user} pending={mutation.isPending} error={error}
           onSubmit={(body) => mutation.mutate(body)} />
       </div>
       <div className="max-w-lg border-t border-border pt-6">
-        <h2 className="mb-2 font-semibold text-fg">Reset password</h2>
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <Input type="text" minLength={8} placeholder="New temporary password"
-              value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-          </div>
-          <Button disabled={newPassword.length < 8 || resetMutation.isPending}
-            onClick={() => resetMutation.mutate()}>Reset</Button>
-        </div>
+        <h2 className="mb-1 font-semibold text-fg">Reset password</h2>
+        <p className="mb-2 text-sm text-muted">
+          Sets the account back to the default password (Welcome@1); the user must choose
+          their own at next sign-in.
+        </p>
+        <Button disabled={resetMutation.isPending}
+          onClick={() => {
+            if (window.confirm(`Reset ${user.email} to the default password?`)) resetMutation.mutate()
+          }}>Reset to default password</Button>
         {resetMsg && <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{resetMsg}</p>}
       </div>
       <div className="max-w-lg border-t border-border pt-6">
@@ -66,7 +64,7 @@ export default function UserEditPage() {
           className="bg-red-600 text-white hover:bg-red-700"
           disabled={deleteMutation.isPending}
           onClick={() => {
-            if (window.confirm(`Delete user "${user.username}"? This cannot be undone.`)) {
+            if (window.confirm(`Delete user "${user.email}"? This cannot be undone.`)) {
               deleteMutation.mutate()
             }
           }}
