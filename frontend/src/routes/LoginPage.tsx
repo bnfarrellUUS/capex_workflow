@@ -10,14 +10,14 @@ import { PasswordInput } from '../components/ui/PasswordInput'
 import { Logo } from '../components/Logo'
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const qc = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: () => login(username, password),
+    mutationFn: () => login(email, password),
     onSuccess: (user) => {
       qc.setQueryData(['me'], user)
       navigate(safeNext(searchParams.get('next')), { replace: true })
@@ -41,9 +41,9 @@ export default function LoginPage() {
         </div>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
           <div className="space-y-1">
-            <label htmlFor="username" className="text-sm font-medium">Username</label>
-            <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username" required />
+            <label htmlFor="email" className="text-sm font-medium">Email</label>
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email" required />
           </div>
           <div className="space-y-1">
             <label htmlFor="password" className="text-sm font-medium">Password</label>

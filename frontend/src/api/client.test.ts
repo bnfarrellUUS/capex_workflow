@@ -32,12 +32,12 @@ describe('api client', () => {
       .mockResolvedValueOnce(fakeResponse(200, { csrfToken: 'tok123' }))
       .mockResolvedValueOnce(fakeResponse(200, { id: '1' }))
     vi.stubGlobal('fetch', fetchMock)
-    await api('/auth/login', { method: 'POST', body: { username: 'a' } })
+    await api('/auth/login', { method: 'POST', body: { email: 'a' } })
     expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/csrf')
     const loginOpts = fetchMock.mock.calls[1][1]
     expect(loginOpts.headers['X-CSRFToken']).toBe('tok123')
     expect(loginOpts.headers['Content-Type']).toBe('application/json')
-    expect(loginOpts.body).toBe(JSON.stringify({ username: 'a' }))
+    expect(loginOpts.body).toBe(JSON.stringify({ email: 'a' }))
   })
 
   it('throws ApiError with server error message on non-ok', async () => {
