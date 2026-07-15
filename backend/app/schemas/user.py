@@ -4,7 +4,6 @@ from pydantic import BaseModel, EmailStr, Field
 class UserCreate(BaseModel):
     email: EmailStr
     name: str = Field(min_length=1)
-    password: str = Field(min_length=8)
     roles: list[str] = Field(default_factory=lambda: ["REQUESTOR"])
     division_id: str | None = None
 
@@ -15,7 +14,3 @@ class UserUpdate(BaseModel):
     roles: list[str]
     division_id: str | None = None
     active: bool = True
-
-
-class PasswordIn(BaseModel):
-    password: str = Field(min_length=8)

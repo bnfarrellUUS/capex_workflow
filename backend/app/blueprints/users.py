@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user
 
 from app.authz import require_roles
-from app.schemas.user import UserCreate, UserUpdate, PasswordIn
+from app.schemas.user import UserCreate, UserUpdate
 from app.services import user_service
 
 bp = Blueprint("users", __name__, url_prefix="/api/users")
@@ -40,8 +40,7 @@ def update_user(user_id):
 @bp.post("/<user_id>/reset-password")
 @require_roles("ADMIN")
 def reset_password(user_id):
-    data = PasswordIn(**(request.get_json(silent=True) or {}))
-    user_service.admin_reset_password(user_id, data.password)
+    user_service.reset_to_default_password(user_id)
     return jsonify(ok=True)
 
 

@@ -1,3 +1,4 @@
+from flask import current_app
 from app.extensions import db
 from app.models import (
     User, CapexRequest, ApprovalAction, Attachment,
@@ -12,7 +13,7 @@ def list_users():
     return db.session.query(User).order_by(User.email).all()
 
 
-def create_user(*, email, name, password, roles, division_id):
+def create_user(*, email, name, roles, division_id):
     if not valid_roles(roles):
         raise ServiceError("Invalid role.")
     mail = email.strip().lower()
@@ -21,7 +22,8 @@ def create_user(*, email, name, password, roles, division_id):
         raise ServiceError("Email already exists.", 409)
     user = User(
         email=mail, name=name.strip(),
-        password_hash=hash_password(password),
+        password_hash=hash_password(current_app.config["DEFAULT_PASSWORD"]),
+        must_change_password=True,
         roles=serialize_roles(roles), division_id=division_id or None,
     )
     db.session.add(user)
@@ -87,11 +89,12 @@ def delete_user(user_id, actor_id):
     db.session.commit()
 
 
-def admin_reset_password(user_id, password):
+def reset_to_default_password(user_id):
     user = db.session.get(User, user_id)
     if user is None:
         raise ServiceError("User not found.", 404)
-    user.password_hash = hash_password(password)
+    user.password_hash = hash_password(current_app.config["DEFAULT_PASSWORD"])
+    user.must_change_password = True
     user.failed_logins = 0
     user.locked_until = None
     db.session.commit()
