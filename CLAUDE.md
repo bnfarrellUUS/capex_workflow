@@ -360,5 +360,13 @@ whether Outlook sends at all. Defaults live in
   `RequestDetailPage` (and its test mocks, which build full objects).
 - `index.css` hides the Edge/IE native password-reveal eye (`::-ms-reveal`) —
   `PasswordInput` provides its own toggle; without this users see two eyes.
+- If `DEFAULT_PASSWORD` ever changes, update it in lockstep: the config
+  constant, the literal "Welcome@1" copy in `UserForm.tsx` (new-user note) and
+  `UserEditPage.tsx` (reset section), and this file.
+- Deferred auth follow-ups (final review 2026-07-15, all minor): no vitest for
+  `ChangePasswordPage` validation or the reset-to-default confirm flow; the
+  "Sign out instead" button doesn't guard a rejected `logout()`; non-`ApiError`
+  failures render nothing in `UserEditPage` reset/delete; an admin reset does
+  not invalidate the target user's existing session/remember cookie.
 - `docs/superpowers/specs/` holds design specs; milestone/phase plans live under
   `docs/`.
