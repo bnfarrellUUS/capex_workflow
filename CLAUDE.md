@@ -297,5 +297,4 @@ comment threads, approved-request PDF) are documented in
 **`PHASE2-PROPOSALS.md`** (repo root) — **read that file when Bryan says
 "implement phase 2"** or asks about any of them. Do not build until Finance
 has reviewed `CAPEX Flow - Proposed Enhancements.docx` and answered its
-"Questions for Finance". (`PHASE2-NOTES.md` is stale — it predates the
-Flask/React rebuild.)
+"Questions for Finance".
