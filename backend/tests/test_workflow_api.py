@@ -4,7 +4,7 @@ from tests.factories import make_user, make_division, set_thresholds
 
 
 def _login(client, user):
-    client.post("/api/auth/login", json={"username": user.username, "password": "secret123"})
+    client.post("/api/auth/login", json={"email": user.email, "password": "secret123"})
 
 
 def _draft_via_api(client):

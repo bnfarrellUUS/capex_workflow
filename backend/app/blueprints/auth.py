@@ -15,6 +15,7 @@ def _user_json(user):
         "email": user.email,
         "roles": user.roles_list,
         "division_id": user.division_id,
+        "must_change_password": user.must_change_password,
     }
 
 
@@ -26,7 +27,7 @@ def csrf_token():
 @bp.post("/login")
 def login():
     data = request.get_json(silent=True) or {}
-    result = authenticate(data.get("username", ""), data.get("password", ""))
+    result = authenticate(data.get("email", ""), data.get("password", ""))
     if not result.ok:
         return jsonify(error=result.error), 401
     # remember=True issues a persistent cookie so email deep links still work

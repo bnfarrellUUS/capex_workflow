@@ -95,7 +95,7 @@ def test_schema_accepts_valid():
 
 def _login_admin(client):
     make_user("admin", roles='["ADMIN"]')
-    client.post("/api/auth/login", json={"username": "admin", "password": "secret123"})
+    client.post("/api/auth/login", json={"email": "admin@x.com", "password": "secret123"})
 
 
 def test_settings_endpoint_round_trips(client, app):
@@ -113,5 +113,5 @@ def test_settings_endpoint_round_trips(client, app):
 
 def test_settings_endpoint_requires_admin(client):
     make_user("plain", roles='["REQUESTOR"]')
-    client.post("/api/auth/login", json={"username": "plain", "password": "secret123"})
+    client.post("/api/auth/login", json={"email": "plain@x.com", "password": "secret123"})
     assert client.get("/api/email-templates/settings").status_code == 403

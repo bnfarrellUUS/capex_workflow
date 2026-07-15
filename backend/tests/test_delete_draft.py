@@ -5,7 +5,7 @@ from tests.factories import make_user, make_division, make_draft
 
 
 def _login(client, username, password="secret123"):
-    return client.post("/api/auth/login", json={"username": username, "password": password})
+    return client.post("/api/auth/login", json={"email": f"{username}@x.com", "password": password})
 
 
 def test_owner_deletes_own_draft_with_attachment_file(client, app):

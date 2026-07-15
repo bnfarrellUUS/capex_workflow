@@ -2,7 +2,7 @@ from tests.factories import make_user
 
 
 def _login(client, username, password="secret123"):
-    return client.post("/api/auth/login", json={"username": username, "password": password})
+    return client.post("/api/auth/login", json={"email": f"{username}@x.com", "password": password})
 
 
 def test_list_requires_admin(client, app):

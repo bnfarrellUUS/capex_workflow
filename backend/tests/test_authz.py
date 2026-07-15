@@ -30,7 +30,7 @@ def _make_user(roles):
 
 
 def _login(client):
-    return client.post("/api/auth/login", json={"username": "u", "password": "secret123"})
+    return client.post("/api/auth/login", json={"email": "u@x.com", "password": "secret123"})
 
 
 def test_admin_route_401_when_anonymous(app_with_routes):

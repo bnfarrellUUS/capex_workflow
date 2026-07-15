@@ -7,7 +7,7 @@ def _admin(client):
     db.session.add(User(username="admin", email="a@x.com", name="Admin",
                         password_hash=hash_password("secret123"), roles='["ADMIN"]'))
     db.session.commit()
-    client.post("/api/auth/login", json={"username": "admin", "password": "secret123"})
+    client.post("/api/auth/login", json={"email": "a@x.com", "password": "secret123"})
 
 
 def test_list_requires_admin(client):
@@ -107,7 +107,7 @@ def test_cannot_delete_self(client, app):
                  password_hash=hash_password("secret123"), roles='["ADMIN"]')
     db.session.add(admin)
     db.session.commit()
-    client.post("/api/auth/login", json={"username": "admin", "password": "secret123"})
+    client.post("/api/auth/login", json={"email": "a@x.com", "password": "secret123"})
     assert client.delete(f"/api/users/{admin.id}").status_code == 400
 
 

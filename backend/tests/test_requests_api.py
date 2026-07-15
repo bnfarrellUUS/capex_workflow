@@ -8,7 +8,7 @@ def _login(client, username="req", roles='["REQUESTOR"]'):
              password_hash=hash_password("secret123"), roles=roles)
     db.session.add(u)
     db.session.commit()
-    client.post("/api/auth/login", json={"username": username, "password": "secret123"})
+    client.post("/api/auth/login", json={"email": f"{username}@x.com", "password": "secret123"})
     return u
 
 
