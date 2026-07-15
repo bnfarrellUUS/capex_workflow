@@ -116,7 +116,7 @@ Manual start:
     pip install -r requirements.txt && flask db upgrade && python seed.py && flask run
 
 App: http://localhost:5000 (`GET /api/health` → `{"status":"ok"}`) ·
-Dev login: **admin / ChangeMe123!**
+Dev login: **admin@uniteduptime.com / ChangeMe123!**
 (To iterate on the frontend, rebuild with `node ./node_modules/vite/bin/vite.js
 build`; there is no live dev server.)
 
@@ -130,10 +130,13 @@ build`; there is no live dev server.)
 
 - `models/__init__.py` — all SQLAlchemy models (see Data model below).
 - `blueprints/` — HTTP routes, one per resource, each mounted under `/api/...`:
-  `health`, `auth` (`/api/auth`), `users`, `divisions`, `thresholds`,
-  `profile`, `requests`, `email_templates` (`/api/email-templates`, ADMIN-only).
-  Routes are thin; they validate input with Pydantic schemas and delegate to
-  services.
+  `health`, `auth` (`/api/auth`, email-based login plus `set-password`),
+  `users`, `divisions`, `thresholds`, `profile`, `requests`, `email_templates`
+  (`/api/email-templates`, ADMIN-only). Routes are thin; they validate input
+  with Pydantic schemas and delegate to services. A flagged
+  `must_change_password` user is blocked from the rest of the API by an
+  app-level `before_request` (403 `PASSWORD_CHANGE_REQUIRED`), exempting only
+  `auth.set_password`/`auth.me`/`auth.csrf_token`/`auth.logout`.
 - `services/` — business logic: `request_service`, `workflow_service`
   (approval routing), `auth_service`, `user_service`, `division_service`,
   `threshold_service`, `profile_service`, `attachment_service`/`storage`,
@@ -162,9 +165,10 @@ build`; there is no live dev server.)
 
 ## Data model (`capex_requests` is the core)
 
-- **User** — `username`, `email`, `name`, `password_hash`, `roles` (JSON string
-  array, see Roles), `active`, `division_id`, `delegate_id` (out-of-office
-  delegate), lockout fields, reset token. `roles_list` property parses roles.
+- **User** — `email`, `name`, `password_hash`, `must_change_password`, `roles`
+  (JSON string array, see Roles), `active`, `division_id`, `delegate_id`
+  (out-of-office delegate), lockout fields, reset token. `roles_list` property
+  parses roles.
 - **Division** — `number`, `name`, `active`, `l1_approvers` (many-to-many via
   `division_l1_approvers`: the Level-1 approver pool for its requests).
 - **ApprovalThreshold** — one row per `level` (1/2/3), `max_amount` (top level
@@ -195,6 +199,10 @@ build`; there is no live dev server.)
 
 Roles: **REQUESTOR**, **APPROVER**, **FINANCE**, **ADMIN** (a user may hold
 several).
+
+New users and admin password resets start at `DEFAULT_PASSWORD` (`Welcome@1`
+in `backend/app/config.py`) with `must_change_password` set, forcing the
+Set-your-new-password screen on next sign-in.
 
 Status flow: `DRAFT` → `PENDING_L1` → `PENDING_L2` → `PENDING_L3` → `APPROVED`,
 with `REJECTED` as a side state (a rejected request can be resubmitted by its
@@ -274,6 +282,7 @@ whether Outlook sends at all. Defaults live in
   uptime; kept as a brand asset but no longer wired into BrandCard, which now
   uses per-page `NavIcons` marks). `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
+  `ChangePasswordPage` (full-screen forced set-your-new-password screen),
   `RequestsListPage` (+ shared `RequestsTable`: sortable column headers and a
   trailing per-row View action; client-side, comparators + `filterRequests`
   in `routes/requestsSort.ts` — status sorts in workflow order, blanks last;
