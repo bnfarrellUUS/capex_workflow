@@ -4,7 +4,7 @@ from app.services.security import hash_password, verify_password
 
 
 def _flagged_user(app, email="new@x.com"):
-    u = User(username=email.split("@")[0], email=email, name="New User",
+    u = User(email=email, name="New User",
              password_hash=hash_password(app.config["DEFAULT_PASSWORD"]),
              roles='["REQUESTOR"]', must_change_password=True)
     db.session.add(u)

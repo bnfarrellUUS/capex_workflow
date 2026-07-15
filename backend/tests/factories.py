@@ -6,8 +6,8 @@ from app.services import threshold_service
 from app.services.security import hash_password
 
 
-def make_user(username, roles='["APPROVER"]', delegate_id=None):
-    u = User(username=username, email=f"{username}@x.com", name=username.title(),
+def make_user(key, roles='["APPROVER"]', delegate_id=None):
+    u = User(email=f"{key}@x.com", name=key.title(),
              password_hash=hash_password("secret123"), roles=roles, delegate_id=delegate_id)
     db.session.add(u)
     db.session.commit()

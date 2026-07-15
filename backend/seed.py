@@ -19,9 +19,8 @@ def _get_or_create(session, model, defaults=None, **key):
 def seed(session) -> None:
     _get_or_create(
         session, User,
-        username="admin",
+        email="admin@uniteduptime.com",
         defaults={
-            "email": "admin@uniteduptime.com",
             "name": "Administrator",
             "password_hash": hash_password("ChangeMe123!"),
             "roles": '["ADMIN","REQUESTOR","APPROVER","FINANCE"]',

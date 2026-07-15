@@ -4,7 +4,7 @@ from app.services.security import hash_password
 
 
 def _seed_user(**kw):
-    d = dict(username="jdoe", email="j@x.com", name="J Doe",
+    d = dict(email="j@x.com", name="J Doe",
              password_hash=hash_password("secret123"),
              roles='["REQUESTOR"]', active=True)
     d.update(kw)

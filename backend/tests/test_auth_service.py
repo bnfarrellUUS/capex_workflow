@@ -6,7 +6,7 @@ from app.services.auth_service import authenticate, MAX_FAILED_LOGINS
 
 def _user(**kw):
     defaults = dict(
-        username="jdoe", email="j@x.com", name="J",
+        email="j@x.com", name="J",
         password_hash=hash_password("secret123"), active=True,
     )
     defaults.update(kw)
@@ -23,14 +23,14 @@ def test_authenticate_success(app):
 
 
 def test_authenticate_is_case_insensitive(app):
-    _user(username="jdoe")
+    _user()
     assert authenticate("J@X.com", "secret123").ok
 
 
 def test_wrong_password_increments_counter(app):
     _user()
     assert not authenticate("j@x.com", "nope").ok
-    u = db.session.query(User).filter_by(username="jdoe").one()
+    u = db.session.query(User).filter_by(email="j@x.com").one()
     assert u.failed_logins == 1
 
 
@@ -38,7 +38,7 @@ def test_lockout_after_max_failures(app):
     _user()
     for _ in range(MAX_FAILED_LOGINS):
         authenticate("j@x.com", "nope")
-    u = db.session.query(User).filter_by(username="jdoe").one()
+    u = db.session.query(User).filter_by(email="j@x.com").one()
     assert u.locked_until is not None
     # Correct password is still rejected while locked.
     assert not authenticate("j@x.com", "secret123").ok
@@ -56,5 +56,5 @@ def test_inactive_user_fails(app):
 def test_success_resets_counter(app):
     _user(failed_logins=3)
     assert authenticate("j@x.com", "secret123").ok
-    u = db.session.query(User).filter_by(username="jdoe").one()
+    u = db.session.query(User).filter_by(email="j@x.com").one()
     assert u.failed_logins == 0

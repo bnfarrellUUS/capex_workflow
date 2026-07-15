@@ -9,7 +9,7 @@ bp = Blueprint("profile", __name__, url_prefix="/api/profile")
 
 def profile_out(u):
     return {
-        "id": u.id, "username": u.username, "name": u.name, "email": u.email,
+        "id": u.id, "name": u.name, "email": u.email,
         "roles": u.roles_list, "division_id": u.division_id, "delegate_id": u.delegate_id,
     }
 

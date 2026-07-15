@@ -4,7 +4,7 @@ from app.services.security import hash_password
 
 
 def _admin(client):
-    db.session.add(User(username="admin", email="a@x.com", name="Admin",
+    db.session.add(User(email="a@x.com", name="Admin",
                         password_hash=hash_password("secret123"), roles='["ADMIN"]'))
     db.session.commit()
     client.post("/api/auth/login", json={"email": "a@x.com", "password": "secret123"})

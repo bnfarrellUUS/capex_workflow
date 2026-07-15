@@ -41,7 +41,6 @@ class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
-    username: Mapped[str] = mapped_column(String(150), unique=True)
     email: Mapped[str] = mapped_column(String(255), unique=True)
     name: Mapped[str] = mapped_column(String(150))
     password_hash: Mapped[str] = mapped_column(String(255))

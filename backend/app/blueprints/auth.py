@@ -11,7 +11,6 @@ bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 def _user_json(user):
     return {
         "id": user.id,
-        "username": user.username,
         "name": user.name,
         "email": user.email,
         "roles": user.roles_list,

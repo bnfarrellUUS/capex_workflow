@@ -4,7 +4,7 @@ from app.services.security import hash_password
 
 
 def test_user_loader_and_roles(app):
-    u = User(username="a", email="a@x.com", name="A",
+    u = User(email="a@x.com", name="A",
              password_hash=hash_password("x"), roles='["ADMIN","REQUESTOR"]')
     db.session.add(u)
     db.session.commit()

@@ -28,22 +28,22 @@ def test_required_levels_l3():
 
 
 def test_intended_approvers_l1_are_division_approvers():
-    a1 = User(id="a1", username="a", email="a@x", name="A", password_hash="x")
-    a2 = User(id="a2", username="b", email="b@x", name="B", password_hash="x")
+    a1 = User(id="a1", email="a@x", name="A", password_hash="x")
+    a2 = User(id="a2", email="b@x", name="B", password_hash="x")
     div = Division(number="100", name="F", l1_approvers=[a1, a2])
     assert intended_approvers(1, div, _thresholds()) == [a1, a2]
 
 
 def test_effective_assignee_prefers_delegate():
-    delegate = User(id="d1", username="d", email="d@x", name="D", password_hash="x")
-    appr = User(id="a1", username="a", email="a@x", name="A", password_hash="x",
+    delegate = User(id="d1", email="d@x", name="D", password_hash="x")
+    appr = User(id="a1", email="a@x", name="A", password_hash="x",
                 delegate_id="d1", delegate=delegate)
     assert effective_assignee(appr) is delegate
 
 
 def test_eligible_actors_map_through_delegate():
-    delegate = User(id="d1", username="d", email="d@x", name="D", password_hash="x")
-    appr = User(id="a1", username="a", email="a@x", name="A", password_hash="x",
+    delegate = User(id="d1", email="d@x", name="D", password_hash="x")
+    appr = User(id="a1", email="a@x", name="A", password_hash="x",
                 delegate_id="d1", delegate=delegate)
     div = Division(number="100", name="F", l1_approvers=[appr])
     assert eligible_actors(1, div, _thresholds()) == [delegate]

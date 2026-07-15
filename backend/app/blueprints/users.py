@@ -10,7 +10,7 @@ bp = Blueprint("users", __name__, url_prefix="/api/users")
 
 def user_out(u):
     return {
-        "id": u.id, "username": u.username, "email": u.email, "name": u.name,
+        "id": u.id, "email": u.email, "name": u.name,
         "roles": u.roles_list, "active": u.active, "division_id": u.division_id,
     }
 

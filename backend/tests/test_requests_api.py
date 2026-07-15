@@ -4,7 +4,7 @@ from app.services.security import hash_password
 
 
 def _login(client, username="req", roles='["REQUESTOR"]'):
-    u = User(username=username, email=f"{username}@x.com", name=username.title(),
+    u = User(email=f"{username}@x.com", name=username.title(),
              password_hash=hash_password("secret123"), roles=roles)
     db.session.add(u)
     db.session.commit()

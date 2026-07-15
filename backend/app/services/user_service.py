@@ -9,21 +9,18 @@ from app.services.security import hash_password
 
 
 def list_users():
-    return db.session.query(User).order_by(User.username).all()
+    return db.session.query(User).order_by(User.email).all()
 
 
-def create_user(*, username, email, name, password, roles, division_id):
+def create_user(*, email, name, password, roles, division_id):
     if not valid_roles(roles):
         raise ServiceError("Invalid role.")
-    uname = username.strip().lower()
     mail = email.strip().lower()
-    clash = db.session.query(User).filter(
-        (User.username == uname) | (User.email == mail)
-    ).first()
+    clash = db.session.query(User).filter(User.email == mail).first()
     if clash is not None:
-        raise ServiceError("Username or email already exists.", 409)
+        raise ServiceError("Email already exists.", 409)
     user = User(
-        username=uname, email=mail, name=name.strip(),
+        email=mail, name=name.strip(),
         password_hash=hash_password(password),
         roles=serialize_roles(roles), division_id=division_id or None,
     )
@@ -32,7 +29,7 @@ def create_user(*, username, email, name, password, roles, division_id):
     return user
 
 
-def update_user(user_id, *, name, email, roles, division_id, active, username=None):
+def update_user(user_id, *, name, email, roles, division_id, active):
     user = db.session.get(User, user_id)
     if user is None:
         raise ServiceError("User not found.", 404)
@@ -42,14 +39,6 @@ def update_user(user_id, *, name, email, roles, division_id, active, username=No
     clash = db.session.query(User).filter(User.email == mail, User.id != user_id).first()
     if clash is not None:
         raise ServiceError("Email already in use.", 409)
-    if username is not None:
-        uname = username.strip().lower()
-        if not uname:
-            raise ServiceError("Username cannot be empty.")
-        taken = db.session.query(User).filter(User.username == uname, User.id != user_id).first()
-        if taken is not None:
-            raise ServiceError("Username already in use.", 409)
-        user.username = uname
     user.name = name.strip()
     user.email = mail
     user.roles = serialize_roles(roles)

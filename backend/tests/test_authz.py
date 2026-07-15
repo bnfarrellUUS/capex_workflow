@@ -22,7 +22,7 @@ def app_with_routes(app):
 
 
 def _make_user(roles):
-    u = User(username="u", email="u@x.com", name="U",
+    u = User(email="u@x.com", name="U",
              password_hash=hash_password("secret123"), roles=roles)
     db.session.add(u)
     db.session.commit()
