@@ -1,10 +1,12 @@
+# CLAUDE.md
+
+Coding rules: @CODING-RULES.md
+
 # Project: CAPEX Flow
 
 Internal web app for **United Uptime Services** to submit, route, approve, and
 search capital-expenditure (CAPEX) requests. Product brand name: **CAPEX Flow**
 (under "United Uptime Services").
-
-(Generic coding guidelines live in the user-level `~/.claude/CLAUDE.md`.)
 
 ## Stack
 
@@ -290,33 +292,10 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
 
 ## Phase 2 — proposed enhancements (pending Finance review)
 
-Five features Bryan selected on 2026-07-15, written up for the Finance group in
-**`CAPEX Flow - Proposed Enhancements.docx`** (repo root; its closing section
-also lists eight smaller later-phase ideas). **Do not build until Finance has
-reviewed and answered each section's "Questions for Finance"** — their answers
-may change the rules below. When Bryan says "implement phase 2", this is what
-he means; confirm which feature to start with (recommended order: 1 → 2 → rest
-in any order).
-
-1. **Budget upload & tracking** — real annual CAPEX budgets per division
-   (replacing the trust-based `budgeted` flag): admin uploads Excel/CSV
-   (division number, amount) or edits amounts on an Admin → Budgets page;
-   dashboard shows budget / spent (APPROVED) / committed (PENDING_*) /
-   remaining per division; over-budget warnings on the wizard Review step and
-   request detail page. Provisional rules: per-division per-calendar-year
-   (request counts by `request_date` year), warn-only (no hard block),
-   approved + pending both count. Implementation sketch: mirror the Divisions
-   CRUD stack; new `DivisionBudget` model (unique division+year); the app's
-   first aggregation query; `openpyxl` dep for .xlsx.
-2. **Exports & reporting** — Export-to-Excel/CSV of the (filtered) requests
-   list, plus a reports page: spend by division/month/status, cycle-time
-   (avg days to approve). Build after #1 to reuse its summary plumbing.
-3. **Reminders & escalation** — scheduled job emails the approver pool when a
-   request sits at a level > N days (proposed 3), escalates after a second
-   threshold (proposed 7); two new editable email templates + admin setting.
-4. **Comment threads** — Q&A thread on the request detail page so approvers
-   can ask questions without rejecting; immutable comments, email notification
-   to the other party; request stays put in the workflow.
-5. **Printable PDF of approved request** — Download-PDF button rendering the
-   full request, approval history (names/dates), and finance breakdown for
-   audit files / PO packages.
+Five proposed features (budget tracking, exports/reporting, reminders,
+comment threads, approved-request PDF) are documented in
+**`PHASE2-PROPOSALS.md`** (repo root) — **read that file when Bryan says
+"implement phase 2"** or asks about any of them. Do not build until Finance
+has reviewed `CAPEX Flow - Proposed Enhancements.docx` and answered its
+"Questions for Finance". (`PHASE2-NOTES.md` is stale — it predates the
+Flask/React rebuild.)
