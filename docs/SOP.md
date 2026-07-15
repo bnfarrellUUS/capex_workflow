@@ -3,7 +3,7 @@
 **Application:** CAPEX Flow (United Uptime Services)
 **Purpose:** Submit, route, approve, and complete capital-expenditure (CAPEX) requests.
 **Audience:** Requestors, Approvers, Finance, and Administrators.
-**Last updated:** 2026-07-14
+**Last updated:** 2026-07-15
 
 ---
 
@@ -15,8 +15,12 @@ levels a request must clear is decided automatically by its **total cost**. Each
 approval level has a **pool of eligible approvers**, and **any one member of the
 pool** can act on the request.
 
-Access the app at **http://localhost:5000** (dev). Dev admin login is
-`admin / ChangeMe123!`.
+Access the app at **http://localhost:5000** (dev). Sign in with your **email
+address**. Dev admin login is `admin@uniteduptime.com / ChangeMe123!`.
+
+New accounts start with the default password **Welcome@1** and are required to
+set their own password the first time they sign in (a full-screen "Set your new
+password" step; the rest of the app stays locked until it's done).
 
 ---
 
@@ -329,8 +333,11 @@ editor.
 Under **Admin** (ADMIN role required):
 
 - **Users** — create/edit users, assign roles, set a user's division and
-  out-of-office delegate. A user can't be deleted while they are still a required
-  approver or have open requests (the error names the blockers).
+  out-of-office delegate. Creating a user takes no password: the account starts
+  at the default (**Welcome@1**) and the user must set their own at first
+  sign-in. **Reset to default password** puts an existing account back in that
+  state (and clears any lockout). A user can't be deleted while they are still
+  a required approver or have open requests (the error names the blockers).
 - **Divisions** — create divisions and set each division's **L1 approver pool**
   (dual-listbox picker). These are the level-1 approvers for that division's
   requests.

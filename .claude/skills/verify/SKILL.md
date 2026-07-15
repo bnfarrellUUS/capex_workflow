@@ -23,7 +23,9 @@ Health check: `GET http://localhost:5000/api/health` → `{"status":"ok"}`.
 ## Drive
 
 - Use the Playwright MCP browser tools against `http://localhost:5000`.
-- Dev login: **admin / ChangeMe123!** (seeded by `python seed.py`).
+- Dev login: **admin@uniteduptime.com / ChangeMe123!** (seeded by
+  `python seed.py`). Login is by email; new/reset accounts start at
+  **Welcome@1** and get forced to `/change-password` first.
 - Request IDs are UUID hex, not integers — fetch a real one first:
   `fetch('/api/requests')` from `browser_evaluate` (items have `id`, `number`).
 - Cookie surgery (e.g. simulating a browser restart by dropping the HttpOnly

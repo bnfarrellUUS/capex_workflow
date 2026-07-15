@@ -20,7 +20,7 @@ opens the browser. Manually:
     cd ../backend && python -m venv .venv && source .venv/Scripts/activate
     pip install -r requirements.txt && flask db upgrade && python seed.py && flask run
 
-App: http://localhost:5000 · Login: admin / ChangeMe123!
+App: http://localhost:5000 · Login: admin@uniteduptime.com / ChangeMe123!
 
 ## Test
     cd backend && pytest -q
