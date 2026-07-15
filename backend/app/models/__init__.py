@@ -47,6 +47,9 @@ class User(UserMixin, db.Model):
     password_hash: Mapped[str] = mapped_column(String(255))
     roles: Mapped[str] = mapped_column(String(255), default='["REQUESTOR"]')
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Set for new accounts and admin resets: the user is gated to the
+    # set-password endpoint until they choose their own password.
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
 
     division_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("divisions.id", ondelete="NO ACTION"), nullable=True

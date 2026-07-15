@@ -52,3 +52,15 @@ def _make_user(app):
     db.session.add(u)
     db.session.commit()
     return u
+
+
+def test_must_change_password_defaults_false(app):
+    u = User(username="flaguser", email="flag@x.com", name="F",
+             password_hash="x")
+    db.session.add(u)
+    db.session.commit()
+    assert u.must_change_password is False
+
+
+def test_default_password_config(app):
+    assert app.config["DEFAULT_PASSWORD"] == "Welcome@1"

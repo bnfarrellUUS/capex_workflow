@@ -5,6 +5,9 @@ from datetime import timedelta
 
 class BaseConfig:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-change-me")
+    # Starting password for new accounts and admin resets; the owner must
+    # replace it on first login (User.must_change_password).
+    DEFAULT_PASSWORD = "Welcome@1"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
