@@ -1,76 +1,10 @@
-# CLAUDE.md
-
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
-
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
-
-## 1. Think Before Coding
-
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
-
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-
-## 2. Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-## 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-
----
-
 # Project: CAPEX Flow
 
 Internal web app for **United Uptime Services** to submit, route, approve, and
 search capital-expenditure (CAPEX) requests. Product brand name: **CAPEX Flow**
 (under "United Uptime Services").
+
+(Generic coding guidelines live in the user-level `~/.claude/CLAUDE.md`.)
 
 ## Stack
 
@@ -99,8 +33,8 @@ through tools that shell out. Two consequences:
   the single Flask server (`flask run`, port 5000) in its own window, and opens
   the browser to `http://localhost:5000`. It launches the server from its own
   directory via a *relative* path so the `&`-in-path never reaches a parser.
-  (A prior `run-app.bat` was removed — cmd's `start cmd /k` mis-parses the `&`
-  in the path, flashing the windows closed.)
+  (Don't recreate a `.bat` launcher — cmd's `start` mis-parses the `&` in the
+  path.)
 - When running frontend tooling directly (CI, agents), call the binaries via
   node to sidestep the shell: e.g.
   `node ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json`,
@@ -198,55 +132,50 @@ build`; there is no live dev server.)
 ## Roles & approval workflow
 
 Roles: **REQUESTOR**, **APPROVER**, **FINANCE**, **ADMIN** (a user may hold
-several).
-
-New users and admin password resets start at `DEFAULT_PASSWORD` (`Welcome@1`
-in `backend/app/config.py`) with `must_change_password` set, forcing the
-Set-your-new-password screen on next sign-in.
+several). New users and admin password resets start at `DEFAULT_PASSWORD`
+(`Welcome@1` in `backend/app/config.py`) with `must_change_password` set,
+forcing the Set-your-new-password screen on next sign-in.
 
 Status flow: `DRAFT` → `PENDING_L1` → `PENDING_L2` → `PENDING_L3` → `APPROVED`,
-with `REJECTED` as a side state (a rejected request can be resubmitted by its
-owner). Owners can delete their own drafts (`DELETE /api/requests/<id>`,
-DRAFT-only; removes stored attachment files, children cascade) — the red
-"Delete draft" action on the request detail page. The number of levels required (`required_levels`) is derived from
-`total_cost` vs the `ApprovalThreshold` caps. Each level has a **pool** of
-approvers (L1 from the request's division, L2/L3 from the threshold rows), each
-mapped through their out-of-office delegate; **any one** eligible approver may
-approve (advances) or reject. The pool appears on every member's "assigned"
-worklist; `assignee_id` is just a display hint (the first current approver).
+with `REJECTED` as a side state (the owner can fix and resubmit via the wizard).
+Owners can delete their own drafts (`DELETE /api/requests/<id>`, DRAFT-only;
+removes stored attachment files, children cascade). `required_levels` is
+derived from `total_cost` vs the `ApprovalThreshold` caps. Each level has a
+**pool** of approvers (L1 from the request's division, L2/L3 from the threshold
+rows), each mapped through their out-of-office delegate; **any one** eligible
+approver may approve (advances) or reject. The pool appears on every member's
+"assigned" worklist; `assignee_id` is just a display hint (the first current
+approver).
+
 After final approval, a **FINANCE** user completes the cost breakdown
-(`cost_*` → `finance_completed`); Finance can re-save it anytime while the
-request is APPROVED (each save logs a `FINANCE_COMPLETED` action). The request
-detail page shows the breakdown read-only to all viewers of an approved
-request, renders the finance form prefilled with decimal text inputs for
-FINANCE users (dollar amounts; client-side validated in
-`routes/financeCosts.ts` — accepts `$`/commas, names the bad field on error).
-Both finance views show a live **breakdown total vs. CAPEX total** line
-(`BreakdownTotal`; sums in cents via `financeTotalCents` — green "✓ Matches"
-or the amber difference) plus the asset detail fields. The page also lists
-the approval history as a table with a local-time
-Date column (`created_at` treated as UTC). A collapsed-by-default
-"Full request details" toggle (`FullDetails`) exposes everything captured in
-the wizard — basic-info flags, justification, effect on operations, economic
-fields — so approvers can review the whole request before acting. Attachment permissions
-(`attachment_service._can_modify`): the requestor manages attachments while
-DRAFT/REJECTED; FINANCE users manage them once APPROVED. Attach-file UI
+(`cost_*` → `finance_completed`) and can re-save it anytime while the request
+is APPROVED (each save logs a `FINANCE_COMPLETED` action). On the request
+detail page: the breakdown is read-only to all viewers of an approved request;
+FINANCE users get the form prefilled with decimal text inputs (dollar amounts;
+client-side validated in `routes/financeCosts.ts` — accepts `$`/commas, names
+the bad field on error); both views show a live **breakdown total vs. CAPEX
+total** line (`BreakdownTotal`; cents math in `financeTotalCents` — green
+"✓ Matches" or the amber difference) plus the asset detail fields. The page
+also shows the approval history table (local-time Date column; `created_at`
+treated as UTC) and a collapsed-by-default "Full request details" toggle
+(`FullDetails`) exposing everything captured in the wizard. Attachment
+permissions (`attachment_service._can_modify`): the requestor manages
+attachments while DRAFT/REJECTED; FINANCE once APPROVED. Attach-file UI
 (wizard + detail page) is a button over a hidden file input — picking a file
 uploads immediately.
 
-Each transition sends a notification email (assignment/decision/finance-ready).
-Emails are **editable HTML templates** — admins customize the subject, body
-(WYSIWYG), and enabled flag per type under **Admin → Email Templates**, with
-`{token}` placeholders substituted at send time and a brand-styled locked frame.
-Sent via the local Outlook desktop app (`email_outlook`). A runtime
-**delivery mode** (Test/Live) — toggled from the Email Templates page and
-editor (`components/admin/EmailDeliveryMode.tsx`), stored in `AppSetting` via
-`settings_service`, exposed at `GET/PUT /api/email-templates/settings` — picks
-the recipient: **Test** redirects every message to a configurable test
-recipient (default `EMAIL_REDIRECT_TO`) and adds a "redirected while testing"
-banner; **Live** sends to the real recipients. `EMAIL_ENABLED` still gates
-whether Outlook sends at all. Defaults live in
-`email_template_service.DEFAULTS`.
+Each transition sends a notification email (assignment/decision/finance-ready)
+via the local Outlook desktop app (`email_outlook`). Emails are **editable
+HTML templates** — admins customize subject, body (WYSIWYG), and enabled flag
+per type under **Admin → Email Templates**, with `{token}` placeholders
+substituted at send time and a brand-styled locked frame. A runtime **delivery
+mode** (Test/Live — toggled from the Email Templates page and editor via
+`components/admin/EmailDeliveryMode.tsx`, stored in `AppSetting`, exposed at
+`GET/PUT /api/email-templates/settings`) picks the recipient: **Test**
+redirects every message to a configurable test recipient (default
+`EMAIL_REDIRECT_TO`) and adds a "redirected while testing" banner; **Live**
+sends to the real recipients. `EMAIL_ENABLED` still gates whether Outlook
+sends at all. Defaults live in `email_template_service.DEFAULTS`.
 
 ## Frontend layout (`frontend/src/`)
 
@@ -254,66 +183,60 @@ whether Outlook sends at all. Defaults live in
   `index.css` (Tailwind v4 + design tokens + dark variant).
   `auth/loginRedirect.ts` — deep-link preservation: unauthenticated visits
   redirect to `/login?next=<path>` (set by `ProtectedLayout` and the 401
-  handler in `main.tsx`); `LoginPage` navigates to the sanitized `next`
-  (same-app absolute paths only) after sign-in.
-- `components/AppShell.tsx` — navy grouped sidebar (icons, active pill) + header
-  (theme toggle, Sign Out). `components/ui/` — `Button` (variants
-  primary/secondary/ghost), `Input`, `Select`, `PasswordInput` (eye toggle),
-  `Card`/`StatCard`, `Badge`/`StatusBadge`, `TransferList` (dual-listbox:
-  Available | Add»/«Remove | Selected + ▲▼ reorder), `BrandCard` (email-look
-  page card: navy header band + per-page mark (the page's own nav icon in a
-  sky-blue rounded tile) + title/sky subtitle, optional actions/subheader/
-  footer slots — one per page; used by Dashboard, Requests list/detail, Wizard,
-  Profile, and the admin list pages. `mark` prop is a page key —
-  `dashboard`/`newRequest`/`requests`/`users`/`divisions`/`thresholds`/
-  `emailTemplates`/`profile` — mapped to the matching `NavIcons`), `QuillEditor`.
-  `components/NavIcons.tsx` (custom per-page sidebar line-icons — one distinct
-  symbol per nav item, 24px grid / rounded joins, `currentColor`; from
-  `brand/UUS CAPEX Flow Nav Icons.html`. AppShell uses these instead of
-  lucide for nav; lucide still supplies non-nav glyphs like Sign Out).
-  `components/ActionIcons.tsx` (same-style in-page icons from the same doc:
-  approval actions Approve/Reject/Submit, row controls View/Edit/Delete/
-  Download/Search/Filter/Add/Upload, and workflow-status icons. Used by
-  `StatusBadge` (icon inside each pill), RequestDetailPage action buttons,
-  the Wizard, and the Requests list. `currentColor`, so each icon takes its
-  button/badge color).
-  `components/Logo.tsx` (primary Capital-Cycle mark, used in the sidebar/login).
-  `components/BrandMark.tsx` (the four brand logo marks — cycle/ascent/check/
-  uptime; kept as a brand asset but no longer wired into BrandCard, which now
-  uses per-page `NavIcons` marks). `ThemeToggle.tsx`, `theme.ts`.
+  handler); `LoginPage` navigates to the sanitized `next` (same-app absolute
+  paths only) after sign-in.
+- `components/AppShell.tsx` — navy grouped sidebar (icons, active pill) +
+  header (theme toggle, Sign Out).
+- `components/ui/` — `Button` (primary/secondary/ghost), `Input`, `Select`,
+  `PasswordInput` (eye toggle), `Card`/`StatCard`, `Badge`/`StatusBadge`,
+  `QuillEditor`, `TransferList` (dual-listbox: Available | Add»/«Remove |
+  Selected + ▲▼ reorder; used for approver pools and user roles, not
+  checkboxes), `BrandCard` (email-look page card: navy header band + per-page
+  mark — the page's own nav icon in a sky-blue rounded tile — + white title +
+  sky subtitle; optional actions/subheader/footer slots; `mark` is a page key
+  mapped to `NavIcons`: `dashboard`/`newRequest`/`requests`/`users`/
+  `divisions`/`thresholds`/`emailTemplates`/`profile`).
+- Icons: `components/NavIcons.tsx` (custom per-page sidebar line-icons — 24px
+  grid, rounded joins, `currentColor`; AppShell uses these for nav, lucide
+  only supplies non-nav glyphs like Sign Out) and `components/ActionIcons.tsx`
+  (same-style in-page icons: Approve/Reject/Submit, row controls
+  View/Edit/Delete/Download/Search/Filter/Add/Upload, workflow-status icons;
+  used by `StatusBadge`, RequestDetailPage action buttons, the Wizard, and the
+  Requests list — `currentColor`, so icons take their button/badge color).
+  Both derive from `brand/UUS CAPEX Flow Nav Icons.html`. `components/Logo.tsx`
+  (primary Capital-Cycle mark: sidebar/login); `BrandMark.tsx` (four brand
+  marks, currently not wired into any page). `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
-  `ChangePasswordPage` (full-screen forced set-your-new-password screen),
-  `RequestsListPage` (+ shared `RequestsTable`: sortable column headers and a
-  trailing per-row View action; client-side, comparators + `filterRequests`
-  in `routes/requestsSort.ts` — status sorts in workflow order, blanks last;
-  the list page adds a client-side search box over number/division/requestor),
-  `WizardPage` (7-step request wizard:
-  Basic Info, Description, Effect on Ops, Equipment, Economic, Attachments,
-  Review — the Attachments step uploads/removes files via the existing
-  attachment API; on a new request the first upload lazily creates the draft
-  (persist) then attaches. Styled
-  as an email-look brand card: navy header band with Logo, numbered stepper
-  [✓ done / accent active], footer action bar. Runs in two modes keyed on the
-  route: **new** (`/requests/new`, no id) starts from a blank form (`blankForm`,
-  division prefilled from `useMe().division_id`, date today) and **creates
-  nothing** until the first Save Draft / Submit — those call `createDraft` then
-  `updateDraft` and swap the URL to `/requests/:id/edit`; **edit**
-  (`/requests/:id/edit`) loads the draft and, as before, auto-saves on
-  Next/stepper. The wizard edits both DRAFT and REJECTED requests (owners can
-  fix a rejected request and resubmit); the Review-step action calls `resubmit`
-  when the loaded request is REJECTED, otherwise `submit`), `RequestDetailPage`,
-  `ProfilePage`, and `routes/admin/` (Users, Divisions, Approval Thresholds,
-  Email Templates + forms). The Email Templates editor uses `components/ui/
-  QuillEditor` (Quill 2.x on a ref) with a placeholders panel and a sandboxed
-  iframe preview, and a tab bar (`TemplateTabs`) across the top to switch
-  between the four templates in place — switching while there are unsaved
-  edits prompts a discard confirm. (The list page is still the sidebar
-  landing.) Approver pools (division L1, threshold L2/L3) and user roles
-  are assigned with the `TransferList` dual-listbox, not checkboxes.
+  `ChangePasswordPage` (full-screen forced set-your-new-password),
+  `RequestsListPage` + shared `RequestsTable` (sortable column headers and a
+  per-row View action; client-side comparators + `filterRequests` in
+  `routes/requestsSort.ts` — status sorts in workflow order, blanks last; the
+  list page adds a search box over number/division/requestor),
+  `RequestDetailPage`, `ProfilePage`, and `routes/admin/` (Users, Divisions,
+  Approval Thresholds, Email Templates + forms).
+- `WizardPage` — 7-step request wizard (Basic Info, Description, Effect on
+  Ops, Equipment, Economic, Attachments, Review), styled as an email-look
+  brand card (navy header band with Logo, numbered stepper [✓ done / accent
+  active], footer action bar). Two modes keyed on the route: **new**
+  (`/requests/new`) starts from a blank form (division prefilled from
+  `useMe().division_id`, date today) and **creates nothing** until the first
+  Save Draft / Submit — those call `createDraft` then `updateDraft` and swap
+  the URL to `/requests/:id/edit`; **edit** (`/requests/:id/edit`) loads the
+  draft and auto-saves on Next/stepper. The wizard edits both DRAFT and
+  REJECTED requests; the Review-step action calls `resubmit` when the loaded
+  request is REJECTED, otherwise `submit`. The Attachments step
+  uploads/removes files via the attachment API; on a new request the first
+  upload lazily creates the draft (persist) then attaches.
   `routes/wizard/types.ts` maps API ↔ form (`toForm`/`toPayload`).
-- `api/` — `client.ts` (fetch wrapper; obtains CSRF from `/api/auth/csrf`, sends
-  `X-CSRFToken` on mutations, `credentials: 'include'`), plus per-resource
-  modules (`auth`, `requests`, `divisions`, `users`, `thresholds`, `profileApi`).
+- Email Templates editor: `components/ui/QuillEditor` (Quill 2.x on a ref)
+  with a placeholders panel, a sandboxed iframe preview, and a `TemplateTabs`
+  tab bar to switch between the four templates in place — switching with
+  unsaved edits prompts a discard confirm. (The list page is still the sidebar
+  landing.)
+- `api/` — `client.ts` (fetch wrapper; obtains CSRF from `/api/auth/csrf`,
+  sends `X-CSRFToken` on mutations, `credentials: 'include'`), plus
+  per-resource modules (`auth`, `requests`, `divisions`, `users`,
+  `thresholds`, `profileApi`).
 
 ## Design system & brand
 
@@ -324,21 +247,15 @@ whether Outlook sends at all. Defaults live in
   `localStorage['capex-theme']`; an inline script in `index.html` applies it
   before render to avoid a flash.
 - **Page pattern:** every main page wraps its content in **one `BrandCard`**
-  (email-look card: navy `#0B2A4A` header band + per-page mark (the page's nav
-  icon, sky-blue in a rounded tile) + white title + sky `#93BBF5` subtitle;
-  optional `actions`/`subheader`/`footer` slots). New pages should follow this
-  and pass the matching page `mark` (`dashboard`/`newRequest`/`requests`/
-  `users`/`divisions`/`thresholds`/`emailTemplates`/`profile`).
-  Secondary edit forms (User/Division forms, EmailTemplateEditor) keep plain
-  headings.
+  with the matching page `mark`. Secondary edit forms (User/Division forms,
+  EmailTemplateEditor) keep plain headings.
 - **Table headers:** data-table `thead` rows use the sky brand tint —
   `bg-brand-sky/25 text-brand-navy` (light) / `dark:bg-brand-sky/10
   dark:text-brand-sky` — uppercase `text-xs`. Bryan found plain `surface-2`
   too subtle and solid navy too bold; new tables should match this.
 - **Brand (`brand/`, "UUS CAPEX Flow"):** `brand_asset.pdf` plus
-  `UUS CAPEX Flow - Logo.dc.html` (the four logo-direction mockups; the old
-  ARIA placeholder assets were removed once these landed). Palette navy
-  `#0B2A4A`, blue `#2563EB`, sky `#93BBF5`. Logo mark = direction **1d
+  `UUS CAPEX Flow - Logo.dc.html` (the four logo-direction mockups). Palette
+  navy `#0B2A4A`, blue `#2563EB`, sky `#93BBF5`. Logo mark = direction **1d
   "Capital Cycle"** (`components/Logo.tsx` + `public/favicon.svg`). No IBM
   Plex typeface (default system font). The look-and-feel targets the "ARIA"
   reference dashboard.
@@ -374,11 +291,12 @@ whether Outlook sends at all. Defaults live in
 ## Phase 2 — proposed enhancements (pending Finance review)
 
 Five features Bryan selected on 2026-07-15, written up for the Finance group in
-**`CAPEX Flow - Proposed Enhancements.docx`** (repo root). **Do not build until
-Finance has reviewed and answered each section's "Questions for Finance"** —
-their answers may change the rules below. When Bryan says "implement phase 2",
-this is what he means; confirm which feature to start with (recommended order:
-1 → 2 → rest in any order).
+**`CAPEX Flow - Proposed Enhancements.docx`** (repo root; its closing section
+also lists eight smaller later-phase ideas). **Do not build until Finance has
+reviewed and answered each section's "Questions for Finance"** — their answers
+may change the rules below. When Bryan says "implement phase 2", this is what
+he means; confirm which feature to start with (recommended order: 1 → 2 → rest
+in any order).
 
 1. **Budget upload & tracking** — real annual CAPEX budgets per division
    (replacing the trust-based `budgeted` flag): admin uploads Excel/CSV
@@ -387,10 +305,9 @@ this is what he means; confirm which feature to start with (recommended order:
    remaining per division; over-budget warnings on the wizard Review step and
    request detail page. Provisional rules: per-division per-calendar-year
    (request counts by `request_date` year), warn-only (no hard block),
-   approved + pending both count. Draft implementation plan:
-   `~/.claude/plans/linear-cooking-stroustrup.md` (mirror the Divisions CRUD
-   stack; new `DivisionBudget` model; first aggregation query in the app;
-   `openpyxl` dep for .xlsx).
+   approved + pending both count. Implementation sketch: mirror the Divisions
+   CRUD stack; new `DivisionBudget` model (unique division+year); the app's
+   first aggregation query; `openpyxl` dep for .xlsx.
 2. **Exports & reporting** — Export-to-Excel/CSV of the (filtered) requests
    list, plus a reports page: spend by division/month/status, cycle-time
    (avg days to approve). Build after #1 to reuse its summary plumbing.
