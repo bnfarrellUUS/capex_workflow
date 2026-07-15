@@ -21,3 +21,7 @@ export async function logout(): Promise<void> {
   await api('/auth/logout', { method: 'POST' })
   resetCsrf()
 }
+
+export function setPassword(new_password: string): Promise<CurrentUser> {
+  return api<CurrentUser>('/auth/set-password', { method: 'POST', body: { new_password } })
+}

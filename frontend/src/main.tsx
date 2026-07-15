@@ -9,9 +9,15 @@ import './index.css'
 
 // On a 401 anywhere (expired session), bounce to login instead of letting
 // pages hang on "Loading…"; ?next= brings the user back here afterwards.
+// On a PASSWORD_CHANGE_REQUIRED error (backend locks out other endpoints
+// until the forced password change completes), bounce to that page instead.
 function handleAuthError(error: unknown) {
-  if (error instanceof ApiError && error.status === 401 && window.location.pathname !== '/login') {
+  if (!(error instanceof ApiError)) return
+  if (error.status === 401 && window.location.pathname !== '/login') {
     window.location.assign(loginPathWithNext(window.location.pathname, window.location.search))
+  } else if (error.code === 'PASSWORD_CHANGE_REQUIRED'
+      && window.location.pathname !== '/change-password') {
+    window.location.assign('/change-password')
   }
 }
 

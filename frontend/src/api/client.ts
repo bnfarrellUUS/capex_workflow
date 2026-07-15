@@ -2,10 +2,12 @@ let csrfToken: string | null = null
 
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  code?: string
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -46,13 +48,15 @@ export async function api<T = unknown>(
   if (!res.ok) {
     if (_clearsCsrf(res.status)) csrfToken = null
     let message = res.statusText
+    let code: string | undefined
     try {
       const data = await res.json()
       if (data && data.error) message = data.error
+      if (data && data.code) code = data.code
     } catch {
       /* non-JSON error body */
     }
-    throw new ApiError(res.status, message)
+    throw new ApiError(res.status, message, code)
   }
 
   if (res.status === 204) return undefined as T
@@ -67,13 +71,15 @@ export async function apiUpload<T = unknown>(path: string, formData: FormData): 
   if (!res.ok) {
     if (_clearsCsrf(res.status)) csrfToken = null
     let message = res.statusText
+    let code: string | undefined
     try {
       const d = await res.json()
       if (d && d.error) message = d.error
+      if (d && d.code) code = d.code
     } catch {
       /* non-JSON */
     }
-    throw new ApiError(res.status, message)
+    throw new ApiError(res.status, message, code)
   }
   return (await res.json()) as T
 }

@@ -20,7 +20,8 @@ export default function LoginPage() {
     mutationFn: () => login(email, password),
     onSuccess: (user) => {
       qc.setQueryData(['me'], user)
-      navigate(safeNext(searchParams.get('next')), { replace: true })
+      navigate(user.must_change_password ? '/change-password' : safeNext(searchParams.get('next')),
+        { replace: true })
     },
   })
 

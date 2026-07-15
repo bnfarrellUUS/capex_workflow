@@ -10,5 +10,6 @@ export function ProtectedLayout() {
   if (isError || !data) {
     return <Navigate to={loginPathWithNext(location.pathname, location.search)} replace />
   }
+  if (data.must_change_password) return <Navigate to="/change-password" replace />
   return <AppShell />
 }
