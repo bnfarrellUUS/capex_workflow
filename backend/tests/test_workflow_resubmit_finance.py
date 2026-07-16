@@ -90,12 +90,14 @@ def test_complete_finance_stores_asset_details(app):
         "cost_machinery": Decimal("30000"),
         "asset_number": "FA-1001",
         "gl_account": "1600-20",
-        "useful_life": "5 years",
+        "useful_life_years": 5,
+        "useful_life_months": 6,
         "in_service_date": datetime(2026, 8, 1),
     })
     assert result.asset_number == "FA-1001"
     assert result.gl_account == "1600-20"
-    assert result.useful_life == "5 years"
+    assert result.useful_life_years == 5
+    assert result.useful_life_months == 6
     assert result.in_service_date == datetime(2026, 8, 1)
 
 

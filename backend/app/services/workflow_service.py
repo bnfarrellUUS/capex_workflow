@@ -164,7 +164,8 @@ def reject(request_id, actor_id, comment):
 _FINANCE_FIELDS = (
     "cost_autos_trucks", "cost_machinery", "cost_improvements",
     "cost_furniture", "cost_it_computer", "cost_misc",
-    "asset_number", "gl_account", "useful_life", "in_service_date",
+    "asset_number", "gl_account", "useful_life_years", "useful_life_months",
+    "in_service_date",
 )
 
 

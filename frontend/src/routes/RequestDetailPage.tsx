@@ -12,6 +12,7 @@ import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { Select } from '../components/ui/Select'
 import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
 import {
@@ -146,12 +147,13 @@ export default function RequestDetailPage() {
               </div>
               <BreakdownTotal vals={financeFormValues(req)} requestTotal={req.total_cost} />
               <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border pt-2 text-sm">
-                {ASSET_FIELDS.map(([key, label]) => (
-                  <div key={key}>
-                    <span className="font-medium">{label}:</span>{' '}
-                    {key === 'in_service_date' ? (req[key]?.slice(0, 10) ?? '—') : (req[key] ?? '—')}
-                  </div>
-                ))}
+                <div><span className="font-medium">Asset number:</span> {req.asset_number ?? '—'}</div>
+                <div><span className="font-medium">GL account:</span> {req.gl_account ?? '—'}</div>
+                <div>
+                  <span className="font-medium">Useful life:</span>{' '}
+                  {usefulLifeText(req.useful_life_years, req.useful_life_months)}
+                </div>
+                <div><span className="font-medium">In-service date:</span> {req.in_service_date?.slice(0, 10) ?? '—'}</div>
               </div>
               {!req.finance_completed && (
                 <p className="mt-1 text-sm text-muted">Not completed by Finance yet.</p>
@@ -350,23 +352,30 @@ function BreakdownTotal({ vals, requestTotal }: {
   )
 }
 
-type AssetField = 'asset_number' | 'gl_account' | 'useful_life' | 'in_service_date'
+type AssetField = 'asset_number' | 'gl_account' | 'useful_life_years'
+  | 'useful_life_months' | 'in_service_date'
 
-const ASSET_FIELDS: [AssetField, string][] = [
-  ['asset_number', 'Asset number'], ['gl_account', 'GL account'],
-  ['useful_life', 'Useful life'], ['in_service_date', 'In-service date'],
-]
+const LIFE_YEARS = Array.from({ length: 41 }, (_, i) => i)
+const LIFE_MONTHS = Array.from({ length: 12 }, (_, i) => i)
+
+function usefulLifeText(years: number | null, months: number | null): string {
+  const parts: string[] = []
+  if (years != null) parts.push(`${years} year${years === 1 ? '' : 's'}`)
+  if (months != null) parts.push(`${months} month${months === 1 ? '' : 's'}`)
+  return parts.length ? parts.join(' ') : '—'
+}
 
 function FinanceForm({ req, onSubmit, disabled }: {
   req: CapexRequestData
-  onSubmit: (costs: Record<string, string | null>) => void
+  onSubmit: (costs: Record<string, string | number | null>) => void
   disabled: boolean
 }) {
   const [vals, setVals] = useState<Record<string, string>>(() => financeFormValues(req))
   const [info, setInfo] = useState<Record<AssetField, string>>(() => ({
     asset_number: req.asset_number ?? '',
     gl_account: req.gl_account ?? '',
-    useful_life: req.useful_life ?? '',
+    useful_life_years: req.useful_life_years?.toString() ?? '',
+    useful_life_months: req.useful_life_months?.toString() ?? '',
     in_service_date: req.in_service_date?.slice(0, 10) ?? '',
   }))
   const [formErr, setFormErr] = useState<string | null>(null)
@@ -384,13 +393,36 @@ function FinanceForm({ req, onSubmit, disabled }: {
       </div>
       <BreakdownTotal vals={vals} requestTotal={req.total_cost} />
       <div className="grid grid-cols-2 gap-2 border-t border-border pt-2">
-        {ASSET_FIELDS.map(([key, label]) => (
-          <div key={key} className="space-y-1">
-            <label className="text-xs text-muted">{label}</label>
-            <Input type={key === 'in_service_date' ? 'date' : 'text'} value={info[key]}
-              onChange={(e) => setInfo({ ...info, [key]: e.target.value })} />
+        <div className="space-y-1">
+          <label className="text-xs text-muted">Asset number</label>
+          <Input value={info.asset_number}
+            onChange={(e) => setInfo({ ...info, asset_number: e.target.value })} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted">GL account</label>
+          <Input value={info.gl_account}
+            onChange={(e) => setInfo({ ...info, gl_account: e.target.value })} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted">Useful life</label>
+          <div className="flex gap-2">
+            <Select aria-label="Useful life years" value={info.useful_life_years}
+              onChange={(e) => setInfo({ ...info, useful_life_years: e.target.value })}>
+              <option value="">Years</option>
+              {LIFE_YEARS.map((y) => <option key={y} value={y}>{y} yr</option>)}
+            </Select>
+            <Select aria-label="Useful life months" value={info.useful_life_months}
+              onChange={(e) => setInfo({ ...info, useful_life_months: e.target.value })}>
+              <option value="">Months</option>
+              {LIFE_MONTHS.map((m) => <option key={m} value={m}>{m} mo</option>)}
+            </Select>
           </div>
-        ))}
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted">In-service date</label>
+          <Input type="date" value={info.in_service_date}
+            onChange={(e) => setInfo({ ...info, in_service_date: e.target.value })} />
+        </div>
       </div>
       {formErr && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{formErr}</p>}
       <Button disabled={disabled}
@@ -401,9 +433,14 @@ function FinanceForm({ req, onSubmit, disabled }: {
             return
           }
           setFormErr(null)
-          const details = Object.fromEntries(
-            ASSET_FIELDS.map(([k]) => [k, info[k].trim() ? info[k].trim() : null]))
-          onSubmit({ ...costs, ...details })
+          onSubmit({
+            ...costs,
+            asset_number: info.asset_number.trim() || null,
+            gl_account: info.gl_account.trim() || null,
+            useful_life_years: info.useful_life_years === '' ? null : Number(info.useful_life_years),
+            useful_life_months: info.useful_life_months === '' ? null : Number(info.useful_life_months),
+            in_service_date: info.in_service_date || null,
+          })
         }}>
         {req.finance_completed ? 'Update finance section' : 'Save finance section'}
       </Button>

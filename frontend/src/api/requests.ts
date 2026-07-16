@@ -40,7 +40,8 @@ export interface CapexRequestData {
   cost_misc: string | null
   asset_number: string | null
   gl_account: string | null
-  useful_life: string | null
+  useful_life_years: number | null
+  useful_life_months: number | null
   in_service_date: string | null
   total_cost: string | null
   requestor_id: string
@@ -86,7 +87,7 @@ export function rejectRequest(id: string, comment: string): Promise<CapexRequest
 export function resubmitRequest(id: string): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/resubmit`, { method: 'POST' })
 }
-export function completeFinance(id: string, costs: Record<string, string | null>): Promise<CapexRequestData> {
+export function completeFinance(id: string, costs: Record<string, string | number | null>): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/finance`, { method: 'POST', body: costs })
 }
 export function uploadAttachment(id: string, file: File): Promise<CapexRequestData> {

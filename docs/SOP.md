@@ -187,7 +187,8 @@ A rejected request is editable again, and there are two ways to resubmit it:
    accept `$` and comma formatting; non-numeric entries are rejected with the
    offending field named.
 3. Below the amounts, fill in the **asset details** (all optional):
-   **asset number**, **GL account**, **useful life**, and **in-service date**.
+   **asset number**, **GL account**, **useful life** (separate years and
+   months selectors), and **in-service date**.
 4. **Save finance section** — sets `finance_completed`. Only a Finance user can
    do this, and only on an APPROVED request. The section stays **editable**:
    Finance can reopen the request and **Update finance section** at any time

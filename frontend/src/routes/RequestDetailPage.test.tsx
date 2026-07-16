@@ -36,7 +36,7 @@ function makeRequest(): CapexRequestData {
     annual_savings: '9000', payback_years: '3.3', npv_savings: '20000',
     cost_autos_trucks: null, cost_machinery: null, cost_improvements: null,
     cost_furniture: null, cost_it_computer: null, cost_misc: null,
-    asset_number: null, gl_account: null, useful_life: null, in_service_date: null,
+    asset_number: null, gl_account: null, useful_life_years: null, useful_life_months: null, in_service_date: null,
     total_cost: '30000', requestor_id: 'owner-1', assignee_id: null,
     requestor_name: 'Owner', assignee_name: null,
     current_approver_ids: ['approver-1'], current_approver_names: ['Approver'],

@@ -52,5 +52,6 @@ class FinanceIn(BaseModel):
     cost_misc: Decimal | None = None
     asset_number: str | None = None
     gl_account: str | None = None
-    useful_life: str | None = None
+    useful_life_years: int | None = Field(None, ge=0, le=99)
+    useful_life_months: int | None = Field(None, ge=0, le=11)
     in_service_date: datetime | None = None

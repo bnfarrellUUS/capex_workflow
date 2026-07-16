@@ -118,7 +118,8 @@ build`; there is no live dev server.)
   `effect_on_operations`); economic fields (`asset_life`, `irr_after_tax`,
   `first_year_ebit`, `annual_savings`, `payback_years`, `npv_savings`); finance
   cost breakdown (`cost_*`, asset details `asset_number`/`gl_account`/
-`useful_life`/`in_service_date`, `finance_completed`); `total_cost`,
+`useful_life_years`+`useful_life_months`/`in_service_date`,
+  `finance_completed`); `total_cost`,
   `required_levels`, `current_level`. Money = `Numeric(18,2)`, ratios =
   `Numeric(9,4)`.
 - **EquipmentItem** — line items (`units`, `condition` NEW/USED, `type`, `make`,

@@ -163,7 +163,8 @@ class CapexRequest(db.Model):
     cost_misc: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
     asset_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     gl_account: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    useful_life: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    useful_life_years: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    useful_life_months: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     in_service_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     finance_completed: Mapped[bool] = mapped_column(Boolean, default=False)
 
