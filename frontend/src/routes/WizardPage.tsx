@@ -16,7 +16,7 @@ import { AddIcon, DeleteIcon, SubmitIcon, UploadIcon, DownloadIcon } from '../co
 import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, blankForm, equipmentTotal } from './wizard/types'
 
-const STEPS = ['Basic Info', 'Description', 'Effect on Ops', 'Equipment', 'Economic', 'Attachments', 'Review']
+const STEPS = ['Basic Info', 'Description', 'Effect on Ops', 'Asset Details', 'Economic', 'Attachments', 'Review']
 
 type Setter = <K extends keyof RequestForm>(k: K, v: RequestForm[K]) => void
 
@@ -187,7 +187,7 @@ export default function WizardPage() {
               value={form.effect_on_operations} onChange={(e) => set('effect_on_operations', e.target.value)} />
           </Field>
         )}
-        {step === 3 && <Equipment form={form} set={set} />}
+        {step === 3 && <AssetDetails form={form} set={set} />}
         {step === 4 && <Economic form={form} set={set} />}
         {step === 5 && <Attachments
           items={data?.attachments ?? []}
@@ -239,7 +239,7 @@ function BasicInfo({ form, set, number, requestorName, divisions }:
           <Input value={requestorName} readOnly className={readOnlyClass} />
         </Field>
       </div>
-      <Field label="Equipment / project description">
+      <Field label="Asset / project description">
         <textarea className="min-h-24 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
           value={form.description} onChange={(e) => set('description', e.target.value)} />
       </Field>
@@ -268,7 +268,7 @@ function BasicInfo({ form, set, number, requestorName, divisions }:
   )
 }
 
-function Equipment({ form, set }: { form: RequestForm; set: Setter }) {
+function AssetDetails({ form, set }: { form: RequestForm; set: Setter }) {
   const items = form.equipment_items
   const update = (idx: number, patch: Partial<(typeof items)[number]>) =>
     set('equipment_items', items.map((it, i) => (i === idx ? { ...it, ...patch } : it)))
@@ -280,6 +280,13 @@ function Equipment({ form, set }: { form: RequestForm; set: Setter }) {
       {items.map((it, idx) => (
         <div key={idx} className="flex flex-wrap items-end gap-2 border-b border-border pb-2">
           <LabeledInput label="Units" value={String(it.units)} onChange={(v) => update(idx, { units: Number(v) || 0 })} w="w-16" />
+          <div className="w-24 space-y-1">
+            <label className="text-xs text-muted">New/Used</label>
+            <Select value={it.condition} onChange={(e) => update(idx, { condition: e.target.value })}>
+              <option value="NEW">New</option>
+              <option value="USED">Used</option>
+            </Select>
+          </div>
           <LabeledInput label="Type" value={it.type} onChange={(v) => update(idx, { type: v })} />
           <LabeledInput label="Make" value={it.make} onChange={(v) => update(idx, { make: v })} />
           <LabeledInput label="Model" value={it.model} onChange={(v) => update(idx, { model: v })} />
@@ -292,7 +299,7 @@ function Equipment({ form, set }: { form: RequestForm; set: Setter }) {
       <button className="inline-flex items-center gap-1.5 text-sm text-accent" onClick={add}>
         <AddIcon size={16} />Add line item
       </button>
-      <div className="text-right font-semibold">Equipment total: ${equipmentTotal(items).toLocaleString()}</div>
+      <div className="text-right font-semibold">Asset total: ${equipmentTotal(items).toLocaleString()}</div>
     </div>
   )
 }
@@ -378,7 +385,7 @@ function Review({ form, attachmentCount, onSubmit, pending, error, submitLabel }
   return (
     <div className="space-y-3 text-sm">
       <p><span className="font-medium">Description:</span> {form.description || '—'}</p>
-      <p><span className="font-medium">Equipment lines:</span> {form.equipment_items.length}</p>
+      <p><span className="font-medium">Asset line items:</span> {form.equipment_items.length}</p>
       <p><span className="font-medium">Total cost:</span> ${total.toLocaleString()}</p>
       <p><span className="font-medium">Attachments:</span> {attachmentCount}</p>
       {error && <p className="text-red-600 dark:text-red-400" role="alert">{error}</p>}

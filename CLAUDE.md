@@ -217,7 +217,7 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   `RequestDetailPage`, `ProfilePage`, and `routes/admin/` (Users, Divisions,
   Approval Thresholds, Email Templates + forms).
 - `WizardPage` — 7-step request wizard (Basic Info, Description, Effect on
-  Ops, Equipment, Economic, Attachments, Review), styled as an email-look
+  Ops, Asset Details, Economic, Attachments, Review), styled as an email-look
   brand card (navy header band with Logo, numbered stepper [✓ done / accent
   active], footer action bar). Two modes keyed on the route: **new**
   (`/requests/new`) starts from a blank form (division prefilled from

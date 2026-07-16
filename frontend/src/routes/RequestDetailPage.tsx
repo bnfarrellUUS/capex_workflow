@@ -83,7 +83,7 @@ export default function RequestDetailPage() {
       <FullDetails req={req} />
 
       <section>
-        <h2 className="mb-1 font-semibold text-fg">Equipment</h2>
+        <h2 className="mb-1 font-semibold text-fg">Asset details</h2>
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border bg-brand-sky/25 text-left text-xs uppercase tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky [&>th]:py-1.5 [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">

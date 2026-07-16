@@ -126,7 +126,9 @@ produce the list of people who may actually act. **Any one** of them can approve
       revenue-generating, environmental, competitive bids, lease recommended).
    2. **Description**
    3. **Effect on Operations** — justification, effect on operations.
-   4. **Equipment** — line items (units, condition, type, make, model, cost).
+   4. **Asset Details** — line items (units, new/used, type, make, model,
+      cost); covers equipment and non-equipment assets such as leasehold
+      improvements.
       **At least one line item with a cost > 0 is required to submit.** The sum
       becomes the total cost that drives routing.
    5. **Economic** — asset life, IRR, first-year EBIT, annual savings, payback,
