@@ -36,11 +36,11 @@ export interface CapexRequestData {
   cost_machinery: string | null
   cost_improvements: string | null
   cost_furniture: string | null
-  cost_permits: string | null
+  cost_it_computer: string | null
   cost_misc: string | null
   asset_number: string | null
   gl_account: string | null
-  po_number: string | null
+  useful_life: string | null
   in_service_date: string | null
   total_cost: string | null
   requestor_id: string

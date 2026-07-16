@@ -48,9 +48,9 @@ class FinanceIn(BaseModel):
     cost_machinery: Decimal | None = None
     cost_improvements: Decimal | None = None
     cost_furniture: Decimal | None = None
-    cost_permits: Decimal | None = None
+    cost_it_computer: Decimal | None = None
     cost_misc: Decimal | None = None
     asset_number: str | None = None
     gl_account: str | None = None
-    po_number: str | None = None
+    useful_life: str | None = None
     in_service_date: datetime | None = None

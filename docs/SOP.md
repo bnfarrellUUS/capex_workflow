@@ -176,7 +176,8 @@ A rejected request is editable again, and there are two ways to resubmit it:
 
 1. After a request is **APPROVED**, all Finance users are notified it's pending.
 2. Open the request. The **Finance cost breakdown** section shows six dollar
-   fields — autos/trucks, machinery, improvements, furniture, permits, misc —
+   fields — autos/trucks, machinery, improvements, furniture, IT & computer
+   equipment, misc —
    used to **allocate the request's total cost across accounting categories**.
    A live total under the fields compares your allocation against the CAPEX
    total (the sum of the equipment line items): a green **✓ Matches** when they
@@ -184,7 +185,7 @@ A rejected request is editable again, and there are two ways to resubmit it:
    accept `$` and comma formatting; non-numeric entries are rejected with the
    offending field named.
 3. Below the amounts, fill in the **asset details** (all optional):
-   **asset number**, **GL account**, **PO number**, and **in-service date**.
+   **asset number**, **GL account**, **useful life**, and **in-service date**.
 4. **Save finance section** — sets `finance_completed`. Only a Finance user can
    do this, and only on an APPROVED request. The section stays **editable**:
    Finance can reopen the request and **Update finance section** at any time

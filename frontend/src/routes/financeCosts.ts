@@ -1,12 +1,12 @@
 import type { CapexRequestData } from '../api/requests'
 
 export type CostField = 'cost_autos_trucks' | 'cost_machinery' | 'cost_improvements'
-  | 'cost_furniture' | 'cost_permits' | 'cost_misc'
+  | 'cost_furniture' | 'cost_it_computer' | 'cost_misc'
 
 export const FINANCE_FIELDS: [CostField, string][] = [
   ['cost_autos_trucks', 'Autos & Trucks'], ['cost_machinery', 'Machinery & Equipment'],
   ['cost_improvements', 'Improvements'], ['cost_furniture', 'Furniture & Fixtures'],
-  ['cost_permits', 'Permits'], ['cost_misc', 'Misc'],
+  ['cost_it_computer', 'IT & Computer Equipment'], ['cost_misc', 'Misc'],
 ]
 
 /** Parse the finance form values into an API payload. Accepts plain numbers

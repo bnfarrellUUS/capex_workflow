@@ -350,11 +350,11 @@ function BreakdownTotal({ vals, requestTotal }: {
   )
 }
 
-type AssetField = 'asset_number' | 'gl_account' | 'po_number' | 'in_service_date'
+type AssetField = 'asset_number' | 'gl_account' | 'useful_life' | 'in_service_date'
 
 const ASSET_FIELDS: [AssetField, string][] = [
   ['asset_number', 'Asset number'], ['gl_account', 'GL account'],
-  ['po_number', 'PO number'], ['in_service_date', 'In-service date'],
+  ['useful_life', 'Useful life'], ['in_service_date', 'In-service date'],
 ]
 
 function FinanceForm({ req, onSubmit, disabled }: {
@@ -366,7 +366,7 @@ function FinanceForm({ req, onSubmit, disabled }: {
   const [info, setInfo] = useState<Record<AssetField, string>>(() => ({
     asset_number: req.asset_number ?? '',
     gl_account: req.gl_account ?? '',
-    po_number: req.po_number ?? '',
+    useful_life: req.useful_life ?? '',
     in_service_date: req.in_service_date?.slice(0, 10) ?? '',
   }))
   const [formErr, setFormErr] = useState<string | null>(null)

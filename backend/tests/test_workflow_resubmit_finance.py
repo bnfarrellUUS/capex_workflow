@@ -73,11 +73,11 @@ def test_complete_finance_can_resave_after_completion(app):
     complete_finance(req.id, finance.id, {"cost_machinery": Decimal("30000")})
     result = complete_finance(req.id, finance.id, {
         "cost_machinery": Decimal("25000"),
-        "cost_permits": Decimal("5000"),
+        "cost_it_computer": Decimal("5000"),
     })
     assert result.finance_completed is True
     assert result.cost_machinery == Decimal("25000")
-    assert result.cost_permits == Decimal("5000")
+    assert result.cost_it_computer == Decimal("5000")
     actions = db.session.query(ApprovalAction).filter_by(
         request_id=req.id, action="FINANCE_COMPLETED").count()
     assert actions == 2
@@ -90,12 +90,12 @@ def test_complete_finance_stores_asset_details(app):
         "cost_machinery": Decimal("30000"),
         "asset_number": "FA-1001",
         "gl_account": "1600-20",
-        "po_number": "PO-778",
+        "useful_life": "5 years",
         "in_service_date": datetime(2026, 8, 1),
     })
     assert result.asset_number == "FA-1001"
     assert result.gl_account == "1600-20"
-    assert result.po_number == "PO-778"
+    assert result.useful_life == "5 years"
     assert result.in_service_date == datetime(2026, 8, 1)
 
 
