@@ -2,28 +2,53 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { listRequests, type RequestSummary } from '../api/requests'
+import { listRequests, downloadRequestsExport, type RequestSummary } from '../api/requests'
+import { useMe } from '../auth/useMe'
 import { Select } from '../components/ui/Select'
+import { Button } from '../components/ui/Button'
 import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
-import { SearchIcon, FilterIcon, ViewIcon } from '../components/ActionIcons'
+import { SearchIcon, FilterIcon, ViewIcon, DownloadIcon } from '../components/ActionIcons'
 import { sortRequests, filterRequests, type SortDir, type SortKey } from './requestsSort'
 
 const STATUSES = ['', 'DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED', 'REJECTED']
 
+const SCOPE_LABELS: Record<string, string> = {
+  mine: 'My Requests',
+  assigned: 'Assigned to me',
+  all: 'All',
+}
+
 export default function RequestsListPage() {
+  const { data: me } = useMe()
   const [scope, setScope] = useState('mine')
   const [status, setStatus] = useState('')
   const [query, setQuery] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
+  const canSeeAll = (me?.roles ?? []).some((r) => r === 'ADMIN' || r === 'FINANCE')
+  const scopes = canSeeAll ? ['mine', 'assigned', 'all'] : ['mine', 'assigned']
   const { data: rows = [] } = useQuery({
     queryKey: ['requests', scope, status],
     queryFn: () => listRequests({ scope, status: status || undefined }),
   })
 
+  async function handleExport() {
+    setExporting(true)
+    setExportError('')
+    try {
+      await downloadRequestsExport({ scope, status, q: query })
+    } catch {
+      setExportError('Export failed.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const filters = (
     <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface-2 px-7 py-3">
       <div className="inline-flex rounded-md border border-border bg-surface p-0.5">
-        {(['mine', 'assigned'] as const).map((s) => (
+        {scopes.map((s) => (
           <button
             key={s}
             onClick={() => setScope(s)}
@@ -31,7 +56,7 @@ export default function RequestsListPage() {
               scope === s ? 'bg-accent text-accent-fg' : 'text-muted hover:text-fg'
             }`}
           >
-            {s === 'mine' ? 'My Requests' : 'Assigned to me'}
+            {SCOPE_LABELS[s]}
           </button>
         ))}
       </div>
@@ -59,6 +84,13 @@ export default function RequestsListPage() {
             ))}
           </Select>
         </div>
+      </div>
+      <div className="ml-auto flex items-center gap-2">
+        {exportError && <span className="text-sm text-red-600">{exportError}</span>}
+        <Button variant="secondary" onClick={handleExport} disabled={exporting}>
+          <DownloadIcon size={15} />
+          {exporting ? 'Exporting…' : 'Export'}
+        </Button>
       </div>
     </div>
   )
