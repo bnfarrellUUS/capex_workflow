@@ -67,6 +67,9 @@ def create_app(config_object=None):
     from .blueprints.email_templates import bp as email_templates_bp
     app.register_blueprint(email_templates_bp)
 
+    from .blueprints.reports import bp as reports_bp
+    app.register_blueprint(reports_bp)
+
     @app.errorhandler(ServiceError)
     def _handle_service_error(err: ServiceError):
         return jsonify(error=err.message), err.status
