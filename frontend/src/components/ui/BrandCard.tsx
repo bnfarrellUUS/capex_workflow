@@ -8,6 +8,7 @@ import {
   ThresholdsIcon,
   EmailTemplatesIcon,
   ProfileIcon,
+  ReportsIcon,
   type NavIconProps,
 } from '../NavIcons'
 
@@ -27,6 +28,7 @@ export type PageMark =
   | 'thresholds'
   | 'emailTemplates'
   | 'profile'
+  | 'reports'
 
 const MARKS: Record<PageMark, React.ComponentType<NavIconProps>> = {
   dashboard: DashboardIcon,
@@ -37,6 +39,7 @@ const MARKS: Record<PageMark, React.ComponentType<NavIconProps>> = {
   thresholds: ThresholdsIcon,
   emailTemplates: EmailTemplatesIcon,
   profile: ProfileIcon,
+  reports: ReportsIcon,
 }
 
 /**

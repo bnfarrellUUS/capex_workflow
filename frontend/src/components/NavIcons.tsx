@@ -107,3 +107,14 @@ export function ProfileIcon(props: NavIconProps) {
     </Icon>
   )
 }
+
+export function ReportsIcon(props: NavIconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 4v16h16" />
+      <path d="M9 16v-5" />
+      <path d="M13 16V8" />
+      <path d="M17 16v-3" />
+    </Icon>
+  )
+}

@@ -10,6 +10,7 @@ import {
   ThresholdsIcon,
   EmailTemplatesIcon,
   ProfileIcon,
+  ReportsIcon,
   type NavIconProps,
 } from './NavIcons'
 import { useMe } from '../auth/useMe'
@@ -35,6 +36,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       { to: '/', label: 'Dashboard', icon: DashboardIcon, roles: [], end: true },
       { to: '/requests/new', label: 'New Request', icon: NewRequestIcon, roles: [], activePattern: /^\/requests\/[^/]+\/edit$/ },
       { to: '/requests', label: 'My Requests', icon: MyRequestsIcon, roles: [], end: true },
+      { to: '/reports', label: 'Reports', icon: ReportsIcon, roles: ['FINANCE', 'ADMIN'] },
     ],
   },
   {

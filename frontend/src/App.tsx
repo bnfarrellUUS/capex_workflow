@@ -17,6 +17,7 @@ import ProfilePage from './routes/ProfilePage'
 import WizardPage from './routes/WizardPage'
 import RequestDetailPage from './routes/RequestDetailPage'
 import RequestsListPage from './routes/RequestsListPage'
+import ReportsPage from './routes/ReportsPage'
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/requests/new" element={<WizardPage />} />
         <Route path="/requests/:id/edit" element={<WizardPage />} />
         <Route path="/requests/:id" element={<RequestDetailPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route element={<AdminLayout />}>
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/new" element={<UserNewPage />} />
