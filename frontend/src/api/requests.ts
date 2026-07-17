@@ -1,4 +1,4 @@
-import { api, apiUpload } from './client'
+import { api, apiUpload, ApiError } from './client'
 
 export interface EquipItem {
   id?: string
@@ -119,4 +119,33 @@ export function listRequests(params: { scope?: string; status?: string } = {}): 
   if (params.status) q.set('status', params.status)
   const qs = q.toString()
   return api<RequestSummary[]>(`/requests${qs ? `?${qs}` : ''}`)
+}
+
+export interface ExportParams {
+  scope?: string
+  status?: string
+  q?: string
+}
+
+export function exportRequestsPath(params: ExportParams = {}): string {
+  const qp = new URLSearchParams()
+  if (params.scope) qp.set('scope', params.scope)
+  if (params.status) qp.set('status', params.status)
+  if (params.q?.trim()) qp.set('q', params.q.trim())
+  const qs = qp.toString()
+  return `/api/requests/export.xlsx${qs ? `?${qs}` : ''}`
+}
+
+export async function downloadRequestsExport(params: ExportParams = {}): Promise<void> {
+  const res = await fetch(exportRequestsPath(params), { credentials: 'include' })
+  if (!res.ok) throw new ApiError(res.status, 'Export failed.')
+  const blob = await res.blob()
+  const disposition = res.headers.get('Content-Disposition') ?? ''
+  const name = /filename=([^;]+)/.exec(disposition)?.[1]?.trim() ?? 'capex-requests.xlsx'
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(url)
 }
