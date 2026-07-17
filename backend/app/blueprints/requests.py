@@ -1,8 +1,9 @@
+from datetime import date
 from flask import Blueprint, jsonify, request, Response
 from flask_login import login_required, current_user
 
 from app.schemas.request import RequestDraft, FinanceIn
-from app.services import request_service, workflow_service, notify, attachment_service
+from app.services import request_service, workflow_service, notify, attachment_service, export_service
 
 bp = Blueprint("requests", __name__, url_prefix="/api/requests")
 
@@ -17,6 +18,24 @@ def list_requests_route():
         division_id=request.args.get("division_id") or None,
     )
     return jsonify([request_service.request_summary(r) for r in rows])
+
+
+@bp.get("/export.xlsx")
+@login_required
+def export_requests_route():
+    data = export_service.export_xlsx(
+        current_user,
+        scope=request.args.get("scope", "mine"),
+        status=request.args.get("status") or None,
+        division_id=request.args.get("division_id") or None,
+        q=request.args.get("q") or None,
+    )
+    filename = f"capex-requests-{date.today().isoformat()}.xlsx"
+    return Response(
+        data,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @bp.post("")
