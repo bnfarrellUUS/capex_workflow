@@ -92,3 +92,26 @@ def test_export_xlsx_empty_is_valid_workbook_with_header(app):
     ws = load_workbook(BytesIO(data)).active
     assert ws[1][0].value == "Number"
     assert list(ws.iter_rows(min_row=2)) == []
+
+
+def test_build_workbook_neutralizes_formula_injection(app):
+    user = make_user("req", roles='["REQUESTOR"]')
+    div = make_division()
+    r = make_draft(user.id, div.id, number="CX000010")
+    r.asset_life = "=1+1"
+    r.gl_account = '=HYPERLINK("x")'
+    db.session.commit()
+
+    data = export_service.export_xlsx(user, scope="mine")
+    ws = load_workbook(BytesIO(data)).active
+
+    headers = [c.value for c in ws[1]]
+    by_header = dict(zip(headers, list(ws[2])))
+
+    asset_life_cell = by_header["Asset Life"]
+    assert asset_life_cell.data_type == "s"
+    assert asset_life_cell.value == "=1+1"
+
+    gl_account_cell = by_header["GL Account"]
+    assert gl_account_cell.data_type == "s"
+    assert gl_account_cell.value == '=HYPERLINK("x")'

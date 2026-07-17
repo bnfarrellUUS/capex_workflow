@@ -90,10 +90,16 @@ def build_workbook(rows) -> bytes:
     for req in rows:
         ws.append([getter(req) for _, getter, _ in COLUMNS])
         for idx, (_, _, kind) in enumerate(COLUMNS, start=1):
+            cell = ws.cell(row=ws.max_row, column=idx)
             if kind == "money":
-                ws.cell(row=ws.max_row, column=idx).number_format = _MONEY_FMT
+                cell.number_format = _MONEY_FMT
             elif kind == "date":
-                ws.cell(row=ws.max_row, column=idx).number_format = _DATE_FMT
+                cell.number_format = _DATE_FMT
+            elif kind == "text" and isinstance(cell.value, str) and cell.value.startswith("="):
+                # Prevent Excel formula injection: openpyxl treats a leading
+                # "=" as a live formula. Force the cell back to plain text
+                # without altering its visible content.
+                cell.data_type = "s"
     for idx in range(1, len(COLUMNS) + 1):
         ws.column_dimensions[ws.cell(row=1, column=idx).column_letter].width = 18
     buf = BytesIO()
