@@ -17,7 +17,9 @@ any order; confirm with Bryan which feature to start with.
    approved + pending both count. Implementation sketch: mirror the Divisions
    CRUD stack; new `DivisionBudget` model (unique division+year); the app's
    first aggregation query; `openpyxl` dep for .xlsx.
-2. **Exports & reporting** — Export-to-Excel/CSV of the (filtered) requests
+2. **Exports & reporting** — **BUILT 2026-07-17** (see
+   `docs/superpowers/specs/2026-07-17-exports-reporting-design.md`).
+   Export-to-Excel/CSV of the (filtered) requests
    list, plus a reports page: spend by division/month/status, cycle-time
    (avg days to approve). Build after #1 to reuse its summary plumbing.
 3. **Reminders & escalation** — scheduled job emails the approver pool when a

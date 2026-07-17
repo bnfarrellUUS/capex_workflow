@@ -58,7 +58,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 164 tests).
+- Backend: `cd backend && pytest -q` (currently 185 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -68,7 +68,8 @@ build`; there is no live dev server.)
 - `blueprints/` — HTTP routes, one per resource, each mounted under `/api/...`:
   `health`, `auth` (`/api/auth`, email-based login plus `set-password`),
   `users`, `divisions`, `thresholds`, `profile`, `requests`, `email_templates`
-  (`/api/email-templates`, ADMIN-only). Routes are thin; they validate input
+  (`/api/email-templates`, ADMIN-only), `reports` (`/api/reports`, FINANCE/ADMIN
+  summary endpoint). Routes are thin; they validate input
   with Pydantic schemas and delegate to services. A flagged
   `must_change_password` user is blocked from the rest of the API by an
   app-level `before_request` (403 `PASSWORD_CHANGE_REQUIRED`), exempting only
@@ -87,7 +88,9 @@ build`; there is no live dev server.)
   buttons, bottom strip — is baked into `assets/*.png` because classic
   Outlook's Word engine can't round CSS corners and mangles VML on send),
   `email_outlook` (Outlook COM sender; attaches referenced `cid:capexflow-*`
-  assets), `security`, `errors` (`ServiceError(msg, status)`).
+  assets), `security`, `errors` (`ServiceError(msg, status)`),
+  `export_service` (xlsx export of the requests list via openpyxl),
+  `report_service` (year summary aggregates, computed Python-side).
   **Email gotchas:** editable template bodies must stay Quill-round-trippable
   (no tables/bgcolor/VML — Quill strips them); preview HTML must equal sent
   HTML (test-pinned); verify email changes against a real Outlook render, not
@@ -198,7 +201,7 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   mark — the page's own nav icon in a sky-blue rounded tile — + white title +
   sky subtitle; optional actions/subheader/footer slots; `mark` is a page key
   mapped to `NavIcons`: `dashboard`/`newRequest`/`requests`/`users`/
-  `divisions`/`thresholds`/`emailTemplates`/`profile`).
+  `divisions`/`thresholds`/`emailTemplates`/`profile`/`reports`).
 - Icons: `components/NavIcons.tsx` (custom per-page sidebar line-icons — 24px
   grid, rounded joins, `currentColor`; AppShell uses these for nav, lucide
   only supplies non-nav glyphs like Sign Out) and `components/ActionIcons.tsx`
@@ -214,8 +217,12 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   `RequestsListPage` + shared `RequestsTable` (sortable column headers and a
   per-row View action; client-side comparators + `filterRequests` in
   `routes/requestsSort.ts` — status sorts in workflow order, blanks last; the
-  list page adds a search box over number/division/requestor),
-  `RequestDetailPage`, `ProfilePage`, and `routes/admin/` (Users, Divisions,
+  list page adds a search box over number/division/requestor, an
+  Export-to-Excel button that downloads the current scope/status/search as
+  an xlsx, and an ADMIN/FINANCE-only "All" scope tab),
+  `RequestDetailPage`, `ProfilePage`, `ReportsPage` (`/reports`, FINANCE/ADMIN
+  only: year picker, spend-by-division/month/status tables with inline CSS
+  bars, cycle time), and `routes/admin/` (Users, Divisions,
   Approval Thresholds, Email Templates + forms).
 - `WizardPage` — 7-step request wizard (Basic Info, Description, Effect on
   Ops, Asset Details, Economic, Attachments, Review), styled as an email-look

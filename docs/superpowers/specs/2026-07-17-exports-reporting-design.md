@@ -85,10 +85,11 @@ otherwise), delegating to a new `app/services/report_service.py`.
 - Spend = APPROVED requests' `total_cost`; pipeline = `PENDING_L*`. DRAFT and
   REJECTED appear only in `by_status`. Requests with no division group under
   `"—"`. `by_month` always has 12 rows.
-- `cycle_time`: over requests approved in the year — days from the first
-  SUBMITTED `ApprovalAction` to the action that made the request APPROVED
-  (its last APPROVED action); never-approved requests excluded; `avg_days`
-  null when count is 0.
+- `cycle_time`: over the selected year's (`request_date`) requests whose
+  status is APPROVED — days from the first SUBMITTED `ApprovalAction` to the
+  last APPROVED action; never-approved requests excluded; `avg_days` null
+  when count is 0. (Keeps every number on the page consistent with the same
+  request_date-year bucket.)
 
 ## Frontend
 
