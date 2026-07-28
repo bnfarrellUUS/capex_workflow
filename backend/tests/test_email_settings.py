@@ -30,7 +30,7 @@ def test_set_email_settings_persists_to_appsetting(app):
 def _sent_spy(monkeypatch):
     sent = {}
     monkeypatch.setattr("app.services.email_outlook.send",
-                        lambda to, subject, body, html=None: sent.update(to=to, body=body, html=html))
+                        lambda to, subject, body, html=None, attachments=None: sent.update(to=to, body=body, html=html))
     return sent
 
 

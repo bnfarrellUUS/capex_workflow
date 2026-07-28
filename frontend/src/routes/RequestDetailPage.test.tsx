@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import RequestDetailPage from './RequestDetailPage'
@@ -16,17 +16,20 @@ vi.mock('../api/requests', () => ({
   deleteRequest: vi.fn(),
   uploadAttachment: vi.fn(),
   deleteAttachment: vi.fn(),
+  resendRecord: vi.fn(),
   attachmentUrl: (id: string, attId: string) => `/api/requests/${id}/attachments/${attId}`,
+  requestPdfUrl: (id: string) => `/api/requests/${id}/pdf`,
 }))
+let mockRoles = ['APPROVER']
 vi.mock('../auth/useMe', () => ({
-  useMe: () => ({ data: { id: 'approver-1', name: 'Approver', roles: ['APPROVER'], division_id: null } }),
+  useMe: () => ({ data: { id: 'approver-1', name: 'Approver', roles: mockRoles, division_id: null } }),
 }))
 vi.mock('../api/requestSections', () => ({
   getHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
   saveHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
 }))
 
-import { getRequest } from '../api/requests'
+import { getRequest, resendRecord } from '../api/requests'
 import { getHiddenSections } from '../api/requestSections'
 
 function makeRequest(): CapexRequestData {
@@ -129,5 +132,60 @@ describe('RequestDetailPage — admin-hidden sections', () => {
     renderPage()
     await screen.findByText('Request CX000042')
     expect(screen.getByText('Attachments')).toBeInTheDocument()
+  })
+})
+
+describe('RequestDetailPage — record PDF', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRoles = ['APPROVER']
+    vi.mocked(getRequest).mockResolvedValue(makeRequest())
+    vi.mocked(getHiddenSections).mockResolvedValue([])
+  })
+
+  it('offers a Download PDF link pointing at the pdf endpoint', async () => {
+    renderPage()
+    await screen.findByText('Request CX000042')
+    const link = screen.getByRole('link', { name: /Download PDF/i })
+    expect(link).toHaveAttribute('href', '/api/requests/req-1/pdf')
+  })
+
+  it('offers the PDF on a DRAFT too', async () => {
+    vi.mocked(getRequest).mockResolvedValue({ ...makeRequest(), status: 'DRAFT' })
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.getByRole('link', { name: /Download PDF/i })).toBeInTheDocument()
+  })
+
+  it('hides the resend button from a non-finance viewer', async () => {
+    vi.mocked(getRequest).mockResolvedValue({
+      ...makeRequest(), status: 'APPROVED', finance_completed: true,
+    })
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.queryByRole('button', { name: /Resend record/i })).toBeNull()
+  })
+
+  it('hides the resend button until finance completes', async () => {
+    mockRoles = ['FINANCE']
+    vi.mocked(getRequest).mockResolvedValue({
+      ...makeRequest(), status: 'APPROVED', finance_completed: false,
+    })
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.queryByRole('button', { name: /Resend record/i })).toBeNull()
+  })
+
+  it('lets FINANCE resend the record once complete', async () => {
+    mockRoles = ['FINANCE']
+    const complete = { ...makeRequest(), status: 'APPROVED', finance_completed: true }
+    vi.mocked(getRequest).mockResolvedValue(complete)
+    vi.mocked(resendRecord).mockResolvedValue(complete)
+    renderPage()
+    await screen.findByText('Request CX000042')
+
+    fireEvent.click(screen.getByRole('button', { name: /Resend record/i }))
+
+    await waitFor(() => expect(resendRecord).toHaveBeenCalledWith('req-1'))
   })
 })

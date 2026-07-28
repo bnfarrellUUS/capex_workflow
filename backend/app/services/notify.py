@@ -27,7 +27,7 @@ def _redirect_note(intended):
     return _delivery(intended)[1]
 
 
-def _emit(intended, subject, html, enabled, request_id, type_):
+def _emit(intended, subject, html, enabled, request_id, type_, attachments=None):
     """Always record a NotificationLog; deliver via Outlook when enabled."""
     try:
         log.info("EMAIL to=%s subject=%s", intended, subject)
@@ -41,16 +41,17 @@ def _emit(intended, subject, html, enabled, request_id, type_):
     redirect_to = _delivery(intended)[0]
     try:
         from app.services import email_outlook
-        email_outlook.send(redirect_to, subject, "", html=html)
+        email_outlook.send(redirect_to, subject, "", html=html, attachments=attachments)
     except Exception:
         log.exception("email delivery failed (intended %s)", intended)
 
 
-def _send_template(intended, type_, req, **extra):
+def _send_template(intended, type_, req, attachments=None, **extra):
     from app.services import email_template_service as ets
     ctx = ets.context_for(req, **extra)
     out = ets.render(type_, ctx, redirect_note=_redirect_note(intended))
-    _emit(intended, out["subject"], out["html"], out["enabled"], req.id, type_)
+    _emit(intended, out["subject"], out["html"], out["enabled"], req.id, type_,
+          attachments=attachments)
 
 
 def notify_assignment(req):
@@ -75,6 +76,14 @@ def notify_finance_ready(req):
     for u in users:
         if "FINANCE" in u.roles_list:
             _send_template(u.email, "FINANCE_READY", req)
+
+
+def notify_finance_complete(req):
+    """Final record email: the requestor keeps a PDF of the finished request."""
+    from app.services import pdf_service, settings_service
+    pdf = pdf_service.build_request_pdf(req, settings_service.get_hidden_sections())
+    _send_template(req.requestor.email, "FINANCE_COMPLETE", req,
+                   attachments=[(pdf_service.pdf_filename(req), pdf)])
 
 
 def send_email(recipient, subject, body, request_id=None, type_="INFO"):

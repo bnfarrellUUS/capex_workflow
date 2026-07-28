@@ -7,13 +7,14 @@ from app.models import EmailTemplate
 from app.services import email_frame
 from app.services.errors import ServiceError
 
-TYPES = ("ASSIGNED", "APPROVED", "REJECTED", "FINANCE_READY")
+TYPES = ("ASSIGNED", "APPROVED", "REJECTED", "FINANCE_READY", "FINANCE_COMPLETE")
 
 NAMES = {
     "ASSIGNED": "Approval needed",
     "APPROVED": "Request approved",
     "REJECTED": "Request rejected",
     "FINANCE_READY": "Finance section pending",
+    "FINANCE_COMPLETE": "Record complete",
 }
 
 _COMMON = [
@@ -28,6 +29,7 @@ TOKENS = {
     "APPROVED": _COMMON,
     "REJECTED": _COMMON + [{"token": "{comment}", "description": "Reviewer's rejection comment"}],
     "FINANCE_READY": _COMMON,
+    "FINANCE_COMPLETE": _COMMON,
 }
 
 # The editable body must be HTML that Quill can round-trip unchanged —
@@ -73,6 +75,15 @@ DEFAULTS = {
         "body_html": (
             "<p>Request <strong>{number}</strong> ({total_cost}) has been fully "
             "approved and needs the finance cost breakdown.</p>" + _FACTS
+        ),
+    },
+    "FINANCE_COMPLETE": {
+        "subject": "{number} is complete — your record copy",
+        "body_html": (
+            "<p>Your request <strong>{number}</strong> ({total_cost}) is fully "
+            "approved and the finance details are now complete.</p><p><br></p>"
+            "<p>A PDF copy of the full request, its approvals, and the finance "
+            "breakdown is attached for your records.</p>" + _FACTS
         ),
     },
 }

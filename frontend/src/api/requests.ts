@@ -101,6 +101,13 @@ export function deleteAttachment(id: string, attId: string): Promise<CapexReques
 export function attachmentUrl(id: string, attId: string): string {
   return `/api/requests/${id}/attachments/${attId}`
 }
+export function requestPdfUrl(id: string): string {
+  return `/api/requests/${id}/pdf`
+}
+/** Re-send the requestor their record copy (FINANCE/ADMIN, finance-complete only). */
+export function resendRecord(id: string): Promise<CapexRequestData> {
+  return api<CapexRequestData>(`/requests/${id}/resend-record`, { method: 'POST' })
+}
 
 export interface RequestSummary {
   id: string

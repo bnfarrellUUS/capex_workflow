@@ -34,12 +34,19 @@ def _attach_inline_assets(mail, html):
             _PR_ATTACH_CONTENT_ID, f"{email_frame.CID_PREFIX}{name}")
 
 
-def send(to, subject, body, html=None):
+def send(to, subject, body, html=None, attachments=None):
+    """Send via Outlook. `attachments` is a list of (filename, bytes) attached
+    as ordinary visible files (unlike the inline brand assets, which are keyed
+    by Content-ID). Outlook's COM API only attaches from a path, so each one is
+    written to a temp file and cleaned up after the send."""
     # Imported lazily so the app (and CI on non-Windows) never needs pywin32
     # unless email is actually being sent.
     import pythoncom
     import win32com.client
+    import shutil
+    import tempfile
 
+    tmpdir = tempfile.mkdtemp(prefix="capexflow-mail-") if attachments else None
     pythoncom.CoInitialize()
     try:
         outlook = win32com.client.Dispatch("Outlook.Application")
@@ -51,6 +58,13 @@ def send(to, subject, body, html=None):
             mail.HTMLBody = html
         else:
             mail.Body = body
+        for filename, data in attachments or []:
+            path = os.path.join(tmpdir, filename)
+            with open(path, "wb") as fh:
+                fh.write(data)
+            mail.Attachments.Add(path)
         mail.Send()
     finally:
         pythoncom.CoUninitialize()
+        if tmpdir:
+            shutil.rmtree(tmpdir, ignore_errors=True)

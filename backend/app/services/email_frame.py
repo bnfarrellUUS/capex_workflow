@@ -36,6 +36,9 @@ BUTTONS = {
     "APPROVED": ("btn-approved", 162, 44, "View the request"),
     "REJECTED": ("btn-rejected", 167, 44, "Open the request"),
     "FINANCE_READY": ("btn-finance-ready", 252, 44, "Complete the finance section"),
+    # Reuses the approved button: its "View the request" label already fits, so
+    # the record email needs no new baked-PNG artwork.
+    "FINANCE_COMPLETE": ("btn-approved", 162, 44, "View the request"),
 }
 
 BUTTON_LABELS = {type_: b[3] for type_, b in BUTTONS.items()}

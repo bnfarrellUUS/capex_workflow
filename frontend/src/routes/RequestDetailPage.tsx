@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getRequest, approveRequest, rejectRequest, resubmitRequest, completeFinance,
   deleteRequest, uploadAttachment, deleteAttachment, attachmentUrl,
+  requestPdfUrl, resendRecord,
   type CapexRequestData,
 } from '../api/requests'
 import { getHiddenSections } from '../api/requestSections'
@@ -35,15 +36,19 @@ export default function RequestDetailPage() {
   const [comment, setComment] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [recordSent, setRecordSent] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  async function act(fn: () => Promise<CapexRequestData>) {
+  /** Runs a request action, refreshing the cache. Returns whether it succeeded. */
+  async function act(fn: () => Promise<CapexRequestData>): Promise<boolean> {
     setErr(null)
     setBusy(true)
     try {
       qc.setQueryData(['request', id], await fn())
+      return true
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'Action failed.')
+      return false
     } finally {
       setBusy(false)
     }
@@ -56,6 +61,10 @@ export default function RequestDetailPage() {
   const canEdit = isOwner && (req.status === 'DRAFT' || req.status === 'REJECTED')
   const canResubmit = isOwner && req.status === 'REJECTED'
   const canFinance = me.roles.includes('FINANCE') && req.status === 'APPROVED'
+  // Only Finance/Admin can re-send the requestor's record copy, and only once
+  // there is a record to send.
+  const canResendRecord = (me.roles.includes('FINANCE') || me.roles.includes('ADMIN'))
+    && req.finance_completed
   const canAttach = canEdit || canFinance
   const hasActions = isAssignee || canEdit || canResubmit
 
@@ -84,6 +93,22 @@ export default function RequestDetailPage() {
         <div><span className="font-medium">Awaiting:</span> {req.current_approver_names.length ? req.current_approver_names.join(', ') : (req.assignee_name ?? '—')}</div>
         <div><span className="font-medium">Total cost:</span> ${Number(req.total_cost ?? 0).toLocaleString()}</div>
         <div className="col-span-2"><span className="font-medium">Description:</span> {req.description || '—'}</div>
+      </section>
+
+      <section className="flex flex-wrap items-center gap-4 border-y border-border py-2.5">
+        <a className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
+          href={requestPdfUrl(id)}>
+          <DownloadIcon size={16} />Download PDF
+        </a>
+        {canResendRecord && (
+          <Button variant="secondary" disabled={busy}
+            onClick={async () => setRecordSent(await act(() => resendRecord(id)))}>
+            Resend record to requestor
+          </Button>
+        )}
+        {recordSent && (
+          <span className="text-sm text-emerald-600 dark:text-emerald-400">Record sent.</span>
+        )}
       </section>
 
       <FullDetails req={req} hidden={hidden} />

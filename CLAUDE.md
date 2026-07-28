@@ -58,7 +58,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 204 tests).
+- Backend: `cd backend && pytest -q` (currently 236 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -94,7 +94,11 @@ build`; there is no live dev server.)
   `email_outlook` (Outlook COM sender; attaches referenced `cid:capexflow-*`
   assets), `security`, `errors` (`ServiceError(msg, status)`),
   `export_service` (xlsx export of the requests list via openpyxl),
-  `report_service` (year summary aggregates, computed Python-side).
+  `report_service` (year summary aggregates, computed Python-side),
+  `pdf_service` (record PDF of one request via reportlab — see "Record PDF"
+  below; `request_pdf_sections` decides the content as plain dicts and
+  `render_pdf` is the only reportlab-aware part, so content rules are testable
+  without parsing PDFs).
   **Email gotchas:** editable template bodies must stay Quill-round-trippable
   (no tables/bgcolor/VML — Quill strips them); preview HTML must equal sent
   HTML (test-pinned); verify email changes against a real Outlook render, not
@@ -174,10 +178,10 @@ attachments while DRAFT/REJECTED; FINANCE once APPROVED. Attach-file UI
 (wizard + detail page) is a button over a hidden file input — picking a file
 uploads immediately.
 
-Each transition sends a notification email (assignment/decision/finance-ready)
-via the local Outlook desktop app (`email_outlook`). Emails are **editable
-HTML templates** — admins customize subject, body (WYSIWYG), and enabled flag
-per type under **Admin → Email Templates**, with `{token}` placeholders
+Each transition sends a notification email (assignment/decision/finance-ready/
+record-complete) via the local Outlook desktop app (`email_outlook`). Emails are
+**editable HTML templates** — admins customize subject, body (WYSIWYG), and
+enabled flag per type under **Admin → Email Templates**, with `{token}` placeholders
 substituted at send time and a brand-styled locked frame. A runtime **delivery
 mode** (Test/Live — toggled from the Email Templates page and editor via
 `components/admin/EmailDeliveryMode.tsx`, stored in `AppSetting`, exposed at
@@ -253,6 +257,35 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   sends `X-CSRFToken` on mutations, `credentials: 'include'`), plus
   per-resource modules (`auth`, `requests`, `divisions`, `users`,
   `thresholds`, `profileApi`, `requestSections`).
+
+## Record PDF & the finance-complete email
+
+When Finance **first** completes the cost breakdown, the requestor gets a final
+"record copy" email with a PDF of the whole request attached (spec:
+`docs/superpowers/specs/2026-07-28-finance-complete-record-pdf-design.md`).
+
+- **Trigger:** in the `POST /api/requests/<id>/finance` route (notifications
+  fire from blueprints, never services). First completion is detected by
+  counting `FINANCE_COMPLETED` actions on the saved request — exactly one means
+  this save was the first, so **re-saves send nothing** and no signature or
+  extra state was needed.
+- **Manual resend:** `POST /api/requests/<id>/resend-record`, FINANCE/ADMIN
+  only, 400 unless `finance_completed`. Button sits next to Download PDF.
+- **Download:** `GET /api/requests/<id>/pdf` at any status; authz is just
+  `request_service.get_request`, so it inherits the detail page's visibility
+  rule. Frontend uses `requestPdfUrl(id)` in a plain `<a href>`.
+- **Fifth email template `FINANCE_COMPLETE`** ("Record complete"). It reuses
+  the existing `btn-approved` PNG because that button already reads "View the
+  request" — **adding an email type needs no new baked artwork unless you want
+  a new CTA label** (buttons are PNGs; see the email gotchas above).
+- **Attachments:** `email_outlook.send(..., attachments=[(filename, bytes)])`
+  writes each to a temp file (Outlook COM attaches from a path only) and
+  cleans up after `Send()`. `notify._emit`/`_send_template` pass it through.
+  **Any test that spies on `email_outlook.send` must accept `attachments=`.**
+- The PDF omits admin-hidden wizard sections and omits the finance breakdown
+  until `finance_completed`. Ratio columns (`Numeric(9,4)`) print via
+  `money_str`, so payback shows `3`, not `3.0000`.
+- Nothing is stored: PDFs are generated per request.
 
 ## Hideable wizard sections
 

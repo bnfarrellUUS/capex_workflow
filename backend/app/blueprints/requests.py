@@ -2,8 +2,13 @@ from datetime import date
 from flask import Blueprint, jsonify, request, Response
 from flask_login import login_required, current_user
 
+from app.authz import require_roles
 from app.schemas.request import RequestDraft, FinanceIn
-from app.services import request_service, workflow_service, notify, attachment_service, export_service
+from app.services.errors import ServiceError
+from app.services import (
+    request_service, workflow_service, notify, attachment_service, export_service,
+    pdf_service, settings_service,
+)
 
 bp = Blueprint("requests", __name__, url_prefix="/api/requests")
 
@@ -110,7 +115,33 @@ def resubmit_request(request_id):
 def finance_request(request_id):
     costs = FinanceIn(**(request.get_json(silent=True) or {})).model_dump()
     req = workflow_service.complete_finance(request_id, current_user.id, costs)
+    # Send the requestor their record copy on the FIRST completion only; the
+    # audit trail already logs every FINANCE_COMPLETED, so exactly one means
+    # this save was the first. Later re-saves stay silent (use resend-record).
+    if sum(1 for a in req.actions if a.action == "FINANCE_COMPLETED") == 1:
+        notify.notify_finance_complete(req)
     return jsonify(request_service.request_out(req))
+
+
+@bp.post("/<request_id>/resend-record")
+@require_roles("FINANCE", "ADMIN")
+def resend_record(request_id):
+    req = request_service.get_request(request_id, current_user)
+    if not req.finance_completed:
+        raise ServiceError("The finance section is not complete yet.")
+    notify.notify_finance_complete(req)
+    return jsonify(request_service.request_out(req))
+
+
+@bp.get("/<request_id>/pdf")
+@login_required
+def request_pdf(request_id):
+    # get_request applies the detail page's visibility rule (404/403).
+    req = request_service.get_request(request_id, current_user)
+    data = pdf_service.build_request_pdf(req, settings_service.get_hidden_sections())
+    return Response(data, mimetype="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="{pdf_service.pdf_filename(req)}"',
+    })
 
 
 @bp.post("/<request_id>/attachments")

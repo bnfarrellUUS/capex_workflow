@@ -28,9 +28,13 @@ any order; confirm with Bryan which feature to start with.
 4. **Comment threads** — Q&A thread on the request detail page so approvers
    can ask questions without rejecting; immutable comments, email notification
    to the other party; request stays put in the workflow.
-5. **Printable PDF of approved request** — Download-PDF button rendering the
+5. **Printable PDF of approved request** — **BUILT 2026-07-28** (see
+   `docs/superpowers/specs/2026-07-28-finance-complete-record-pdf-design.md`).
+   Download-PDF button rendering the
    full request, approval history (names/dates), and finance breakdown for
-   audit files / PO packages.
+   audit files / PO packages. Shipped with more than the proposal asked for: a
+   fifth email template (`FINANCE_COMPLETE`) mails the requestor that PDF when
+   Finance first completes the breakdown, plus a FINANCE/ADMIN resend button.
 
 ## Later-phase candidate ideas (awareness only, also in the docx)
 

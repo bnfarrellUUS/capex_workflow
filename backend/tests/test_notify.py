@@ -15,7 +15,7 @@ def test_send_email_logs_notification(app):
 def test_send_email_delivers_redirected_when_enabled(app, monkeypatch):
     sent = {}
     monkeypatch.setattr("app.services.email_outlook.send",
-                        lambda to, subject, body, html=None: sent.update(to=to, body=body))
+                        lambda to, subject, body, html=None, attachments=None: sent.update(to=to, body=body))
     app.config["EMAIL_ENABLED"] = True
     app.config["EMAIL_REDIRECT_TO"] = "me@uus.com"
 
@@ -55,7 +55,7 @@ def test_notify_assignment_notifies_current_level_approvers(app):
 def test_notify_assignment_uses_template_html(app, monkeypatch):
     sent = {}
     monkeypatch.setattr("app.services.email_outlook.send",
-                        lambda to, subject, body, html=None: sent.update(subject=subject, html=html))
+                        lambda to, subject, body, html=None, attachments=None: sent.update(subject=subject, html=html))
     app.config["EMAIL_ENABLED"] = True
     app.config["APP_BASE_URL"] = "https://capex.example.com"
     approver = make_user("appr")
