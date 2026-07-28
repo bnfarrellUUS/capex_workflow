@@ -21,8 +21,13 @@ vi.mock('../api/requests', () => ({
 vi.mock('../auth/useMe', () => ({
   useMe: () => ({ data: { id: 'approver-1', name: 'Approver', roles: ['APPROVER'], division_id: null } }),
 }))
+vi.mock('../api/requestSections', () => ({
+  getHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
+  saveHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
+}))
 
 import { getRequest } from '../api/requests'
+import { getHiddenSections } from '../api/requestSections'
 
 function makeRequest(): CapexRequestData {
   return {
@@ -80,5 +85,49 @@ describe('RequestDetailPage — full request details', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Full request details/i }))
     expect(screen.queryByText(/Because the old forklift died/)).toBeNull()
+  })
+})
+
+describe('RequestDetailPage — admin-hidden sections', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getRequest).mockResolvedValue(makeRequest())
+    vi.mocked(getHiddenSections).mockResolvedValue([])
+  })
+
+  it('omits a hidden section from Full request details', async () => {
+    vi.mocked(getHiddenSections).mockResolvedValue(['economic'])
+    renderPage()
+    await screen.findByText('Request CX000042')
+    fireEvent.click(screen.getByRole('button', { name: /Full request details/i }))
+
+    expect(await screen.findByText(/Because the old forklift died/)).toBeInTheDocument()
+    expect(screen.queryByText('Economic analysis')).toBeNull()
+    expect(screen.queryByText(/7 years/)).toBeNull()
+  })
+
+  it('omits the justification and effect blocks when those sections are hidden', async () => {
+    vi.mocked(getHiddenSections).mockResolvedValue(['description', 'effect_on_ops'])
+    renderPage()
+    await screen.findByText('Request CX000042')
+    fireEvent.click(screen.getByRole('button', { name: /Full request details/i }))
+
+    expect(await screen.findByText('Economic analysis')).toBeInTheDocument()
+    expect(screen.queryByText(/Because the old forklift died/)).toBeNull()
+    expect(screen.queryByText(/Warehouse throughput doubles/)).toBeNull()
+  })
+
+  it('omits the Asset details table when that section is hidden', async () => {
+    vi.mocked(getHiddenSections).mockResolvedValue(['asset_details'])
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.queryByText('Asset details')).toBeNull()
+  })
+
+  it('keeps the Attachments section, which FINANCE still needs after approval', async () => {
+    vi.mocked(getHiddenSections).mockResolvedValue(['attachments'])
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.getByText('Attachments')).toBeInTheDocument()
   })
 })

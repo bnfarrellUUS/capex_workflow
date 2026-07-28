@@ -70,6 +70,9 @@ def create_app(config_object=None):
     from .blueprints.reports import bp as reports_bp
     app.register_blueprint(reports_bp)
 
+    from .blueprints.request_sections import bp as request_sections_bp
+    app.register_blueprint(request_sections_bp)
+
     @app.errorhandler(ServiceError)
     def _handle_service_error(err: ServiceError):
         return jsonify(error=err.message), err.status

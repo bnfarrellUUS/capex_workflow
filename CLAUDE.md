@@ -58,7 +58,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 185 tests).
+- Backend: `cd backend && pytest -q` (currently 204 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -69,7 +69,9 @@ build`; there is no live dev server.)
   `health`, `auth` (`/api/auth`, email-based login plus `set-password`),
   `users`, `divisions`, `thresholds`, `profile`, `requests`, `email_templates`
   (`/api/email-templates`, ADMIN-only), `reports` (`/api/reports`, FINANCE/ADMIN
-  summary endpoint). Routes are thin; they validate input
+  summary endpoint), `request_sections` (`/api/request-sections` — which wizard
+  steps are hidden; **GET is open to any signed-in user** because the wizard
+  needs it, PUT is ADMIN-only). Routes are thin; they validate input
   with Pydantic schemas and delegate to services. A flagged
   `must_change_password` user is blocked from the rest of the API by an
   app-level `before_request` (403 `PASSWORD_CHANGE_REQUIRED`), exempting only
@@ -82,7 +84,9 @@ build`; there is no live dev server.)
   for the delivery mode to pick the recipient), `settings_service`
   (app-wide settings in the `AppSetting` table — the email delivery mode:
   Test redirects all mail to a test recipient, Live sends to real
-  recipients; defaults to Test + `EMAIL_REDIRECT_TO`), `email_template_service`
+  recipients; defaults to Test + `EMAIL_REDIRECT_TO`; plus
+  `get/set_hidden_sections`, the hidden wizard steps as a JSON array under
+  `wizard_hidden_sections`, defaulting to none), `email_template_service`
   (four editable email templates: defaults, tokens, render, three-tier reset),
   `email_frame` (brand HTML wrapper; the rounded chrome — header band, CTA
   buttons, bottom strip — is baked into `assets/*.png` because classic
@@ -223,11 +227,13 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   `RequestDetailPage`, `ProfilePage`, `ReportsPage` (`/reports`, FINANCE/ADMIN
   only: year picker, spend-by-division/month/status tables with inline CSS
   bars, cycle time), and `routes/admin/` (Users, Divisions,
-  Approval Thresholds, Email Templates + forms).
+  Approval Thresholds, Request Sections, Email Templates + forms).
 - `WizardPage` — 7-step request wizard (Basic Info, Description, Effect on
   Ops, Asset Details, Economic, Attachments, Review), styled as an email-look
   brand card (navy header band with Logo, numbered stepper [✓ done / accent
-  active], footer action bar). Two modes keyed on the route: **new**
+  active], footer action bar). **Steps are a keyed registry**
+  (`routes/wizard/sections.ts`), not positional indexes — add a step there, and
+  see "Hideable wizard sections" below. Two modes keyed on the route: **new**
   (`/requests/new`) starts from a blank form (division prefilled from
   `useMe().division_id`, date today) and **creates nothing** until the first
   Save Draft / Submit — those call `createDraft` then `updateDraft` and swap
@@ -246,7 +252,30 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
 - `api/` — `client.ts` (fetch wrapper; obtains CSRF from `/api/auth/csrf`,
   sends `X-CSRFToken` on mutations, `credentials: 'include'`), plus
   per-resource modules (`auth`, `requests`, `divisions`, `users`,
-  `thresholds`, `profileApi`).
+  `thresholds`, `profileApi`, `requestSections`).
+
+## Hideable wizard sections
+
+**Admin → Request Sections** (`/admin/request-sections`, ADMIN-only) lets an
+admin hide five of the seven wizard steps — `description`, `effect_on_ops`,
+`asset_details`, `economic`, `attachments`. **Basic Info and Review are always
+visible** (Basic Info carries the Division that drives L1 routing; Review
+carries Submit) and the API rejects them as hideable keys.
+
+- Single source of truth: `routes/wizard/sections.ts` — `ALL_SECTIONS`,
+  `visibleSections(hidden)`, `isSectionVisible(key, hidden)`, `clampStep`.
+  Step numbers are the 1-based position in the **visible** list, so hiding one
+  renumbers the rest with no arithmetic anywhere else.
+- Consumers all read the `['request-sections']` query: `WizardPage` (stepper +
+  bodies + Review summary lines), `RequestDetailPage` (the `FullDetails`
+  Justification / Effect / Economic blocks and the Asset details table), and
+  the admin page. **The detail page's Attachments section deliberately ignores
+  the config** — FINANCE needs it after approval.
+- **Display config, not a security boundary.** The PATCH route still accepts a
+  hidden section's fields, so hiding never deletes or freezes existing data;
+  re-showing a section brings its values back.
+- Hiding Asset Details means no line items → `total_cost` 0 → every request
+  routes at Level 1. The admin page warns about this on that row.
 
 ## Design system & brand
 
@@ -285,6 +314,14 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   `FinanceIn` schema, `workflow_service._FINANCE_FIELDS`, `request_out`,
   frontend `CapexRequestData` + the `FinanceForm`/read-only views in
   `RequestDetailPage` (and its test mocks, which build full objects).
+- **Known bug (pre-existing, unfixed):** the app-wide `ValidationError` handler
+  in `app/__init__.py` calls `err.errors()`, which embeds the raw `ValueError`
+  in the error's `ctx` — `jsonify` can't serialize it, so any schema whose
+  `field_validator` *raises* returns a 500 instead of 400. This already affects
+  `PUT /api/email-templates/settings` with a malformed `test_recipient`. Until
+  it's fixed (`err.errors(include_context=False)` or `json.loads(err.json())`),
+  express new constraints as types — `Literal`, bounds — rather than raising
+  validators; see `schemas/request_sections.py`.
 - `index.css` hides the Edge/IE native password-reveal eye (`::-ms-reveal`) —
   `PasswordInput` provides its own toggle; without this users see two eyes.
 - If `DEFAULT_PASSWORD` ever changes, update it in lockstep: the config

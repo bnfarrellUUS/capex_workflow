@@ -7,6 +7,8 @@ import {
   deleteRequest, uploadAttachment, deleteAttachment, attachmentUrl,
   type CapexRequestData,
 } from '../api/requests'
+import { getHiddenSections } from '../api/requestSections'
+import { isSectionVisible } from './wizard/sections'
 import { FINANCE_FIELDS, parseFinanceCosts, financeFormValues, financeTotalCents, dollars } from './financeCosts'
 import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
@@ -27,6 +29,9 @@ export default function RequestDetailPage() {
   const qc = useQueryClient()
   const { data: me } = useMe()
   const { data: req } = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id) })
+  // Sections an admin hid in the wizard are omitted here too, so readers don't
+  // page through blank rows. Attachments is the exception — see below.
+  const { data: hidden = [] } = useQuery({ queryKey: ['request-sections'], queryFn: getHiddenSections })
   const [comment, setComment] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -81,8 +86,9 @@ export default function RequestDetailPage() {
         <div className="col-span-2"><span className="font-medium">Description:</span> {req.description || '—'}</div>
       </section>
 
-      <FullDetails req={req} />
+      <FullDetails req={req} hidden={hidden} />
 
+      {isSectionVisible('asset_details', hidden) && (
       <section>
         <h2 className="mb-1 font-semibold text-fg">Asset details</h2>
         <table className="w-full border-collapse text-sm">
@@ -104,6 +110,7 @@ export default function RequestDetailPage() {
           </tbody>
         </table>
       </section>
+      )}
 
       <section>
         <h2 className="mb-1 font-semibold text-fg">Approval history</h2>
@@ -272,7 +279,7 @@ const ECONOMIC_FIELDS: { key: EconField; label: string; money?: boolean }[] = [
   { key: 'npv_savings', label: 'NPV of future savings', money: true },
 ]
 
-function FullDetails({ req }: { req: CapexRequestData }) {
+function FullDetails({ req, hidden }: { req: CapexRequestData; hidden: string[] }) {
   const [open, setOpen] = useState(false)
   return (
     <section>
@@ -292,14 +299,19 @@ function FullDetails({ req }: { req: CapexRequestData }) {
               ))}
             </div>
           </div>
+          {isSectionVisible('description', hidden) && (
           <div>
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Justification</h3>
             <p className="whitespace-pre-wrap">{req.justification || '—'}</p>
           </div>
+          )}
+          {isSectionVisible('effect_on_ops', hidden) && (
           <div>
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Effect on operations</h3>
             <p className="whitespace-pre-wrap">{req.effect_on_operations || '—'}</p>
           </div>
+          )}
+          {isSectionVisible('economic', hidden) && (
           <div>
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Economic analysis</h3>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1">
@@ -313,6 +325,7 @@ function FullDetails({ req }: { req: CapexRequestData }) {
               ))}
             </div>
           </div>
+          )}
         </div>
       )}
     </section>

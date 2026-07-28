@@ -45,6 +45,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
       { to: '/admin/users', label: 'Users', icon: UsersIcon, roles: ['ADMIN'] },
       { to: '/admin/divisions', label: 'Divisions', icon: DivisionsIcon, roles: ['ADMIN'] },
       { to: '/admin/thresholds', label: 'Approval Thresholds', icon: ThresholdsIcon, roles: ['ADMIN'] },
+      { to: '/admin/request-sections', label: 'Request Sections', icon: NewRequestIcon, roles: ['ADMIN'] },
       { to: '/admin/email-templates', label: 'Email Templates', icon: EmailTemplatesIcon, roles: ['ADMIN'] },
     ],
   },

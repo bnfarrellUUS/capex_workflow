@@ -22,8 +22,13 @@ vi.mock('../api/divisions', () => ({
 vi.mock('../auth/useMe', () => ({
   useMe: () => ({ data: { id: 'me', name: 'Me', roles: ['REQUESTOR'], division_id: 'div-1' } }),
 }))
+vi.mock('../api/requestSections', () => ({
+  getHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
+  saveHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
+}))
 
 import { getRequest, createDraft, updateDraft, submitRequest, resubmitRequest, uploadAttachment } from '../api/requests'
+import { getHiddenSections } from '../api/requestSections'
 
 function makeRequest(status: string): CapexRequestData {
   return {
@@ -138,6 +143,56 @@ describe('WizardPage — new request defers draft creation', () => {
     fireEvent.change(input, { target: { files: [file] } })
     await waitFor(() => expect(createDraft).toHaveBeenCalledOnce())
     await waitFor(() => expect(uploadAttachment).toHaveBeenCalledWith('new-1', file))
+  })
+})
+
+describe('WizardPage — admin-hidden sections', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getRequest).mockResolvedValue(makeRequest('DRAFT'))
+    vi.mocked(getHiddenSections).mockResolvedValue([])
+  })
+
+  it('shows all seven numbered steps when nothing is hidden', async () => {
+    renderAt('/requests/req-1/edit')
+    expect((await screen.findByRole('button', { name: /Economic/ })).textContent).toBe('5Economic')
+    expect(screen.getByRole('button', { name: /Attachments/ }).textContent).toBe('6Attachments')
+    expect(screen.getByRole('button', { name: /Review/ }).textContent).toBe('7Review')
+  })
+
+  it('drops a hidden step from the stepper and renumbers the rest', async () => {
+    vi.mocked(getHiddenSections).mockResolvedValue(['economic'])
+    renderAt('/requests/req-1/edit')
+    expect((await screen.findByRole('button', { name: /Attachments/ })).textContent).toBe('5Attachments')
+    expect(screen.getByRole('button', { name: /Review/ }).textContent).toBe('6Review')
+    expect(screen.queryByRole('button', { name: /Economic/ })).toBeNull()
+  })
+
+  it('skips the hidden step when advancing with Next', async () => {
+    vi.mocked(getHiddenSections).mockResolvedValue(['economic'])
+    renderAt('/requests/req-1/edit')
+    fireEvent.click(await screen.findByRole('button', { name: /Asset Details/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Next$/ }))
+    // Next from Asset Details lands on Attachments, not the hidden Economic step.
+    await screen.findByRole('button', { name: /Attach file/i })
+    expect(screen.queryByLabelText(/IRR after tax/)).toBeNull()
+  })
+
+  it('omits the Next button on the last visible step', async () => {
+    vi.mocked(getHiddenSections).mockResolvedValue(['economic', 'attachments'])
+    renderAt('/requests/req-1/edit')
+    fireEvent.click(await screen.findByRole('button', { name: /Review/ }))
+    await screen.findByRole('button', { name: /for approval/i })
+    expect(screen.queryByRole('button', { name: /^Next$/ })).toBeNull()
+  })
+
+  it('leaves the hidden section out of the Review summary', async () => {
+    vi.mocked(getHiddenSections).mockResolvedValue(['asset_details'])
+    renderAt('/requests/req-1/edit')
+    fireEvent.click(await screen.findByRole('button', { name: /Review/ }))
+    await screen.findByRole('button', { name: /for approval/i })
+    expect(screen.queryByText(/Asset line items/)).toBeNull()
+    expect(screen.queryByText(/Total cost/)).toBeNull()
   })
 })
 

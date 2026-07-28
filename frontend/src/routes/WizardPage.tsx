@@ -6,6 +6,7 @@ import {
   uploadAttachment, deleteAttachment, attachmentUrl,
 } from '../api/requests'
 import { listDivisions, type Division } from '../api/divisions'
+import { getHiddenSections } from '../api/requestSections'
 import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -15,8 +16,7 @@ import { BrandCard } from '../components/ui/BrandCard'
 import { AddIcon, DeleteIcon, SubmitIcon, UploadIcon, DownloadIcon } from '../components/ActionIcons'
 import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, blankForm, equipmentTotal } from './wizard/types'
-
-const STEPS = ['Basic Info', 'Description', 'Effect on Ops', 'Asset Details', 'Economic', 'Attachments', 'Review']
+import { visibleSections, isSectionVisible, clampStep } from './wizard/sections'
 
 type Setter = <K extends keyof RequestForm>(k: K, v: RequestForm[K]) => void
 
@@ -34,6 +34,8 @@ export default function WizardPage() {
     enabled: !!routeId,
   })
   const { data: divisions = [] } = useQuery({ queryKey: ['divisions'], queryFn: listDivisions })
+  // Which sections an admin has hidden; the stepper is built from this.
+  const { data: hidden } = useQuery({ queryKey: ['request-sections'], queryFn: getHiddenSections })
   const [form, setForm] = useState<RequestForm | null>(null)
   const [step, setStep] = useState<number>((location.state as { step?: number } | null)?.step ?? 0)
   const [saved, setSaved] = useState(false)
@@ -112,35 +114,42 @@ export default function WizardPage() {
     setStep(i)
   }
 
-  if (!form) return <p className="text-sm text-muted">Loading…</p>
+  // Wait for the section config too, so the stepper never renders with the
+  // wrong numbering and then reflows.
+  if (!form || !hidden) return <p className="text-sm text-muted">Loading…</p>
 
   const set: Setter = (k, v) => { setForm({ ...form, [k]: v }); setSaved(false) }
 
+  // Steps come from the visible sections, so hiding one renumbers the rest.
+  const sections = visibleSections(hidden)
+  const at = clampStep(step, sections.length)
+  const currentKey = sections[at].key
+
   const stepper = (
     <ol className="flex items-center gap-1 overflow-x-auto border-b border-border bg-surface-2 px-7 py-3">
-      {STEPS.map((label, i) => (
-        <li key={label} className="flex min-w-0 items-center gap-1">
+      {sections.map(({ key, label }, i) => (
+        <li key={key} className="flex min-w-0 items-center gap-1">
           {i > 0 && <span aria-hidden className="h-px w-4 shrink-0 bg-border sm:w-6" />}
           <button
             type="button"
             disabled={save.isPending}
-            aria-current={i === step ? 'step' : undefined}
-            onClick={() => { if (i !== step) goToStep(i) }}
+            aria-current={i === at ? 'step' : undefined}
+            onClick={() => { if (i !== at) goToStep(i) }}
             className="group flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition hover:bg-accent/10 disabled:opacity-60"
           >
             <span
               className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition ${
-                i === step
+                i === at
                   ? 'bg-accent text-accent-fg ring-2 ring-accent/30'
-                  : i < step
+                  : i < at
                     ? 'bg-accent/15 text-accent'
                     : 'border border-border bg-surface text-muted'
               }`}
             >
-              {i < step ? '✓' : i + 1}
+              {i < at ? '✓' : i + 1}
             </span>
             <span className={`whitespace-nowrap text-xs ${
-              i === step ? 'font-semibold text-fg' : 'text-muted group-hover:text-fg'
+              i === at ? 'font-semibold text-fg' : 'text-muted group-hover:text-fg'
             }`}>
               {label}
             </span>
@@ -160,43 +169,45 @@ export default function WizardPage() {
         footer={
           <>
             <Button variant="secondary"
-              disabled={step === 0} onClick={() => setStep(step - 1)}>Back</Button>
+              disabled={at === 0} onClick={() => setStep(at - 1)}>Back</Button>
             <Button variant="secondary"
               disabled={save.isPending} onClick={() => save.mutate()}>Save Draft</Button>
             {saved && !saveError && <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved.</span>}
             {saveError && <span className="text-sm text-red-600 dark:text-red-400" role="alert">{saveError}</span>}
             <div className="flex-1" />
-            {step < STEPS.length - 1 && (
-              <Button disabled={save.isPending} onClick={() => goToStep(step + 1)}>Next</Button>
+            {at < sections.length - 1 && (
+              <Button disabled={save.isPending} onClick={() => goToStep(at + 1)}>Next</Button>
             )}
           </>
         }
       >
-        {step === 0 && <BasicInfo form={form} set={set}
+        {currentKey === 'basic_info' && <BasicInfo form={form} set={set}
           number={data?.number} requestorName={data?.requestor_name ?? me?.name ?? ''}
           divisions={divisions} />}
-        {step === 1 && (
+        {currentKey === 'description' && (
           <Field label="Brief description & justification">
             <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
               value={form.justification} onChange={(e) => set('justification', e.target.value)} />
           </Field>
         )}
-        {step === 2 && (
+        {currentKey === 'effect_on_ops' && (
           <Field label="Effect on operations">
             <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
               value={form.effect_on_operations} onChange={(e) => set('effect_on_operations', e.target.value)} />
           </Field>
         )}
-        {step === 3 && <AssetDetails form={form} set={set} />}
-        {step === 4 && <Economic form={form} set={set} />}
-        {step === 5 && <Attachments
+        {currentKey === 'asset_details' && <AssetDetails form={form} set={set} />}
+        {currentKey === 'economic' && <Economic form={form} set={set} />}
+        {currentKey === 'attachments' && <Attachments
           items={data?.attachments ?? []}
           requestId={routeId}
           pending={upload.isPending || removeAttachment.isPending}
           error={attachErrorText}
           onUpload={(f) => upload.mutate(f)}
           onRemove={(attId) => removeAttachment.mutate(attId)} />}
-        {step === 6 && <Review form={form}
+        {currentKey === 'review' && <Review form={form}
+          showAssetDetails={isSectionVisible('asset_details', hidden)}
+          showAttachments={isSectionVisible('attachments', hidden)}
           attachmentCount={data?.attachments?.length ?? 0}
           onSubmit={() => submit.mutate()}
           pending={submit.isPending || save.isPending} error={submitError}
@@ -379,15 +390,20 @@ function Attachments({ items, requestId, pending, error, onUpload, onRemove }: {
   )
 }
 
-function Review({ form, attachmentCount, onSubmit, pending, error, submitLabel }:
-  { form: RequestForm; attachmentCount: number; onSubmit: () => void; pending: boolean; error: string | null; submitLabel: string }) {
+function Review({ form, showAssetDetails, showAttachments, attachmentCount, onSubmit, pending, error, submitLabel }:
+  { form: RequestForm; showAssetDetails: boolean; showAttachments: boolean; attachmentCount: number
+    onSubmit: () => void; pending: boolean; error: string | null; submitLabel: string }) {
   const total = equipmentTotal(form.equipment_items)
   return (
     <div className="space-y-3 text-sm">
       <p><span className="font-medium">Description:</span> {form.description || '—'}</p>
-      <p><span className="font-medium">Asset line items:</span> {form.equipment_items.length}</p>
-      <p><span className="font-medium">Total cost:</span> ${total.toLocaleString()}</p>
-      <p><span className="font-medium">Attachments:</span> {attachmentCount}</p>
+      {showAssetDetails && (
+        <>
+          <p><span className="font-medium">Asset line items:</span> {form.equipment_items.length}</p>
+          <p><span className="font-medium">Total cost:</span> ${total.toLocaleString()}</p>
+        </>
+      )}
+      {showAttachments && <p><span className="font-medium">Attachments:</span> {attachmentCount}</p>}
       {error && <p className="text-red-600 dark:text-red-400" role="alert">{error}</p>}
       <Button disabled={pending} onClick={onSubmit}><SubmitIcon size={16} />{submitLabel}</Button>
     </div>
