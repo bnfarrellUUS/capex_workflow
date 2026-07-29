@@ -914,6 +914,14 @@ DRAFT or REJECTED; nobody edits once SENT (make a revision instead).
 
 ## 10. Email
 
+> **Full spec:**
+> `docs/superpowers/specs/2026-07-28-bid-app-email-system-design.md` takes this
+> section to implementation depth — module boundaries, the three-tier template
+> defaults, the render pipeline, the bid template catalog with tokens and
+> shipped defaults, the audience flag for customer-facing mail, the API and
+> editor UI, the testing contract, and a copy/adapt/rewrite port checklist.
+> This section remains the summary.
+
 ### 10.1 The frame, and why it is images
 
 Classic Outlook renders email with **Microsoft Word's engine**. It ignores
