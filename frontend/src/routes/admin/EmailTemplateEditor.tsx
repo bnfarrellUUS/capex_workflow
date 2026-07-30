@@ -84,7 +84,9 @@ export default function EmailTemplateEditor() {
           <div className="email-editor mx-auto max-w-[640px] overflow-hidden rounded-xl border bg-white"
             style={{ borderColor: '#E2E8F0' }}>
             <div className="flex items-center gap-3.5 px-7 py-5" style={{ background: '#0B2A4A' }}>
-              <Logo size={40} />
+              {/* Duller accent than the app's lockup: matches the tone baked
+                  into the sent header PNG, which Bryan signed off as-is. */}
+              <Logo size={40} accent="#93BBF5" />
               <div style={{ fontFamily: EMAIL_FONT }}>
                 <div className="text-xl font-bold text-white">United Uptime Services</div>
                 <div className="text-[13px] font-bold tracking-wide">

@@ -7,8 +7,7 @@ import { ApiError } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { PasswordInput } from '../components/ui/PasswordInput'
-import { Logo } from '../components/Logo'
-import { Wordmark } from '../components/Wordmark'
+import { Lockup } from '../components/Lockup'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -36,11 +35,10 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg p-4">
       <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <Logo size={52} tile className="mb-3" />
-          <div className="text-xl font-bold text-fg">United Uptime Services</div>
-          <Wordmark tone="light" className="text-base font-bold tracking-wide" />
-          <div className="mt-1 text-xs text-muted">
+        <div className="mb-6">
+          {/* Left-justified, matching the brand lockup artwork. */}
+          <Lockup panel markSize={44} className="mb-3 w-full" />
+          <div className="text-xs text-muted">
             Capital Approval, Planning, Reporting &amp; Investment
           </div>
         </div>

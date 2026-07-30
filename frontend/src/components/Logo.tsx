@@ -11,10 +11,15 @@ export function Logo({
   size = 40,
   tile = false,
   className = '',
+  accent = '#5B9BFF',
 }: {
   size?: number
   tile?: boolean
   className?: string
+  /** Cycle-arrow colour. Defaults to the brand's dark-surface accent; the
+   *  email-template editor overrides it to match the duller tone baked into
+   *  the sent header PNG. */
+  accent?: string
 }) {
   return (
     <svg
@@ -30,13 +35,13 @@ export function Logo({
       {/* circular flow arrow (cycle) */}
       <path
         d="M74 28 A33 33 0 1 0 82 54"
-        stroke="#93BBF5"
+        stroke={accent}
         strokeWidth="11"
         strokeLinecap="round"
         fill="none"
       />
       {/* arrowhead at the head of the cycle */}
-      <polygon points="63,20 84,20 74,38" fill="#93BBF5" />
+      <polygon points="63,20 84,20 74,38" fill={accent} />
       {/* rising chevron */}
       <polyline
         points="38,56 50,44 62,56"

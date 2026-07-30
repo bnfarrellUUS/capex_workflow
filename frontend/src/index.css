@@ -8,6 +8,10 @@
   --color-brand-navy: #0B2A4A;
   --color-brand-blue: #2563EB;
   --color-brand-sky: #93BBF5;
+  /* Dark-surface accent: the brand's lockup blue for navy backgrounds — the
+     mark's cycle arrow, the "UUS" label, and the "RI" of the wordmark. Reads
+     brighter than brand-sky, which is too dim for text on navy. */
+  --color-brand-accent: #5B9BFF;
 
   /* Semantic tokens — light theme defaults. Overridden under .dark below.
      Tailwind v4 emits these as CSS custom properties, so overriding the same

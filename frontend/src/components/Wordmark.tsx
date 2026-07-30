@@ -11,7 +11,7 @@ export function Wordmark({ tone, className = '' }: {
   className?: string
 }) {
   const cap = tone === 'dark' ? 'text-white' : 'text-brand-navy'
-  const ri = tone === 'dark' ? 'text-brand-sky' : 'text-brand-blue'
+  const ri = tone === 'dark' ? 'text-brand-accent' : 'text-brand-blue'
   return (
     <span className={className}>
       <span className={cap}>CAP</span>
