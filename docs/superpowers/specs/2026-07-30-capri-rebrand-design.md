@@ -166,6 +166,27 @@ byte-identical to what already ships, so there is no icon work.
 - Existing `"United Uptime Services"` assertions still hold (the alt text keeps
   the company name), so `test_notify.py` needs no change.
 
+## Revisions after review
+
+Bryan reviewed the first implementation and asked for two changes, both applied:
+
+1. **Sidebar and login use the brand's dark lockup** (`brand/capri-dark-lockup.png`)
+   instead of the "United Uptime Services / CAPRI" stack: the mark beside a
+   letterspaced `UUS` over the two-tone wordmark, **left-justified** as in the
+   artwork. Extracted into `components/Lockup.tsx`; the login card wraps it in
+   the navy `panel` from the artwork. This also settles the accent question in
+   §1 the other way — the artwork uses `#5B9BFF`, so that is now a real token,
+   `--color-brand-accent`, and `RI` on navy uses it.
+   The **email band is unchanged** — he approved it as sent, so it keeps the
+   full company name, the tagline, and the duller `#93BBF5` mark. `Logo` gained
+   an `accent` prop so the email-template editor's replica can stay faithful to
+   the PNG while the app lockup uses the brighter tone.
+2. **Port moved 5000 -> 5100.** Ports 5000, 5040 and 5050 are taken by another
+   app on Bryan's machine. Changed in `run-app.ps1` (both the `flask run
+   --port` invocation and the health poll), `config.py`'s `APP_BASE_URL`
+   default — which every email deep link is built from — the sample-context
+   link, the verify skill, and the READMEs/SOP/CLAUDE.md.
+
 ## 6. Verification
 
 1. `cd backend && pytest -q` — 236 tests.

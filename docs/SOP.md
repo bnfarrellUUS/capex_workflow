@@ -16,7 +16,7 @@ levels a request must clear is decided automatically by its **total cost**. Each
 approval level has a **pool of eligible approvers**, and **any one member of the
 pool** can act on the request.
 
-Access the app at **http://localhost:5000** (dev). Sign in with your **email
+Access the app at **http://localhost:5100** (dev). Sign in with your **email
 address**. Dev admin login is `admin@uniteduptime.com / ChangeMe123!`.
 
 New accounts start with the default password **Welcome@1** and are required to
@@ -247,7 +247,7 @@ Division:     12 — Field Services
 Total cost:   $182,400.00
 
 Review and approve:
-http://localhost:5000/requests/<id>
+http://localhost:5100/requests/<id>
 ```
 
 ### 7.2 Current state: sent through local Outlook (redirected for testing)
@@ -284,7 +284,7 @@ the signed-in Outlook account.
 |-----|---------------|---------|
 | `EMAIL_ENABLED` | `1` (on) | Set `0` to log/record only and not send. Master send switch, independent of Test/Live mode. |
 | `EMAIL_REDIRECT_TO` | `bryan.farrell@uniteduptime.com` | **Default** test recipient. The live Test/Live choice and the test address are now set in the UI (stored in the DB); this env var only seeds the default before anything is set. |
-| `APP_BASE_URL` | `http://localhost:5000` | Base URL used for the deep link in every email. Set to the real hostname on the server. |
+| `APP_BASE_URL` | `http://localhost:5100` | Base URL used for the deep link in every email. Set to the real hostname on the server. |
 
 **Requirements to actually send:**
 - Runs on a **Windows** machine with the **Outlook desktop app** installed and a

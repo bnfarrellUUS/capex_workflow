@@ -5,7 +5,7 @@ description: Build, launch, and drive CAPRI locally to verify changes end-to-end
 
 # Verifying CAPRI changes
 
-Single-server app: Flask serves the built SPA + `/api` on port 5000.
+Single-server app: Flask serves the built SPA + `/api` on port 5100.
 
 ## Build & launch
 
@@ -15,14 +15,14 @@ Single-server app: Flask serves the built SPA + `/api` on port 5000.
 cd frontend; node ./node_modules/vite/bin/vite.js build
 
 # 2. Start the server (background). EMAIL_ENABLED=0 stops Outlook sends.
-cd ..\backend; $env:EMAIL_ENABLED='0'; .\.venv\Scripts\python.exe -m flask run --port 5000
+cd ..\backend; $env:EMAIL_ENABLED='0'; .\.venv\Scripts\python.exe -m flask run --port 5100
 ```
 
-Health check: `GET http://localhost:5000/api/health` → `{"status":"ok"}`.
+Health check: `GET http://localhost:5100/api/health` → `{"status":"ok"}`.
 
 ## Drive
 
-- Use the Playwright MCP browser tools against `http://localhost:5000`.
+- Use the Playwright MCP browser tools against `http://localhost:5100`.
 - Dev login: **admin@uniteduptime.com / ChangeMe123!** (seeded by
   `python seed.py`). Login is by email; new/reset accounts start at
   **Welcome@1** and get forced to `/change-password` first.

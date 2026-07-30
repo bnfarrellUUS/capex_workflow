@@ -11,7 +11,7 @@
 
 ## Run
 
-    flask run          # http://localhost:5000  (GET /api/health -> {"status":"ok"})
+    flask run --port 5100   # http://localhost:5100  (GET /api/health -> {"status":"ok"})
 
 ## Test
 

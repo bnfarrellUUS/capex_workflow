@@ -23,7 +23,7 @@ expenditure. See
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
   Query 5, Tailwind CSS v4, `lucide-react` icons. **Single-server:** the SPA is
   built (`vite build` → `frontend/dist`) and served by Flask itself — the app
-  runs as one server on `http://localhost:5000` (Flask serves `dist` plus the
+  runs as one server on `http://localhost:5100` (Flask serves `dist` plus the
   `/api` routes; a catch-all returns `index.html` for client-side routes). The
   API client uses relative `/api`, so it's same-origin. There is no Vite dev
   proxy.
@@ -37,8 +37,8 @@ through tools that shell out. Two consequences:
   from a PowerShell prompt (`powershell -ExecutionPolicy Bypass -File
   .\run-app.ps1` if script execution is blocked). It does first-run setup (venv,
   deps, `flask db upgrade`, `python seed.py`), **builds the frontend**, starts
-  the single Flask server (`flask run`, port 5000) in its own window, and opens
-  the browser to `http://localhost:5000`. It launches the server from its own
+  the single Flask server (`flask run --port 5100`) in its own window, and opens
+  the browser to `http://localhost:5100`. It launches the server from its own
   directory via a *relative* path so the `&`-in-path never reaches a parser.
   (Don't recreate a `.bat` launcher — cmd's `start` mis-parses the `&` in the
   path.)
@@ -54,9 +54,9 @@ Manual start:
     cd frontend && npm install && node ./node_modules/vite/bin/vite.js build
     # backend serves the SPA + API on one port
     cd ../backend && python -m venv .venv && source .venv/Scripts/activate
-    pip install -r requirements.txt && flask db upgrade && python seed.py && flask run
+    pip install -r requirements.txt && flask db upgrade && python seed.py && flask run --port 5100
 
-App: http://localhost:5000 (`GET /api/health` → `{"status":"ok"}`) ·
+App: http://localhost:5100 (`GET /api/health` → `{"status":"ok"}`) ·
 Dev login: **admin@uniteduptime.com / ChangeMe123!**
 (To iterate on the frontend, rebuild with `node ./node_modules/vite/bin/vite.js
 build`; there is no live dev server.)
@@ -341,10 +341,17 @@ carries Submit) and the API rejects them as hideable keys.
   (`components/Logo.tsx` + `public/favicon.svg`) — the chevron points **up**;
   an earlier 48-unit version had it pointing left, which is why the mark
   changed appearance at the rename. Wordmark is two-tone `CAP` + `RI`
-  (`components/Wordmark.tsx`; accent = `brand-sky` on navy, `brand-blue` on
-  light — we reuse those tokens instead of the brand sheet's `#5B9BFF`). The
-  brand sheet sets Archivo 800 for the wordmark, but the app keeps its system
-  font stack and Arial Bold in the email PNG — no webfont. No IBM
+  (`components/Wordmark.tsx`; accent = `brand-accent` `#5B9BFF` on navy,
+  `brand-blue` on light). **The sidebar and login card use the brand's dark
+  lockup** — `components/Lockup.tsx`: mark + letterspaced `UUS` over `CAPRI`,
+  left-justified, with a navy rounded `panel` on the light login card. Bryan
+  picked this over the earlier "United Uptime Services / CAPRI" stack
+  (`brand/capri-dark-lockup.png` is the artwork he chose). The **email band
+  keeps** the full company name + tagline and the duller `#93BBF5` mark, which
+  he signed off as-is — hence `Logo`'s `accent` prop, which the
+  email-template editor sets to `#93BBF5` so its replica still matches the
+  sent PNG. The brand sheet sets Archivo 800 for the wordmark, but the app
+  keeps its system font stack and Arial Bold in the email PNG — no webfont. No IBM
   Plex typeface (default system font). The look-and-feel targets the "ARIA"
   reference dashboard.
 

@@ -1,7 +1,7 @@
 <#
   CAPRI launcher (PowerShell) — single-server mode.
 
-  The app runs as ONE Flask server on http://localhost:5000: Flask serves the
+  The app runs as ONE Flask server on http://localhost:5100: Flask serves the
   built React SPA (frontend/dist) alongside the /api routes. This script:
     * does first-run setup (venv + backend deps + db upgrade + seed, and
       frontend deps);
@@ -55,7 +55,9 @@ try { & node '.\node_modules\vite\bin\vite.js' build } finally { Pop-Location }
 # Path is a single-quoted literal inside the child command, so '&' and spaces
 # are treated literally; Flask is started from the backend dir via a relative
 # path.
-$serverCmd = "Set-Location -LiteralPath '$Backend'; & '.\.venv\Scripts\python.exe' -m flask run"
+# Port 5100, not Flask's default 5000: 5000/5040/5050 are taken by another
+# app on Bryan's machine. Keep this in step with APP_BASE_URL in config.py.
+$serverCmd = "Set-Location -LiteralPath '$Backend'; & '.\.venv\Scripts\python.exe' -m flask run --port 5100"
 Start-Process powershell -ArgumentList '-NoExit', '-Command', $serverCmd
 
 # Wait for the server to accept connections, then open the browser.
@@ -66,16 +68,16 @@ Write-Host 'Starting the server, opening the website when ready...' -ForegroundC
 $ready = $false
 for ($i = 0; $i -lt 60; $i++) {
   try {
-    Invoke-WebRequest -Uri 'http://127.0.0.1:5000/api/health' -UseBasicParsing -TimeoutSec 2 | Out-Null
+    Invoke-WebRequest -Uri 'http://127.0.0.1:5100/api/health' -UseBasicParsing -TimeoutSec 2 | Out-Null
     $ready = $true
     break
   } catch { Start-Sleep -Seconds 1 }
 }
-if ($ready) { Start-Process 'http://localhost:5000' }
+if ($ready) { Start-Process 'http://localhost:5100' }
 else { Write-Host 'Server did not respond in time; check the server window for errors.' -ForegroundColor Yellow }
 
 Write-Host ''
 Write-Host '================================================================'
-Write-Host '  CAPRI: http://localhost:5000   (login: admin / ChangeMe123!)'
+Write-Host '  CAPRI: http://localhost:5100   (login: admin / ChangeMe123!)'
 Write-Host '================================================================'
 Write-Host 'One window opened (the server). Close it to stop the app.'

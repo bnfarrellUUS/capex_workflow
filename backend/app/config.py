@@ -29,7 +29,7 @@ class BaseConfig:
     EMAIL_REDIRECT_TO = os.environ.get("EMAIL_REDIRECT_TO", "bryan.farrell@uniteduptime.com")
     # Base URL used to build deep links in notification emails. On a server set
     # this to the real host (e.g. https://capri.uniteduptime.com).
-    APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5000")
+    APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5100")
 
 
 class DevConfig(BaseConfig):

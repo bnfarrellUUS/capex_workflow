@@ -7,9 +7,9 @@
 
 ## Run
 
-    npm run dev        # http://localhost:5173  (proxies /api -> http://localhost:5000)
+    npm run dev        # http://localhost:5173  (proxies /api -> http://localhost:5100)
 
-The backend (see ../backend/README.md) must be running on :5000.
+The backend (see ../backend/README.md) must be running on :5100.
 Dev login: admin / ChangeMe123!
 
 ## Test / build
