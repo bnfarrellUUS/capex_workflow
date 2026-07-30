@@ -1,7 +1,7 @@
 # Bid Flow — starter blueprint
 
 A complete guide for building a **customer bid / quote application** with
-workflow approval and email, extracted from the working **CAPEX Flow** app
+workflow approval and email, extracted from the working **CAPRI** app
 (United Uptime Services). Copy this file into the new repo and you start with
 the layout, design tokens, buttons, page shells, approval engine, and email
 stack already decided.
@@ -19,16 +19,16 @@ equivalents. Where I am proposing rather than reporting, it says so.
 
 ---
 
-## 1. What you are building, and how it differs from CAPEX Flow
+## 1. What you are building, and how it differs from CAPRI
 
 A salesperson builds a **bid for a customer**, gets internal approval when the
 pricing needs sign-off, and then sends the customer a branded PDF.
 
-CAPEX Flow is the same shape — a document that routes through tiered approvers
+CAPRI is the same shape — a document that routes through tiered approvers
 and emails people at each step — so the entire skeleton transfers. What changes
 is that **the output leaves the building**.
 
-| Concern | CAPEX Flow | Bid Flow |
+| Concern | CAPRI | Bid Flow |
 | --- | --- | --- |
 | The record | `CapexRequest` (internal spend request) | `Bid` (customer-facing quote) |
 | Owner | Requestor | Salesperson / bid owner |
@@ -55,7 +55,7 @@ mistake is externally visible. Two rails, both non-negotiable:
 
 ## 2. Stack and project layout
 
-Same stack as CAPEX Flow, deliberately:
+Same stack as CAPRI, deliberately:
 
 - **backend/** — Flask (Python 3.14), SQLAlchemy 2.0 typed `Mapped`,
   Flask-Login session auth + CSRF, Pydantic v2 request schemas, Alembic.
@@ -596,7 +596,7 @@ def _handle_service_error(err):
 def _handle_validation_error(err):
     # NOTE: use include_context=False. err.errors() embeds the raw ValueError
     # from any raising field_validator in `ctx`, and jsonify cannot serialize
-    # it — you get a 500 instead of a 400. This bit CAPEX Flow; don't inherit it.
+    # it — you get a 500 instead of a 400. This bit CAPRI; don't inherit it.
     return jsonify(error="Validation failed.", details=err.errors(include_context=False)), 400
 ```
 
@@ -1173,7 +1173,7 @@ sender), fix the existing spies rather than working around them.
 
 ## 14. Gotchas worth inheriting
 
-Each of these cost real time in CAPEX Flow:
+Each of these cost real time in CAPRI:
 
 1. **A field missing from the Pydantic schema is silently dropped.** The PATCH
    route does `BidDraft(**json).model_dump(exclude_unset=True)`, so a field
@@ -1230,4 +1230,4 @@ updated, one focused commit.
     average days-to-decision, xlsx export of the filtered list.
 
 Start at 1 and don't skip 6's Outlook verification — every email problem in
-CAPEX Flow was invisible in a browser preview.
+CAPRI was invisible in a browser preview.

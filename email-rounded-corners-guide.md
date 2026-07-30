@@ -1,7 +1,7 @@
 # Rounded corners in HTML email (Outlook-proof)
 
 A portable recipe for brand-framed notification emails whose rounded corners
-survive **classic Outlook desktop**. Extracted from the CAPEX Flow app
+survive **classic Outlook desktop**. Extracted from the CAPRI app
 (United Uptime Services), where it was iterated against real Outlook renders
 until it was pixel-stable. Drop this file into any project that sends HTML
 email and follow the recipe.

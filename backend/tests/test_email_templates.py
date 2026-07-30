@@ -16,8 +16,9 @@ def test_frame_wraps_body_and_shows_brand():
     html = email_frame.wrap("<p>Hello</p>")
     assert "<p>Hello</p>" in html
     assert "United Uptime Services" in html            # header image alt text
-    assert 'src="cid:capexflow-header"' in html        # rounded navy band image
-    assert 'src="cid:capexflow-bottom"' in html        # rounded closing strip
+    assert "CAPRI" in html                             # product name, in the alt
+    assert 'src="cid:capri-header"' in html            # rounded navy band image
+    assert 'src="cid:capri-bottom"' in html            # rounded closing strip
     assert "Intended recipient" not in html
 
 
@@ -47,7 +48,7 @@ def test_frame_button_is_an_image_link():
     # Outlook (Word engine) can display. CSS radius and VML both failed.
     html = email_frame.wrap("<p>x</p>", button_type="ASSIGNED",
                             button_href="http://x/r/1")
-    assert 'src="cid:capexflow-btn-assigned"' in html
+    assert 'src="cid:capri-btn-assigned"' in html
     assert 'alt="Review &amp; approve"' in html
     assert 'href="http://x/r/1"' in html
     # no button when not configured

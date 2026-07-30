@@ -261,7 +261,7 @@ def render_pdf(sections, title):
         canvas.setFont("Helvetica", 7.5)
         canvas.setFillColor(colors.HexColor("#64748B"))
         canvas.drawString(doc_.leftMargin, 0.45 * inch,
-                          "CAPEX Flow — United Uptime Services")
+                          "CAPRI — United Uptime Services")
         canvas.drawRightString(doc_.pagesize[0] - doc_.rightMargin, 0.45 * inch,
                                f"Page {doc_.page}")
         canvas.restoreState()

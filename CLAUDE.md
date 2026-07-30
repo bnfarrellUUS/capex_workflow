@@ -2,11 +2,16 @@
 
 Coding rules: @CODING-RULES.md
 
-# Project: CAPEX Flow
+# Project: CAPRI
 
 Internal web app for **United Uptime Services** to submit, route, approve, and
-search capital-expenditure (CAPEX) requests. Product brand name: **CAPEX Flow**
-(under "United Uptime Services").
+search capital-expenditure (CAPEX) requests. Product brand name: **CAPRI** —
+Capital Approval, Planning, Reporting & Investment (under "United Uptime
+Services"). Renamed from "CAPEX Flow" on 2026-07-30; the domain word CAPEX
+deliberately stays in the code (`CapexRequest`, `capex_requests`, `CX000001`
+numbering, the `capex_tracking` folder) because a request still *is* a capital
+expenditure. See
+`docs/superpowers/specs/2026-07-30-capri-rebrand-design.md`.
 
 ## Stack
 
@@ -28,7 +33,7 @@ search capital-expenditure (CAPEX) requests. Product brand name: **CAPEX Flow**
 **Windows gotcha:** the repo path contains `&` (`D&H United Fueling Solutions`),
 which breaks npm's default cmd script-shell and breaks running `npm run …`
 through tools that shell out. Two consequences:
-- Double-click **`Start CAPEX Flow.cmd`** (repo root), or run **`run-app.ps1`**
+- Double-click **`Start CAPRI.cmd`** (repo root), or run **`run-app.ps1`**
   from a PowerShell prompt (`powershell -ExecutionPolicy Bypass -File
   .\run-app.ps1` if script execution is blocked). It does first-run setup (venv,
   deps, `flask db upgrade`, `python seed.py`), **builds the frontend**, starts
@@ -88,10 +93,13 @@ build`; there is no live dev server.)
   `get/set_hidden_sections`, the hidden wizard steps as a JSON array under
   `wizard_hidden_sections`, defaulting to none), `email_template_service`
   (four editable email templates: defaults, tokens, render, three-tier reset),
-  `email_frame` (brand HTML wrapper; the rounded chrome — header band, CTA
-  buttons, bottom strip — is baked into `assets/*.png` because classic
-  Outlook's Word engine can't round CSS corners and mangles VML on send),
-  `email_outlook` (Outlook COM sender; attaches referenced `cid:capexflow-*`
+  `email_frame` (brand HTML wrapper; the rounded chrome — header band 640×100,
+  CTA buttons, bottom strip — is baked into `assets/*.png` because classic
+  Outlook's Word engine can't round CSS corners and mangles VML on send.
+  **Regenerate with `python tools/gen_email_assets.py`** from `backend/` —
+  only the header carries the product name; see its docstring before using
+  `--all`, which produces button pills a few px wider than the committed ones),
+  `email_outlook` (Outlook COM sender; attaches referenced `cid:capri-*`
   assets), `security`, `errors` (`ServiceError(msg, status)`),
   `export_service` (xlsx export of the requests list via openpyxl),
   `report_service` (year summary aggregates, computed Python-side),
@@ -217,7 +225,7 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   View/Edit/Delete/Download/Search/Filter/Add/Upload, workflow-status icons;
   used by `StatusBadge`, RequestDetailPage action buttons, the Wizard, and the
   Requests list — `currentColor`, so icons take their button/badge color).
-  Both derive from `brand/UUS CAPEX Flow Nav Icons.html`. `components/Logo.tsx`
+  Both derive from `brand/project/UUS CAPEX Flow Nav Icons.html`. `components/Logo.tsx`
   (primary Capital-Cycle mark: sidebar/login); `BrandMark.tsx` (four brand
   marks, currently not wired into any page). `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
@@ -325,10 +333,18 @@ carries Submit) and the API rejects them as hideable keys.
   `bg-brand-sky/25 text-brand-navy` (light) / `dark:bg-brand-sky/10
   dark:text-brand-sky` — uppercase `text-xs`. Bryan found plain `surface-2`
   too subtle and solid navy too bold; new tables should match this.
-- **Brand (`brand/`, "UUS CAPEX Flow"):** `brand_asset.pdf` plus
-  `UUS CAPEX Flow - Logo.dc.html` (the four logo-direction mockups). Palette
-  navy `#0B2A4A`, blue `#2563EB`, sky `#93BBF5`. Logo mark = direction **1d
-  "Capital Cycle"** (`components/Logo.tsx` + `public/favicon.svg`). No IBM
+- **Brand (`brand/project/`, "UUS CAPRI"):** a Claude Design handoff bundle —
+  `UUS CAPEX Flow - Logo.dc.html` (the four logo-direction mockups; the
+  filenames still say CAPEX Flow, the contents say CAPRI) and the Nav Icons
+  files. Palette navy `#0B2A4A`, blue `#2563EB`, sky `#93BBF5`. Logo mark =
+  direction **1d "Capital Cycle"**, geometry on a 100-unit viewBox
+  (`components/Logo.tsx` + `public/favicon.svg`) — the chevron points **up**;
+  an earlier 48-unit version had it pointing left, which is why the mark
+  changed appearance at the rename. Wordmark is two-tone `CAP` + `RI`
+  (`components/Wordmark.tsx`; accent = `brand-sky` on navy, `brand-blue` on
+  light — we reuse those tokens instead of the brand sheet's `#5B9BFF`). The
+  brand sheet sets Archivo 800 for the wordmark, but the app keeps its system
+  font stack and Arial Bold in the email PNG — no webfont. No IBM
   Plex typeface (default system font). The look-and-feel targets the "ARIA"
   reference dashboard.
 
@@ -374,5 +390,6 @@ Five proposed features (budget tracking, exports/reporting, reminders,
 comment threads, approved-request PDF) are documented in
 **`PHASE2-PROPOSALS.md`** (repo root) — **read that file when Bryan says
 "implement phase 2"** or asks about any of them. Do not build until Finance
-has reviewed `CAPEX Flow - Proposed Enhancements.docx` and answered its
+has reviewed `CAPEX Flow - Proposed Enhancements.docx` (filename predates the
+CAPRI rename) and answered its
 "Questions for Finance".

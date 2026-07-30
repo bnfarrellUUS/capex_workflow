@@ -1,6 +1,6 @@
 /**
- * The four UUS CAPEX Flow logo marks from the brand assets
- * (brand/UUS CAPEX Flow - Logo.dc.html), drawn for dark/navy surfaces:
+ * The four UUS CAPRI logo marks from the brand assets
+ * (brand/project/UUS CAPEX Flow - Logo.dc.html), drawn for dark/navy surfaces:
  *  - cycle  (1d "Capital Cycle")  — primary mark, same as components/Logo.tsx
  *  - ascent (twin rising chevrons) — used for the Requests section
  *  - check  (double checkmark)     — used for the Admin section
@@ -26,7 +26,7 @@ export function BrandMark({
     fill: 'none' as const,
     className,
     role: 'img',
-    'aria-label': 'UUS CAPEX Flow',
+    'aria-label': 'UUS CAPRI',
   }
   if (variant === 'ascent') {
     return (

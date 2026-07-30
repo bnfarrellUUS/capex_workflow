@@ -1,6 +1,6 @@
-// Custom UUS CAPEX Flow in-page icons — approval actions, table/row controls,
+// Custom UUS CAPRI in-page icons — approval actions, table/row controls,
 // and workflow status. Same line style as NavIcons (24px grid, rounded joins);
-// paths from brand/UUS CAPEX Flow Nav Icons.html ("Action & status icons").
+// paths from brand/project/UUS CAPEX Flow Nav Icons.html ("Action & status icons").
 // Icons use `currentColor` so each adopts its button/badge text color.
 
 export interface IconProps {

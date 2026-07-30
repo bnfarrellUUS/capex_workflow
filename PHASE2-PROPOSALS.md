@@ -1,7 +1,8 @@
 # Phase 2 — proposed enhancements (pending Finance review)
 
 Five features Bryan selected on 2026-07-15, written up for the Finance group in
-**`CAPEX Flow - Proposed Enhancements.docx`** (repo root; its closing section
+**`CAPEX Flow - Proposed Enhancements.docx`** (filename predates the
+CAPRI rename; the app is now CAPRI) (repo root; its closing section
 also lists eight smaller later-phase candidate ideas). **Do not build until
 Finance has reviewed and answered each section's "Questions for Finance"** —
 their answers may change the rules below. Recommended order: 1 → 2 → rest in

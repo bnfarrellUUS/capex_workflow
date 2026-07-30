@@ -3,9 +3,10 @@
 Classic Outlook renders email with Microsoft Word's engine, which cannot draw
 rounded corners from CSS and mangles VML on send — but it renders images
 perfectly. So the rounded chrome is baked into PNGs (header band with logo +
-wordmark, CTA buttons, bottom closing strip) generated at 2x in
+wordmark, CTA buttons, bottom closing strip) generated at 2x by
+tools/gen_email_assets.py into
 backend/app/assets/. The same markup goes to every client: the Outlook sender
-attaches each referenced asset under Content-ID ``capexflow-<name>`` and the
+attaches each referenced asset under Content-ID ``capri-<name>`` and the
 in-app preview swaps in data-URIs, so preview and sent email are identical.
 
 Everything else is table-based with inline CSS (Word ignores div layout and
@@ -18,7 +19,7 @@ BLUE = "#2563EB"
 
 FONT = "Arial,Helvetica,sans-serif"
 
-CID_PREFIX = "capexflow-"
+CID_PREFIX = "capri-"
 
 # asset name -> file in backend/app/assets (the Outlook sender attaches these)
 ASSET_FILES = {
@@ -81,8 +82,8 @@ def wrap(body_html, *, redirect_note=None, button_type=None, button_href=None,
         f"{banner}"
         '<table role="presentation" width="640" cellpadding="0" cellspacing="0">'
         # rounded navy header band (logo + wordmark baked into the image)
-        f'<tr><td><img src="{asset_src("header")}" width="640" height="85" '
-        'alt="United Uptime Services — CAPEX Flow" '
+        f'<tr><td><img src="{asset_src("header")}" width="640" height="100" '
+        'alt="United Uptime Services — CAPRI" '
         'style="display:block;border:0;"></td></tr>'
         # editable body region (+ the locked CTA button, when configured)
         '<tr><td bgcolor="#ffffff" style="padding:24px 28px;'
@@ -91,7 +92,7 @@ def wrap(body_html, *, redirect_note=None, button_type=None, button_href=None,
         # footer
         '<tr><td bgcolor="#ffffff" style="padding:16px 28px;'
         f'border-top:1px solid #E2E8F0;font:12px {FONT};color:#64748B;">'
-        "Automated message from CAPEX Flow — please do not reply.</td></tr>"
+        "Automated message from CAPRI — please do not reply.</td></tr>"
         # rounded white closing strip
         f'<tr><td><img src="{asset_src("bottom")}" width="640" height="14" '
         'alt="" style="display:block;border:0;"></td></tr>'

@@ -9,7 +9,7 @@ Internal web app to submit, route, approve, and search capital-expenditure reque
   `frontend/dist` and served by Flask.
 
 ## Run (Windows)
-Double-click **`Start CAPEX Flow.cmd`**, or run **`.\run-app.ps1`** from a
+Double-click **`Start CAPRI.cmd`**, or run **`.\run-app.ps1`** from a
 PowerShell prompt (use `powershell -ExecutionPolicy Bypass -File .\run-app.ps1`
 if execution is blocked). It builds the frontend and starts one server, then
 opens the browser. Manually:

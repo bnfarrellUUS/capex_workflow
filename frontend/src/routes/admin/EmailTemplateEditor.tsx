@@ -87,7 +87,13 @@ export default function EmailTemplateEditor() {
               <Logo size={40} />
               <div style={{ fontFamily: EMAIL_FONT }}>
                 <div className="text-xl font-bold text-white">United Uptime Services</div>
-                <div className="text-[13px] tracking-wide" style={{ color: '#93BBF5' }}>CAPEX Flow</div>
+                <div className="text-[13px] font-bold tracking-wide">
+                  <span className="text-white">CAP</span>
+                  <span style={{ color: '#93BBF5' }}>RI</span>
+                </div>
+                <div className="text-[11px]" style={{ color: '#93BBF5' }}>
+                  Capital Approval, Planning, Reporting &amp; Investment
+                </div>
               </div>
             </div>
             <QuillEditor value={data.body_html} onChange={(html) => { setBody(html); markDirty() }}
@@ -106,7 +112,7 @@ export default function EmailTemplateEditor() {
             <div className="px-7 py-4 text-xs" style={{
               borderTop: '1px solid #E2E8F0', color: '#64748B', fontFamily: EMAIL_FONT,
             }}>
-              Automated message from CAPEX Flow — please do not reply.
+              Automated message from CAPRI — please do not reply.
             </div>
           </div>
         </div>

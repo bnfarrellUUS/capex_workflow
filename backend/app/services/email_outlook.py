@@ -46,7 +46,7 @@ def send(to, subject, body, html=None, attachments=None):
     import shutil
     import tempfile
 
-    tmpdir = tempfile.mkdtemp(prefix="capexflow-mail-") if attachments else None
+    tmpdir = tempfile.mkdtemp(prefix="capri-mail-") if attachments else None
     pythoncom.CoInitialize()
     try:
         outlook = win32com.client.Dispatch("Outlook.Application")

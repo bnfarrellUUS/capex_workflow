@@ -18,6 +18,7 @@ import { logout } from '../api/auth'
 import { Button } from './ui/Button'
 import { ThemeToggle } from './ThemeToggle'
 import { Logo } from './Logo'
+import { Wordmark } from './Wordmark'
 
 interface NavItem {
   to: string
@@ -82,7 +83,7 @@ export function AppShell() {
           <Logo size={36} />
           <div>
             <div className="font-bold leading-tight text-white">United Uptime Services</div>
-            <div className="text-xs text-brand-sky">CAPEX Flow</div>
+            <Wordmark tone="dark" className="text-xs font-semibold tracking-wide" />
           </div>
         </div>
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">

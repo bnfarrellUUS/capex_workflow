@@ -1,9 +1,9 @@
 ---
 name: verify
-description: Build, launch, and drive CAPEX Flow locally to verify changes end-to-end
+description: Build, launch, and drive CAPRI locally to verify changes end-to-end
 ---
 
-# Verifying CAPEX Flow changes
+# Verifying CAPRI changes
 
 Single-server app: Flask serves the built SPA + `/api` on port 5000.
 

@@ -1,6 +1,6 @@
-// Custom UUS CAPEX Flow navigation icons — one distinct symbol per page.
+// Custom UUS CAPRI navigation icons — one distinct symbol per page.
 // Drawn in a single line style (24px grid, rounded joins) per brand doc
-// `brand/UUS CAPEX Flow Nav Icons.html`. Icons inherit `currentColor` so the
+// `brand/project/UUS CAPEX Flow Nav Icons.html`. Icons inherit `currentColor` so the
 // sidebar's active/inactive text color applies, matching the prior lucide set.
 
 export interface NavIconProps {

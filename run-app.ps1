@@ -1,5 +1,5 @@
 <#
-  CAPEX Flow launcher (PowerShell) — single-server mode.
+  CAPRI launcher (PowerShell) — single-server mode.
 
   The app runs as ONE Flask server on http://localhost:5000: Flask serves the
   built React SPA (frontend/dist) alongside the /api routes. This script:
@@ -76,6 +76,6 @@ else { Write-Host 'Server did not respond in time; check the server window for e
 
 Write-Host ''
 Write-Host '================================================================'
-Write-Host '  CAPEX Flow: http://localhost:5000   (login: admin / ChangeMe123!)'
+Write-Host '  CAPRI: http://localhost:5000   (login: admin / ChangeMe123!)'
 Write-Host '================================================================'
 Write-Host 'One window opened (the server). Close it to stop the app.'

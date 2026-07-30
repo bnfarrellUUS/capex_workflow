@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { PasswordInput } from '../components/ui/PasswordInput'
 import { Logo } from '../components/Logo'
+import { Wordmark } from '../components/Wordmark'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -38,7 +39,10 @@ export default function LoginPage() {
         <div className="mb-6 flex flex-col items-center text-center">
           <Logo size={52} tile className="mb-3" />
           <div className="text-xl font-bold text-fg">United Uptime Services</div>
-          <div className="text-sm text-muted">CAPEX Flow</div>
+          <Wordmark tone="light" className="text-base font-bold tracking-wide" />
+          <div className="mt-1 text-xs text-muted">
+            Capital Approval, Planning, Reporting &amp; Investment
+          </div>
         </div>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
           <div className="space-y-1">

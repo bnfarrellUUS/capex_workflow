@@ -1,6 +1,7 @@
-# CAPEX Flow — Standard Operating Procedure
+# CAPRI — Standard Operating Procedure
 
-**Application:** CAPEX Flow (United Uptime Services)
+**Application:** CAPRI — Capital Approval, Planning, Reporting & Investment
+(United Uptime Services)
 **Purpose:** Submit, route, approve, and complete capital-expenditure (CAPEX) requests.
 **Audience:** Requestors, Approvers, Finance, and Administrators.
 **Last updated:** 2026-07-15
@@ -9,7 +10,7 @@
 
 ## 1. Overview
 
-CAPEX Flow is an internal web app that takes a capital-expenditure request from
+CAPRI is an internal web app that takes a capital-expenditure request from
 **draft → multi-level approval → finance completion**. The number of approval
 levels a request must clear is decided automatically by its **total cost**. Each
 approval level has a **pool of eligible approvers**, and **any one member of the
@@ -311,7 +312,8 @@ and `{comment}` for the rejection email); click one to insert it at the cursor.
 Tokens are replaced with real values when the email is sent.
 
 Every email is wrapped in a fixed **brand frame** (navy header with the
-Capital-Cycle logo mark, "United Uptime Services / CAPEX Flow", centered white
+Capital-Cycle logo mark, "United Uptime Services / CAPRI" plus the expanded
+name, centered white
 card, brand colors) so all four stay on-brand, and the editor shows the same
 frame around the body while you type. The rounded header, the action button,
 and the card's bottom edge are **inline images** (classic Outlook cannot draw
