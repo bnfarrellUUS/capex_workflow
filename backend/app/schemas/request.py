@@ -1,7 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 
 class EquipmentItemIn(BaseModel):
@@ -55,3 +56,10 @@ class FinanceIn(BaseModel):
     useful_life_years: int | None = Field(None, ge=0, le=99)
     useful_life_months: int | None = Field(None, ge=0, le=11)
     in_service_date: datetime | None = None
+
+
+class CommentIn(BaseModel):
+    # A type constraint, not a raising field_validator: a validator that raises
+    # trips the app-wide ValidationError handler bug and returns 500, not 400.
+    body: Annotated[str, StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=4000)]

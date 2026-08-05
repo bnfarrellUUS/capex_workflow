@@ -29,3 +29,13 @@ def test_submit_ok_with_all_required():
     )
     assert s.division_id == "div1"
     assert s.equipment_items[0].cost == 30000
+
+
+def test_comment_in_strips_and_requires_a_body():
+    from pydantic import ValidationError
+    from app.schemas.request import CommentIn
+
+    assert CommentIn(body="  Real question  ").body == "Real question"
+    for bad in ("", "   ", "x" * 4001):
+        with pytest.raises(ValidationError):
+            CommentIn(body=bad)
