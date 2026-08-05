@@ -186,6 +186,10 @@ class CapexRequest(db.Model):
     actions: Mapped[list["ApprovalAction"]] = relationship(
         back_populates="request", cascade="all, delete-orphan"
     )
+    comments: Mapped[list["RequestComment"]] = relationship(
+        back_populates="request", cascade="all, delete-orphan",
+        order_by="RequestComment.created_at",
+    )
 
 
 class EquipmentItem(db.Model):
@@ -237,6 +241,21 @@ class ApprovalAction(db.Model):
     action: Mapped[str] = mapped_column(String(30))  # SUBMITTED | APPROVED | REJECTED | RESUBMITTED | FINANCE_COMPLETED
     level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
+class RequestComment(db.Model):
+    """A question or answer on a request. Immutable: no edit, no delete."""
+    __tablename__ = "request_comments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    request_id: Mapped[str] = mapped_column(
+        ForeignKey("capex_requests.id", ondelete="CASCADE")
+    )
+    request: Mapped["CapexRequest"] = relationship(back_populates="comments")
+    author_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="NO ACTION"))
+    author: Mapped["User"] = relationship("User")
+    body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
 
