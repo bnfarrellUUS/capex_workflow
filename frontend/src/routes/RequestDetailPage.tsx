@@ -22,6 +22,7 @@ import { StatusBadge } from '../components/ui/Badge'
 import {
   ApproveIcon, RejectIcon, SubmitIcon, EditIcon, DeleteIcon, UploadIcon, DownloadIcon,
 } from '../components/ActionIcons'
+import { CommentThread } from '../components/CommentThread'
 
 const PIPELINE = ['DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED']
 
@@ -162,6 +163,10 @@ export default function RequestDetailPage() {
           </tbody>
         </table>
       </section>
+
+      {/* Not a wizard step, so — like Attachments — it ignores the hidden-
+          sections config and shows at every status. */}
+      <CommentThread req={req} onPosted={(updated) => qc.setQueryData(['request', id], updated)} />
 
       {req.status === 'APPROVED' && (
         <section>

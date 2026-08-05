@@ -190,3 +190,30 @@ describe('RequestDetailPage — record PDF', () => {
     await waitFor(() => expect(resendRecord).toHaveBeenCalledWith('req-1'))
   })
 })
+
+describe('RequestDetailPage — comments', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRoles = ['APPROVER']
+    vi.mocked(getHiddenSections).mockResolvedValue([])
+  })
+
+  it('shows the thread with existing comments', async () => {
+    vi.mocked(getRequest).mockResolvedValue({
+      ...makeRequest(),
+      comments: [{ id: 'c1', body: 'Where are the bids?', author_id: 'approver-1',
+        author_name: 'Approver', created_at: '2026-08-05T14:00:00' }],
+    })
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.getByText('Comments')).toBeInTheDocument()
+    expect(screen.getByText('Where are the bids?')).toBeInTheDocument()
+  })
+
+  it('shows the thread on an approved request too', async () => {
+    vi.mocked(getRequest).mockResolvedValue({ ...makeRequest(), status: 'APPROVED' })
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.getByText('Comments')).toBeInTheDocument()
+  })
+})
