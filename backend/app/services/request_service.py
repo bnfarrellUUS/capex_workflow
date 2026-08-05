@@ -23,7 +23,16 @@ def _can_view(req, viewer):
     if viewer.id in (req.requestor_id, req.assignee_id):
         return True
     roles = viewer.roles_list
-    return "ADMIN" in roles or "FINANCE" in roles
+    if "ADMIN" in roles or "FINANCE" in roles:
+        return True
+    # assignee_id is only a display hint: a pending request belongs to the whole
+    # eligible pool at its level, and any one of them may act on it.
+    if req.status.startswith("PENDING_L"):
+        from app.services import threshold_service, workflow_service
+        actors = workflow_service.eligible_actors(
+            req.current_level, req.division, threshold_service.list_thresholds())
+        return viewer.id in {u.id for u in actors}
+    return False
 
 
 def can_view(req, viewer):

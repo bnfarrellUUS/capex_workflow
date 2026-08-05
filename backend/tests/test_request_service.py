@@ -83,3 +83,32 @@ def test_request_out_includes_names_and_actions(app):
     assert out["assignee_name"] == approver.name
     assert out["division_name"].startswith("900")
     assert any(a["action"] == "SUBMITTED" and a["actor_name"] == requestor.name for a in out["actions"])
+
+
+def test_pool_approver_who_is_not_the_assignee_can_view(app):
+    from tests.factories import set_thresholds, make_draft
+    first = make_user("first")
+    second = make_user("second")
+    owner = make_user("owner2", roles='["REQUESTOR"]')
+    div = make_division(number="200", l1_approver_ids=[first.id, second.id])
+    set_thresholds()
+    req = make_draft(owner.id, div.id, number="CX000901")
+    req.status, req.current_level, req.assignee_id = "PENDING_L1", 1, first.id
+    db.session.commit()
+
+    # `second` is in the L1 pool but is not the displayed assignee.
+    assert request_service.can_view(req, second) is True
+
+
+def test_unrelated_user_still_cannot_view(app):
+    from tests.factories import set_thresholds, make_draft
+    approver = make_user("appr3")
+    stranger = make_user("stranger", roles='["REQUESTOR"]')
+    owner = make_user("owner3", roles='["REQUESTOR"]')
+    div = make_division(number="201", l1_approver_id=approver.id)
+    set_thresholds()
+    req = make_draft(owner.id, div.id, number="CX000902")
+    req.status, req.current_level = "PENDING_L1", 1
+    db.session.commit()
+
+    assert request_service.can_view(req, stranger) is False
