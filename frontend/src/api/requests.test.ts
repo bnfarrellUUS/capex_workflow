@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest'
-import { exportRequestsPath } from './requests'
+import { describe, it, expect, vi } from 'vitest'
+import { exportRequestsPath, addComment } from './requests'
+
+vi.mock('./client', () => ({
+  api: vi.fn(),
+  apiUpload: vi.fn(),
+  ApiError: class ApiError extends Error {},
+}))
+import { api } from './client'
 
 describe('exportRequestsPath', () => {
   it('returns the bare path with no params', () => {
@@ -18,5 +25,15 @@ describe('exportRequestsPath', () => {
       '/api/requests/export.xlsx?scope=mine')
     expect(exportRequestsPath({ q: 'a&b' })).toBe(
       '/api/requests/export.xlsx?q=a%26b')
+  })
+})
+
+describe('addComment', () => {
+  it('posts a comment body to the comments endpoint', async () => {
+    vi.mocked(api).mockResolvedValue({} as never)
+    await addComment('req-1', 'Where are the bids?')
+    expect(api).toHaveBeenCalledWith('/requests/req-1/comments', {
+      method: 'POST', body: { body: 'Where are the bids?' },
+    })
   })
 })

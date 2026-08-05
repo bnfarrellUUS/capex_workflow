@@ -10,6 +10,14 @@ export interface EquipItem {
   cost: string
 }
 
+export interface RequestComment {
+  id: string
+  body: string
+  author_id: string
+  author_name: string | null
+  created_at: string | null
+}
+
 export interface CapexRequestData {
   id: string
   number: string
@@ -60,6 +68,7 @@ export interface CapexRequestData {
     created_at: string | null
     actor_name: string | null
   }[]
+  comments: RequestComment[]
   attachments: { id: string; filename: string; content_type: string; size: number }[]
 }
 
@@ -86,6 +95,10 @@ export function rejectRequest(id: string, comment: string): Promise<CapexRequest
 }
 export function resubmitRequest(id: string): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/resubmit`, { method: 'POST' })
+}
+/** Post a comment. Changes no workflow state; returns the refreshed request. */
+export function addComment(id: string, body: string): Promise<CapexRequestData> {
+  return api<CapexRequestData>(`/requests/${id}/comments`, { method: 'POST', body: { body } })
 }
 export function completeFinance(id: string, costs: Record<string, string | number | null>): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/finance`, { method: 'POST', body: costs })

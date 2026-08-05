@@ -47,7 +47,7 @@ function makeRequest(status: string): CapexRequestData {
     current_approver_ids: [], current_approver_names: [], division_name: '10 — Ops',
     finance_completed: false,
     equipment_items: [{ units: 1, condition: 'NEW', type: 'Lift', make: 'X', model: 'Y', cost: '30000' }],
-    actions: [], attachments: [],
+    actions: [], comments: [], attachments: [],
   }
 }
 

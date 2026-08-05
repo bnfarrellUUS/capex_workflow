@@ -10,6 +10,7 @@ import {
 } from '../api/requests'
 import { getHiddenSections } from '../api/requestSections'
 import { isSectionVisible } from './wizard/sections'
+import { formatActionDate } from './formatDate'
 import { FINANCE_FIELDS, parseFinanceCosts, financeFormValues, financeTotalCents, dollars } from './financeCosts'
 import { useMe } from '../auth/useMe'
 import { ApiError } from '../api/client'
@@ -355,16 +356,6 @@ function FullDetails({ req, hidden }: { req: CapexRequestData; hidden: string[] 
       )}
     </section>
   )
-}
-
-function formatActionDate(iso: string | null): string {
-  if (!iso) return '—'
-  // Backend timestamps are UTC; older rows may arrive without a zone marker.
-  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString(undefined, {
-    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
-  })
 }
 
 function BreakdownTotal({ vals, requestTotal }: {

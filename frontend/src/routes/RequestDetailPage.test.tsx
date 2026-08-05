@@ -17,6 +17,7 @@ vi.mock('../api/requests', () => ({
   uploadAttachment: vi.fn(),
   deleteAttachment: vi.fn(),
   resendRecord: vi.fn(),
+  addComment: vi.fn(),
   attachmentUrl: (id: string, attId: string) => `/api/requests/${id}/attachments/${attId}`,
   requestPdfUrl: (id: string) => `/api/requests/${id}/pdf`,
 }))
@@ -51,7 +52,7 @@ function makeRequest(): CapexRequestData {
     division_name: '10 — Ops',
     finance_completed: false,
     equipment_items: [{ units: 1, condition: 'NEW', type: 'Lift', make: 'X', model: 'Y', cost: '30000' }],
-    actions: [], attachments: [],
+    actions: [], comments: [], attachments: [],
   }
 }
 
