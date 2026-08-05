@@ -3,11 +3,11 @@ from flask import Blueprint, jsonify, request, Response
 from flask_login import login_required, current_user
 
 from app.authz import require_roles
-from app.schemas.request import RequestDraft, FinanceIn
+from app.schemas.request import RequestDraft, FinanceIn, CommentIn
 from app.services.errors import ServiceError
 from app.services import (
     request_service, workflow_service, notify, attachment_service, export_service,
-    pdf_service, settings_service,
+    pdf_service, settings_service, comment_service,
 )
 
 bp = Blueprint("requests", __name__, url_prefix="/api/requests")
@@ -107,6 +107,15 @@ def reject_request(request_id):
 def resubmit_request(request_id):
     req = workflow_service.resubmit(request_id, current_user.id)
     notify.notify_assignment(req)
+    return jsonify(request_service.request_out(req))
+
+
+@bp.post("/<request_id>/comments")
+@login_required
+def add_comment_route(request_id):
+    data = CommentIn(**(request.get_json(silent=True) or {}))
+    comment_service.add_comment(request_id, current_user, data.body)
+    req = request_service.get_request(request_id, current_user)
     return jsonify(request_service.request_out(req))
 
 

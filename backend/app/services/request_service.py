@@ -191,6 +191,12 @@ def request_out(req):
              "actor_name": a.actor.name if a.actor else None}
             for a in sorted(req.actions, key=lambda x: x.created_at or x.id)
         ],
+        "comments": [
+            {"id": c.id, "body": c.body, "author_id": c.author_id,
+             "author_name": c.author.name if c.author else None,
+             "created_at": c.created_at.isoformat() if c.created_at else None}
+            for c in sorted(req.comments, key=lambda x: (x.created_at, x.id))
+        ],
         "attachments": [
             {"id": a.id, "filename": a.filename, "content_type": a.content_type, "size": a.size}
             for a in req.attachments
