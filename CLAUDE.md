@@ -63,7 +63,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 236 tests).
+- Backend: `cd backend && pytest -q` (currently 260 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -84,7 +84,9 @@ build`; there is no live dev server.)
 - `services/` — business logic: `request_service`, `workflow_service`
   (approval routing), `auth_service`, `user_service`, `division_service`,
   `threshold_service`, `profile_service`, `attachment_service`/`storage`,
-  `counter_service` (request numbers `CX000001…`), `notify` (writes
+  `counter_service` (request numbers `CX000001…`), `comment_service` (adds a
+  request comment; authz delegated to `request_service.get_request`, so "if you
+  can see the request, you can comment on it" is one rule, not two), `notify` (writes
   `NotificationLog`, renders emails via templates; asks `settings_service`
   for the delivery mode to pick the recipient), `settings_service`
   (app-wide settings in the `AppSetting` table — the email delivery mode:
@@ -92,7 +94,7 @@ build`; there is no live dev server.)
   recipients; defaults to Test + `EMAIL_REDIRECT_TO`; plus
   `get/set_hidden_sections`, the hidden wizard steps as a JSON array under
   `wizard_hidden_sections`, defaulting to none), `email_template_service`
-  (four editable email templates: defaults, tokens, render, three-tier reset),
+  (six editable email templates: defaults, tokens, render, three-tier reset),
   `email_frame` (brand HTML wrapper; the rounded chrome — header band 640×100,
   CTA buttons, bottom strip — is baked into `assets/*.png` because classic
   Outlook's Word engine can't round CSS corners and mangles VML on send.
@@ -146,8 +148,12 @@ build`; there is no live dev server.)
 - **Attachment**, **ApprovalAction** (audit trail: SUBMITTED/APPROVED/REJECTED/
   RESUBMITTED/FINANCE_COMPLETED, with `level`, `comment`, `acted_for_id` for
   delegated actions), **NotificationLog**, **Counter**, **AppSetting**.
+- **RequestComment** — the Q&A thread (`author_id`, `body`, `created_at`).
+  **Immutable**: no `updated_at`, and no edit or delete route exists. Cascades
+  with the request. Carried on `request_out` as `comments`, so there is no
+  separate GET.
 - **EmailTemplate** — one row per email `type` (ASSIGNED/APPROVED/REJECTED/
-  FINANCE_READY): live `subject`/`body_html`/`enabled` plus `default_subject`/
+  FINANCE_READY/FINANCE_COMPLETE/COMMENT): live `subject`/`body_html`/`enabled` plus `default_subject`/
   `default_body_html` (admin-set baseline). A row exists only once customized;
   code holds the shipped defaults (`email_template_service.DEFAULTS`).
 
@@ -167,7 +173,15 @@ derived from `total_cost` vs the `ApprovalThreshold` caps. Each level has a
 rows), each mapped through their out-of-office delegate; **any one** eligible
 approver may approve (advances) or reject. The pool appears on every member's
 "assigned" worklist; `assignee_id` is just a display hint (the first current
-approver).
+approver) — `request_service._can_view` therefore admits **every eligible actor
+at the current level**, not just `assignee_id` (before 2026-08-05 it didn't, so
+a second pool approver got a 403 opening a request from their own worklist).
+
+An approver has a **third response**: the **comment thread** on the detail page
+(`POST /api/requests/<id>/comments`). A comment changes no status, level, or
+assignee — the request stays with the same people — so a question no longer
+requires a rejection. Anyone who can view the request can post, at any status.
+Comments are immutable and appear in the record PDF. See "Comment thread" below.
 
 After final approval, a **FINANCE** user completes the cost breakdown
 (`cost_*` → `finance_completed`) and can re-save it anytime while the request
@@ -179,7 +193,8 @@ the bad field on error); both views show a live **breakdown total vs. CAPEX
 total** line (`BreakdownTotal`; cents math in `financeTotalCents` — green
 "✓ Matches" or the amber difference) plus the asset detail fields. The page
 also shows the approval history table (local-time Date column; `created_at`
-treated as UTC) and a collapsed-by-default "Full request details" toggle
+treated as UTC), the comment thread (`components/CommentThread.tsx`), and a
+collapsed-by-default "Full request details" toggle
 (`FullDetails`) exposing everything captured in the wizard. Attachment
 permissions (`attachment_service._can_modify`): the requestor manages
 attachments while DRAFT/REJECTED; FINANCE once APPROVED. Attach-file UI
@@ -187,7 +202,7 @@ attachments while DRAFT/REJECTED; FINANCE once APPROVED. Attach-file UI
 uploads immediately.
 
 Each transition sends a notification email (assignment/decision/finance-ready/
-record-complete) via the local Outlook desktop app (`email_outlook`). Emails are
+record-complete/new-comment) via the local Outlook desktop app (`email_outlook`). Emails are
 **editable HTML templates** — admins customize subject, body (WYSIWYG), and
 enabled flag per type under **Admin → Email Templates**, with `{token}` placeholders
 substituted at send time and a brand-styled locked frame. A runtime **delivery
@@ -264,7 +279,8 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
 - `api/` — `client.ts` (fetch wrapper; obtains CSRF from `/api/auth/csrf`,
   sends `X-CSRFToken` on mutations, `credentials: 'include'`), plus
   per-resource modules (`auth`, `requests`, `divisions`, `users`,
-  `thresholds`, `profileApi`, `requestSections`).
+  `thresholds`, `profileApi`, `requestSections`). `routes/formatDate.ts` holds
+  `formatActionDate`, shared by the detail page and the comment thread.
 
 ## Record PDF & the finance-complete email
 
@@ -292,8 +308,40 @@ When Finance **first** completes the cost breakdown, the requestor gets a final
   **Any test that spies on `email_outlook.send` must accept `attachments=`.**
 - The PDF omits admin-hidden wizard sections and omits the finance breakdown
   until `finance_completed`. Ratio columns (`Numeric(9,4)`) print via
-  `money_str`, so payback shows `3`, not `3.0000`.
+  `money_str`, so payback shows `3`, not `3.0000`. A **Comments** table follows
+  Approval history (By / Date / Comment), so the audit copy carries the Q&A
+  that led to the decision.
 - Nothing is stored: PDFs are generated per request.
+
+## Comment thread
+
+Spec: `docs/superpowers/specs/2026-08-05-request-comments-design.md`.
+Built 2026-08-05 — it is Phase 2 proposal #4.
+
+- **Pure side conversation.** `POST /api/requests/<id>/comments` writes a
+  `RequestComment` and nothing else: no status, level, or assignee changes, and
+  no `ApprovalAction` row. That is the whole point — an approver can ask a
+  question without rejecting.
+- **Who can post:** anyone who can view the request, at any status (DRAFT
+  through APPROVED). Authz is `request_service.get_request` inside
+  `comment_service.add_comment`, so it is literally the same rule as viewing.
+- **Response:** the route returns the full `request_out(req)`, so the detail
+  page refreshes from one round trip (same shape as the attachment routes).
+  There is no GET — `request_out` carries `comments`.
+- **Validation:** `CommentIn` (1–4000 chars, whitespace-stripped) via
+  `StringConstraints`, a **type** constraint rather than a raising validator —
+  see the ValidationError→500 gotcha below.
+- **Sixth email template `COMMENT`** ("New comment"), tokens `{author}` and
+  `{comment}`; reuses the `btn-approved` PNG. `notify.notify_comment` mails the
+  *other side*, never the author: the requestor's comment goes to whoever holds
+  the request (the level's approver pool while pending, all active FINANCE
+  users once APPROVED, nobody on a DRAFT/REJECTED); anyone else's comment goes
+  to the requestor.
+- **UI:** `components/CommentThread.tsx`, rendered after the approval history.
+  Like Attachments, it ignores the hidden-wizard-sections config — it is not a
+  wizard step.
+- **Immutable on purpose.** There is no edit or delete route; don't add one
+  without deciding what that does to the audit copy.
 
 ## Hideable wizard sections
 

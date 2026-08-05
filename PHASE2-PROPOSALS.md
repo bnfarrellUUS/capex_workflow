@@ -26,9 +26,14 @@ any order; confirm with Bryan which feature to start with.
 3. **Reminders & escalation** — scheduled job emails the approver pool when a
    request sits at a level > N days (proposed 3), escalates after a second
    threshold (proposed 7); two new editable email templates + admin setting.
-4. **Comment threads** — Q&A thread on the request detail page so approvers
+4. **Comment threads** — **BUILT 2026-08-05** (see
+   `docs/superpowers/specs/2026-08-05-request-comments-design.md`).
+   Q&A thread on the request detail page so approvers
    can ask questions without rejecting; immutable comments, email notification
-   to the other party; request stays put in the workflow.
+   to the other party; request stays put in the workflow. Shipped with a sixth
+   editable email template (`COMMENT`), the thread in the record PDF, and a fix
+   for the `_can_view` bug that 403'd pool approvers who weren't the displayed
+   assignee.
 5. **Printable PDF of approved request** — **BUILT 2026-07-28** (see
    `docs/superpowers/specs/2026-07-28-finance-complete-record-pdf-design.md`).
    Download-PDF button rendering the
