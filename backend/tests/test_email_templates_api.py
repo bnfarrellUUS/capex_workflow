@@ -17,7 +17,8 @@ def test_admin_can_list_get_save_preview_reset(client, app):
 
     items = client.get("/api/email-templates").get_json()
     assert {i["type"] for i in items} == {"ASSIGNED", "APPROVED", "REJECTED",
-                                          "FINANCE_READY", "FINANCE_COMPLETE"}
+                                          "FINANCE_READY", "FINANCE_COMPLETE",
+                                          "COMMENT"}
 
     one = client.get("/api/email-templates/ASSIGNED").get_json()
     assert one["is_custom"] is False and "tokens" in one

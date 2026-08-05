@@ -1,10 +1,10 @@
 import pytest
 
 from app.extensions import db
-from app.models import RequestComment
-from app.services import comment_service
+from app.models import NotificationLog, RequestComment
+from app.services import comment_service, notify
 from app.services.errors import ServiceError
-from tests.factories import make_user, make_division, make_draft
+from tests.factories import make_user, make_division, make_draft, set_thresholds
 
 
 def test_comment_belongs_to_a_request_and_an_author(app):
@@ -148,3 +148,84 @@ def test_pool_approver_can_comment(client, app):
 
     assert r.status_code == 200
     assert r.get_json()["comments"][0]["author_name"] == second.name
+
+
+def _pending_l1():
+    approver = make_user("appr")
+    owner = make_user("owner", roles='["REQUESTOR"]')
+    div = make_division(l1_approver_id=approver.id)
+    set_thresholds()
+    req = make_draft(owner.id, div.id)
+    req.status, req.current_level, req.required_levels = "PENDING_L1", 1, 1
+    db.session.commit()
+    return approver, owner, req
+
+
+def _recipients():
+    return {r.recipient for r in db.session.query(NotificationLog)
+            .filter_by(type="COMMENT").all()}
+
+
+def test_requestor_comment_emails_the_current_approvers(app):
+    approver, owner, req = _pending_l1()
+    c = comment_service.add_comment(req.id, owner, "Any update?")
+
+    notify.notify_comment(req, c)
+
+    assert _recipients() == {approver.email}
+
+
+def test_approver_comment_emails_the_requestor(app):
+    approver, owner, req = _pending_l1()
+    c = comment_service.add_comment(req.id, approver, "Is this a replacement?")
+
+    notify.notify_comment(req, c)
+
+    assert _recipients() == {owner.email}
+
+
+def test_requestor_comment_on_an_approved_request_emails_finance(app):
+    approver, owner, req = _pending_l1()
+    finance = make_user("fin", roles='["FINANCE"]')
+    req.status, req.assignee_id = "APPROVED", None
+    db.session.commit()
+    c = comment_service.add_comment(req.id, owner, "When is this booked?")
+
+    notify.notify_comment(req, c)
+
+    assert _recipients() == {finance.email}
+
+
+def test_requestor_comment_on_a_draft_emails_nobody(app):
+    owner, req = _owner_and_request()
+    c = comment_service.add_comment(req.id, owner, "Note to self")
+
+    notify.notify_comment(req, c)
+
+    assert _recipients() == set()
+    assert db.session.query(RequestComment).count() == 1   # the comment still saved
+
+
+def test_comment_email_renders_the_author_and_body(app, monkeypatch):
+    sent = {}
+    monkeypatch.setattr("app.services.email_outlook.send",
+                        lambda to, subject, body, html=None, attachments=None:
+                        sent.update(subject=subject, html=html))
+    app.config["EMAIL_ENABLED"] = True
+    approver, owner, req = _pending_l1()
+    c = comment_service.add_comment(req.id, approver, "Where are the bids?")
+
+    notify.notify_comment(req, c)
+
+    assert req.number in sent["subject"]
+    assert approver.name in sent["html"]
+    assert "Where are the bids?" in sent["html"]
+
+
+def test_posting_a_comment_through_the_api_sends_the_email(client, app):
+    approver, owner, req = _pending_l1()
+    _login(client, owner)
+
+    client.post(f"/api/requests/{req.id}/comments", json={"body": "Any update?"})
+
+    assert _recipients() == {approver.email}

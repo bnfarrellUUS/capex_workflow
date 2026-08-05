@@ -114,8 +114,9 @@ def resubmit_request(request_id):
 @login_required
 def add_comment_route(request_id):
     data = CommentIn(**(request.get_json(silent=True) or {}))
-    comment_service.add_comment(request_id, current_user, data.body)
+    comment = comment_service.add_comment(request_id, current_user, data.body)
     req = request_service.get_request(request_id, current_user)
+    notify.notify_comment(req, comment)
     return jsonify(request_service.request_out(req))
 
 

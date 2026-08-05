@@ -86,6 +86,34 @@ def notify_finance_complete(req):
                    attachments=[(pdf_service.pdf_filename(req), pdf)])
 
 
+def notify_comment(req, comment):
+    """Tell the other side of the conversation. Never the author."""
+    from app.services import threshold_service, workflow_service
+    if comment.author_id == req.requestor_id:
+        # Whoever is holding the request answers the requestor.
+        if req.status.startswith("PENDING_L"):
+            recipients = workflow_service.eligible_actors(
+                req.current_level, req.division, threshold_service.list_thresholds())
+        elif req.status == "APPROVED":
+            recipients = [u for u in db.session.query(User)
+                          .filter(User.active.is_(True)).all()
+                          if "FINANCE" in u.roles_list]
+        else:
+            recipients = []          # DRAFT / REJECTED: nobody is waiting on it
+        emails = [u.email for u in recipients]
+    else:
+        emails = [req.requestor.email] if req.requestor else []
+
+    author = comment.author.name if comment.author else "Someone"
+    author_email = comment.author.email if comment.author else None
+    seen = set()
+    for email in emails:
+        if email == author_email or email in seen:
+            continue
+        seen.add(email)
+        _send_template(email, "COMMENT", req, author=author, comment=comment.body)
+
+
 def send_email(recipient, subject, body, request_id=None, type_="INFO"):
     """Direct plain-text send (used for ad-hoc/test messages)."""
     _emit_plain(recipient, subject, body, request_id, type_)

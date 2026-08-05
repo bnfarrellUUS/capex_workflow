@@ -36,6 +36,8 @@ BUTTONS = {
     "ASSIGNED": ("btn-assigned", 173, 44, "Review & approve"),
     "APPROVED": ("btn-approved", 162, 44, "View the request"),
     "REJECTED": ("btn-rejected", 167, 44, "Open the request"),
+    # Reuses the approved button's PNG: its label already reads "View the request".
+    "COMMENT": ("btn-approved", 162, 44, "View the request"),
     "FINANCE_READY": ("btn-finance-ready", 252, 44, "Complete the finance section"),
     # Reuses the approved button: its "View the request" label already fits, so
     # the record email needs no new baked-PNG artwork.

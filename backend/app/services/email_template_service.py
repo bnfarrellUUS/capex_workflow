@@ -7,7 +7,8 @@ from app.models import EmailTemplate
 from app.services import email_frame
 from app.services.errors import ServiceError
 
-TYPES = ("ASSIGNED", "APPROVED", "REJECTED", "FINANCE_READY", "FINANCE_COMPLETE")
+TYPES = ("ASSIGNED", "APPROVED", "REJECTED", "FINANCE_READY", "FINANCE_COMPLETE",
+         "COMMENT")
 
 NAMES = {
     "ASSIGNED": "Approval needed",
@@ -15,6 +16,7 @@ NAMES = {
     "REJECTED": "Request rejected",
     "FINANCE_READY": "Finance section pending",
     "FINANCE_COMPLETE": "Record complete",
+    "COMMENT": "New comment",
 }
 
 _COMMON = [
@@ -30,6 +32,10 @@ TOKENS = {
     "REJECTED": _COMMON + [{"token": "{comment}", "description": "Reviewer's rejection comment"}],
     "FINANCE_READY": _COMMON,
     "FINANCE_COMPLETE": _COMMON,
+    "COMMENT": _COMMON + [
+        {"token": "{author}", "description": "Name of the person who commented"},
+        {"token": "{comment}", "description": "The comment text"},
+    ],
 }
 
 # The editable body must be HTML that Quill can round-trip unchanged —
@@ -84,6 +90,16 @@ DEFAULTS = {
             "approved and the finance details are now complete.</p><p><br></p>"
             "<p>A PDF copy of the full request, its approvals, and the finance "
             "breakdown is attached for your records.</p>" + _FACTS
+        ),
+    },
+    "COMMENT": {
+        "subject": "New comment on {number}",
+        "body_html": (
+            "<p><strong>{author}</strong> commented on request "
+            "<strong>{number}</strong> ({total_cost}).</p><p><br></p>"
+            "<blockquote>{comment}</blockquote><p><br></p>"
+            "<p>Nothing has changed about where the request sits — it is still "
+            "waiting on the same people.</p>" + _FACTS
         ),
     },
 }
@@ -235,5 +251,6 @@ def sample_context(type_):
         "division": "12 — Field Services", "total_cost": "$182,400.00",
         "link": "http://localhost:5100/requests/sample",
         "level": "Level 2 of 3", "comment": "Please attach the competitive bids.",
+        "author": "Alex Kim",
     }
     return ctx
