@@ -163,6 +163,18 @@ def request_pdf_sections(req, hidden):
         "empty_note": "No approval actions yet." if not actions else None,
     })
 
+    comments = sorted(req.comments, key=lambda c: (c.created_at is None, c.created_at))
+    rows = []
+    if comments:
+        rows.append(["By", "Date", "Comment"])
+        for c in comments:
+            rows.append([c.author.name if c.author else "—",
+                         _datetime(c.created_at), _plain(c.body)])
+    sections.append({
+        "kind": "table", "title": "Comments", "rows": rows,
+        "empty_note": "No comments." if not comments else None,
+    })
+
     sections.append({
         "kind": "list", "title": "Attachments",
         "items": [f"{a.filename} ({a.size / 1024:.1f} KB)" for a in req.attachments],

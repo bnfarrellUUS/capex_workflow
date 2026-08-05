@@ -163,3 +163,35 @@ def test_render_survives_a_request_with_hidden_sections(app):
 def test_filename_is_the_request_number(app):
     req = _complete_request(app)
     assert pdf_service.pdf_filename(req) == f"{req.number}.pdf"
+
+
+def test_comments_section_lists_every_comment(app):
+    from app.models import RequestComment
+    req = _complete_request(app)
+    asker = make_user("asker")
+    db.session.add(RequestComment(request_id=req.id, author_id=asker.id,
+                                  body="Where are the bids?"))
+    db.session.commit()
+
+    section = _by_title(pdf_service.request_pdf_sections(req, []), "Comments")
+
+    assert section["rows"][0] == ["By", "Date", "Comment"]
+    assert section["rows"][1][0] == asker.name
+    assert section["rows"][1][2] == "Where are the bids?"
+    assert section["empty_note"] is None
+
+
+def test_comments_section_notes_when_there_are_none(app):
+    req = _complete_request(app)
+
+    section = _by_title(pdf_service.request_pdf_sections(req, []), "Comments")
+
+    assert section["rows"] == []
+    assert section["empty_note"] == "No comments."
+
+
+def test_comments_section_follows_approval_history(app):
+    req = _complete_request(app)
+    titles = _titles(pdf_service.request_pdf_sections(req, []))
+
+    assert titles.index("Comments") == titles.index("Approval history") + 1
