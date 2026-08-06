@@ -148,6 +148,7 @@ def request_out(req):
         "request_date": req.request_date.isoformat() if req.request_date else None,
         "description": req.description,
         "budgeted": req.budgeted,
+        "budget_amount": money_str(req.budget_amount),
         "replacement": req.replacement,
         "health_safety": req.health_safety,
         "revenue_generating": req.revenue_generating,

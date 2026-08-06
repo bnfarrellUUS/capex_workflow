@@ -328,6 +328,12 @@ function FullDetails({ req, hidden }: { req: CapexRequestData; hidden: string[] 
               {FLAG_FIELDS.map(([key, label]) => (
                 <div key={key}><span className="font-medium">{label}:</span> {req[key] ? 'Yes' : 'No'}</div>
               ))}
+              {req.budgeted && (
+                <div><span className="font-medium">Budget amount:</span>{' '}
+                  {req.budget_amount != null
+                    ? `$${Number(req.budget_amount).toLocaleString()}`
+                    : '—'}</div>
+              )}
             </div>
           </div>
           {isSectionVisible('description', hidden) && (

@@ -3,6 +3,7 @@ import type { CapexRequestData, EquipItem } from '../../api/requests'
 export interface RequestForm {
   description: string
   budgeted: boolean
+  budget_amount: string
   replacement: boolean
   health_safety: boolean
   revenue_generating: boolean
@@ -24,7 +25,7 @@ export interface RequestForm {
 
 export function blankForm(divisionId: string, requestDate: string): RequestForm {
   return {
-    description: '', budgeted: false, replacement: false, health_safety: false,
+    description: '', budgeted: false, budget_amount: '', replacement: false, health_safety: false,
     revenue_generating: false, environmental: false, competitive_bids: false,
     lease_recommended: false, justification: '', effect_on_operations: '',
     asset_life: '', irr_after_tax: '', first_year_ebit: '', annual_savings: '',
@@ -36,7 +37,8 @@ export function blankForm(divisionId: string, requestDate: string): RequestForm 
 export function toForm(r: CapexRequestData): RequestForm {
   return {
     description: r.description ?? '',
-    budgeted: r.budgeted, replacement: r.replacement, health_safety: r.health_safety,
+    budgeted: r.budgeted, budget_amount: r.budget_amount ?? '',
+    replacement: r.replacement, health_safety: r.health_safety,
     revenue_generating: r.revenue_generating, environmental: r.environmental,
     competitive_bids: r.competitive_bids, lease_recommended: r.lease_recommended,
     justification: r.justification ?? '',
@@ -55,10 +57,20 @@ export function toForm(r: CapexRequestData): RequestForm {
 
 const DEC = (s: string) => (s.trim() === '' ? null : s)
 
+// Dollar amounts are typed loosely ("$50,000"); Pydantic's Decimal won't parse
+// that, so strip the formatting before sending.
+export const AMOUNT = (s: string) => {
+  const t = s.replace(/[$,\s]/g, '')
+  return t === '' ? null : t
+}
+
 export function toPayload(f: RequestForm): Record<string, unknown> {
   return {
     description: f.description,
-    budgeted: f.budgeted, replacement: f.replacement, health_safety: f.health_safety,
+    budgeted: f.budgeted,
+    // An unbudgeted request never keeps an amount.
+    budget_amount: f.budgeted ? AMOUNT(f.budget_amount) : null,
+    replacement: f.replacement, health_safety: f.health_safety,
     revenue_generating: f.revenue_generating, environmental: f.environmental,
     competitive_bids: f.competitive_bids, lease_recommended: f.lease_recommended,
     justification: f.justification,

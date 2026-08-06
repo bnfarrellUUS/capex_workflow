@@ -40,6 +40,33 @@ def test_patch_saves_draft(client, app):
     assert body["equipment_items"][0]["cost"] == "30000"
 
 
+def test_patch_saves_budget_amount(client, app):
+    _login(client)
+    rid = client.post("/api/requests").get_json()["id"]
+    r = client.patch(f"/api/requests/{rid}",
+                     json={"budgeted": True, "budget_amount": "45000"})
+    assert r.status_code == 200
+    assert r.get_json()["budget_amount"] == "45000"  # money_str drops trailing zeros
+
+
+def test_patch_clears_budget_amount(client, app):
+    _login(client)
+    rid = client.post("/api/requests").get_json()["id"]
+    client.patch(f"/api/requests/{rid}", json={"budgeted": True, "budget_amount": "45000"})
+    # Unchecking the flag sends a null amount; nothing stale is left behind.
+    r = client.patch(f"/api/requests/{rid}",
+                     json={"budgeted": False, "budget_amount": None})
+    assert r.get_json()["budget_amount"] is None
+
+
+def test_patch_rejects_negative_budget_amount(client, app):
+    _login(client)
+    rid = client.post("/api/requests").get_json()["id"]
+    r = client.patch(f"/api/requests/{rid}",
+                     json={"budgeted": True, "budget_amount": "-1"})
+    assert r.status_code == 400
+
+
 def test_cannot_get_others_draft(client, app):
     _login(client, "owner")
     rid = client.post("/api/requests").get_json()["id"]

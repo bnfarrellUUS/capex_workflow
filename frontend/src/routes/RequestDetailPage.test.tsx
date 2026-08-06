@@ -37,7 +37,8 @@ function makeRequest(): CapexRequestData {
   return {
     id: 'req-1', number: 'CX000042', status: 'PENDING_L1',
     division_id: 'div-1', request_date: '2026-07-13', description: 'Forklift',
-    budgeted: true, replacement: false, health_safety: true, revenue_generating: false,
+    budgeted: true, budget_amount: '45000',
+    replacement: false, health_safety: true, revenue_generating: false,
     environmental: false, competitive_bids: false, lease_recommended: false,
     justification: 'Because the old forklift died.',
     effect_on_operations: 'Warehouse throughput doubles.',
@@ -89,6 +90,23 @@ describe('RequestDetailPage — full request details', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Full request details/i }))
     expect(screen.queryByText(/Because the old forklift died/)).toBeNull()
+  })
+
+  it('shows the budget amount on a budgeted request', async () => {
+    renderPage()
+    await screen.findByText('Request CX000042')
+    fireEvent.click(screen.getByRole('button', { name: /Full request details/i }))
+    expect(await screen.findByText(/Budget amount:/)).toBeInTheDocument()
+    expect(screen.getByText(/\$45,000/)).toBeInTheDocument()
+  })
+
+  it('omits the budget amount when the request is not budgeted', async () => {
+    vi.mocked(getRequest).mockResolvedValue({ ...makeRequest(), budgeted: false, budget_amount: null })
+    renderPage()
+    await screen.findByText('Request CX000042')
+    fireEvent.click(screen.getByRole('button', { name: /Full request details/i }))
+    await screen.findByText(/Budgeted:/)
+    expect(screen.queryByText(/Budget amount:/)).toBeNull()
   })
 })
 

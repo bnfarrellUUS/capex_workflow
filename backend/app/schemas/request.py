@@ -17,6 +17,9 @@ class EquipmentItemIn(BaseModel):
 class RequestDraft(BaseModel):
     description: str | None = None
     budgeted: bool | None = None
+    # A type-level bound, not a raising field_validator: a validator that raises
+    # trips the app-wide ValidationError handler bug and returns 500, not 400.
+    budget_amount: Decimal | None = Field(None, ge=0)
     replacement: bool | None = None
     health_safety: bool | None = None
     revenue_generating: bool | None = None

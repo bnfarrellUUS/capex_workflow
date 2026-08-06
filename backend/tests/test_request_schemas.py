@@ -1,4 +1,5 @@
 import pytest
+from decimal import Decimal
 from pydantic import ValidationError
 
 from app.schemas.request import RequestDraft, RequestSubmit, EquipmentItemIn
@@ -13,6 +14,15 @@ def test_draft_allows_empty():
 def test_draft_accepts_partial():
     d = RequestDraft(description="Forklift", budgeted=True)
     assert d.description == "Forklift" and d.budgeted is True
+
+
+def test_draft_accepts_budget_amount():
+    assert RequestDraft(budget_amount="45000").budget_amount == Decimal("45000")
+
+
+def test_draft_rejects_negative_budget_amount():
+    with pytest.raises(ValidationError):
+        RequestDraft(budget_amount="-1")
 
 
 def test_submit_requires_core_fields():

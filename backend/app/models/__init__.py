@@ -135,6 +135,8 @@ class CapexRequest(db.Model):
     # Basic info
     description: Mapped[str] = mapped_column(Text, default="")
     budgeted: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Only set while budgeted is true; cleared when the flag comes off.
+    budget_amount: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
     replacement: Mapped[bool] = mapped_column(Boolean, default=False)
     health_safety: Mapped[bool] = mapped_column(Boolean, default=False)
     revenue_generating: Mapped[bool] = mapped_column(Boolean, default=False)

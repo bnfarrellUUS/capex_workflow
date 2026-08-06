@@ -63,7 +63,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 260 tests).
+- Backend: `cd backend && pytest -q` (currently 271 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -135,7 +135,8 @@ build`; there is no live dev server.)
 - **CapexRequest** — `number`, `status`, `requestor_id`, `assignee_id` (current
   approver), `division_id`, `request_date`; Basic-info flags (`budgeted`,
   `replacement`, `health_safety`, `revenue_generating`, `environmental`,
-  `competitive_bids`, `lease_recommended`); narrative (`justification`,
+  `competitive_bids`, `lease_recommended`) plus `budget_amount` (the dollar
+  figure that `budgeted` requires — see "Budgeted amount" below); narrative (`justification`,
   `effect_on_operations`); economic fields (`asset_life`, `irr_after_tax`,
   `first_year_ebit`, `annual_savings`, `payback_years`, `npv_savings`); finance
   cost breakdown (`cost_*`, asset details `asset_number`/`gl_account`/
@@ -270,7 +271,9 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   request is REJECTED, otherwise `submit`. The Attachments step
   uploads/removes files via the attachment API; on a new request the first
   upload lazily creates the draft (persist) then attaches.
-  `routes/wizard/types.ts` maps API ↔ form (`toForm`/`toPayload`).
+  `routes/wizard/types.ts` maps API ↔ form (`toForm`/`toPayload`);
+  `routes/wizard/validate.ts` holds the step-gate predicates
+  (`budgetAmountError`) that `goToStep` checks before advancing.
 - Email Templates editor: `components/ui/QuillEditor` (Quill 2.x on a ref)
   with a placeholders panel, a sandboxed iframe preview, and a `TemplateTabs`
   tab bar to switch between the four templates in place — switching with
@@ -342,6 +345,33 @@ Built 2026-08-05 — it is Phase 2 proposal #4.
   wizard step.
 - **Immutable on purpose.** There is no edit or delete route; don't add one
   without deciding what that does to the audit copy.
+
+## Budgeted amount
+
+Spec: `docs/superpowers/specs/2026-08-06-budgeted-amount-design.md`.
+Built 2026-08-06.
+
+- Checking **Budgeted** in the wizard's Basic Info step reveals a **Budget
+  amount** field (hidden otherwise) that must be filled in before the step can
+  be left.
+- **The column is derived from the flag.** `toPayload` sends
+  `budgeted ? AMOUNT(budget_amount) : null`, and `update_draft`'s `setattr` loop
+  writes the null through, so unchecking clears the stored amount. Anything
+  reading `budget_amount` can trust it without also checking `budgeted`.
+  Unchecking and re-checking therefore means retyping the number.
+- **The gate is client-side, on Next and the stepper only** —
+  `budgetAmountError` in `routes/wizard/validate.ts`, called from
+  `WizardPage.goToStep`. **Save Draft deliberately skips it** so a
+  half-finished request is never lost (the wizard holds the form in memory until
+  a save). Back needs no guard: Basic Info is always step 0.
+- **Server-side backstop** in `workflow_service._open_workflow`, so submit *and*
+  resubmit reject a budgeted request with no amount (or 0). The wizard can't
+  reach Review without passing the gate, but a REJECTED resubmit or a direct API
+  call can.
+- The amount accepts `$` and commas; `AMOUNT` in `routes/wizard/types.ts` strips
+  them, because Pydantic's `Decimal` won't parse `$50,000`. Read-only echoes in
+  `FullDetails`, the record PDF's Basic info section, and a `Budget Amount`
+  export column all appear only when `budgeted`.
 
 ## Hideable wizard sections
 

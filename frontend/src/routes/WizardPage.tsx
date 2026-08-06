@@ -17,6 +17,7 @@ import { AddIcon, DeleteIcon, SubmitIcon, UploadIcon, DownloadIcon } from '../co
 import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, blankForm, equipmentTotal } from './wizard/types'
 import { visibleSections, isSectionVisible, clampStep } from './wizard/sections'
+import { budgetAmountError } from './wizard/validate'
 
 type Setter = <K extends keyof RequestForm>(k: K, v: RequestForm[K]) => void
 
@@ -39,6 +40,7 @@ export default function WizardPage() {
   const [form, setForm] = useState<RequestForm | null>(null)
   const [step, setStep] = useState<number>((location.state as { step?: number } | null)?.step ?? 0)
   const [saved, setSaved] = useState(false)
+  const [budgetError, setBudgetError] = useState<string | null>(null)
 
   const isNew = !routeId
   const isRejected = data?.status === 'REJECTED'
@@ -105,6 +107,14 @@ export default function WizardPage() {
   // Existing drafts auto-save when moving between steps; a brand-new request
   // navigates locally and only persists on Save Draft / Submit.
   async function goToStep(i: number) {
+    // Basic Info is always visible and always first, so gating step 0 covers
+    // every way out of it — Next and the stepper both land here. Save Draft
+    // deliberately doesn't, so a half-finished request is never lost.
+    if (step === 0) {
+      const err = budgetAmountError(form!)
+      setBudgetError(err)
+      if (err) return
+    }
     if (isNew) { setStep(i); return }
     try {
       await save.mutateAsync()
@@ -118,7 +128,7 @@ export default function WizardPage() {
   // wrong numbering and then reflows.
   if (!form || !hidden) return <p className="text-sm text-muted">Loading…</p>
 
-  const set: Setter = (k, v) => { setForm({ ...form, [k]: v }); setSaved(false) }
+  const set: Setter = (k, v) => { setForm({ ...form, [k]: v }); setSaved(false); setBudgetError(null) }
 
   // Steps come from the visible sections, so hiding one renumbers the rest.
   const sections = visibleSections(hidden)
@@ -183,7 +193,7 @@ export default function WizardPage() {
       >
         {currentKey === 'basic_info' && <BasicInfo form={form} set={set}
           number={data?.number} requestorName={data?.requestor_name ?? me?.name ?? ''}
-          divisions={divisions} />}
+          divisions={divisions} budgetError={budgetError} />}
         {currentKey === 'description' && (
           <Field label="Brief description & justification">
             <textarea className="min-h-32 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
@@ -233,8 +243,9 @@ const FLAGS: [keyof RequestForm, string][] = [
   ['lease_recommended', 'Recommended for lease rather than purchase (attach explanation & evaluation; note any manufacturer/dealer financing)'],
 ]
 
-function BasicInfo({ form, set, number, requestorName, divisions }:
-  { form: RequestForm; set: Setter; number?: string; requestorName: string; divisions: Division[] }) {
+function BasicInfo({ form, set, number, requestorName, divisions, budgetError }:
+  { form: RequestForm; set: Setter; number?: string; requestorName: string
+    divisions: Division[]; budgetError: string | null }) {
   const readOnlyClass = 'cursor-default bg-surface-2 text-muted'
   return (
     <div className="space-y-4">
@@ -275,6 +286,16 @@ function BasicInfo({ form, set, number, requestorName, divisions }:
           ))}
         </div>
       </fieldset>
+      {form.budgeted && (
+        <Field label="Budget amount">
+          <Input value={form.budget_amount} placeholder="$0.00"
+            aria-invalid={budgetError ? true : undefined}
+            onChange={(e) => set('budget_amount', e.target.value)} />
+          {budgetError
+            ? <p className="text-sm text-red-600 dark:text-red-400" role="alert">{budgetError}</p>
+            : <p className="text-xs text-muted">Required because this request is flagged as budgeted.</p>}
+        </Field>
+      )}
     </div>
   )
 }

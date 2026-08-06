@@ -63,6 +63,8 @@ def _open_workflow(req):
         raise ServiceError("Add at least one equipment line item with a cost.")
     if req.division is None:
         raise ServiceError("A division is required.")
+    if req.budgeted and (req.budget_amount is None or req.budget_amount <= 0):
+        raise ServiceError("Enter the budgeted amount for this request.")
     thresholds = threshold_service.list_thresholds()
     l1 = first_assignee(1, req.division, thresholds)
     if l1 is None:

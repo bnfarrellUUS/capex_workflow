@@ -60,6 +60,37 @@ def test_submit_requires_l1_approver(app):
         submit(req.id, requestor.id)
 
 
+def test_submit_requires_budget_amount_when_budgeted(app):
+    requestor, approver, req = _setup()
+    req.budgeted = True
+    db.session.commit()
+    with pytest.raises(ServiceError, match="budgeted amount"):
+        submit(req.id, requestor.id)
+
+
+def test_submit_rejects_zero_budget_amount(app):
+    requestor, approver, req = _setup()
+    req.budgeted = True
+    req.budget_amount = Decimal("0")
+    db.session.commit()
+    with pytest.raises(ServiceError, match="budgeted amount"):
+        submit(req.id, requestor.id)
+
+
+def test_submit_ok_with_budget_amount(app):
+    requestor, approver, req = _setup()
+    req.budgeted = True
+    req.budget_amount = Decimal("45000")
+    db.session.commit()
+    assert submit(req.id, requestor.id).status == "PENDING_L1"
+
+
+def test_submit_ignores_missing_amount_when_not_budgeted(app):
+    requestor, approver, req = _setup()
+    assert req.budgeted is False and req.budget_amount is None
+    assert submit(req.id, requestor.id).status == "PENDING_L1"
+
+
 def test_submit_only_drafts(app):
     requestor, approver, req = _setup()
     submit(req.id, requestor.id)

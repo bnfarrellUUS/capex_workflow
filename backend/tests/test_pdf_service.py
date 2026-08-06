@@ -57,6 +57,23 @@ def test_omits_every_hidden_section(app):
     assert "Summary" in titles and "Approval history" in titles
 
 
+def test_budget_amount_shown_when_budgeted(app):
+    req = _complete_request(app)
+    req.budget_amount = Decimal("45000")
+    db.session.commit()
+    fields = dict(_by_title(pdf_service.request_pdf_sections(req, []), "Basic info")["fields"])
+    assert fields["Budgeted"] == "Yes"
+    assert fields["Budget amount"] == "$45,000.00"
+
+
+def test_budget_amount_omitted_when_not_budgeted(app):
+    req = _complete_request(app)
+    req.budgeted = False
+    db.session.commit()
+    fields = dict(_by_title(pdf_service.request_pdf_sections(req, []), "Basic info")["fields"])
+    assert "Budget amount" not in fields
+
+
 def test_finance_breakdown_absent_until_finance_completes(app):
     req = _complete_request(app)
     assert "Finance cost breakdown" not in _titles(pdf_service.request_pdf_sections(req, []))

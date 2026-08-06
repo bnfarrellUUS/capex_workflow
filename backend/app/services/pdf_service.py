@@ -109,6 +109,8 @@ def request_pdf_sections(req, hidden):
         {"kind": "fields", "title": "Basic info", "fields": (
             [("Asset / project description", _plain(req.description))]
             + [(label, "Yes" if getattr(req, key) else "No") for key, label in _FLAGS]
+            # Only budgeted requests carry an amount.
+            + ([("Budget amount", _money(req.budget_amount))] if req.budgeted else [])
         )},
     ]
 

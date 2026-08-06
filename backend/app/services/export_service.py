@@ -51,6 +51,7 @@ COLUMNS = [
     ("Current Level", lambda r: r.current_level, "num"),
     ("Required Levels", lambda r: r.required_levels, "num"),
     ("Budgeted", lambda r: _yn(r.budgeted), "text"),
+    ("Budget Amount", lambda r: r.budget_amount, "money"),
     ("Replacement", lambda r: _yn(r.replacement), "text"),
     ("Health & Safety", lambda r: _yn(r.health_safety), "text"),
     ("Revenue Generating", lambda r: _yn(r.revenue_generating), "text"),

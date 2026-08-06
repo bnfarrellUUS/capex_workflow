@@ -34,7 +34,8 @@ function makeRequest(status: string): CapexRequestData {
   return {
     id: 'req-1', number: 'CX000042', status,
     division_id: 'div-1', request_date: '2026-07-13', description: 'Forklift',
-    budgeted: false, replacement: false, health_safety: false, revenue_generating: false,
+    budgeted: false, budget_amount: null,
+    replacement: false, health_safety: false, revenue_generating: false,
     environmental: false, competitive_bids: false, lease_recommended: false,
     justification: '', effect_on_operations: '',
     asset_life: null, irr_after_tax: null, first_year_ebit: null,
@@ -193,6 +194,81 @@ describe('WizardPage — admin-hidden sections', () => {
     await screen.findByRole('button', { name: /for approval/i })
     expect(screen.queryByText(/Asset line items/)).toBeNull()
     expect(screen.queryByText(/Total cost/)).toBeNull()
+  })
+})
+
+describe('WizardPage — budget amount', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getRequest).mockResolvedValue(makeRequest('DRAFT'))
+  })
+
+  const amountField = () => screen.queryByPlaceholderText('$0.00')
+
+  async function checkBudgeted() {
+    await screen.findByText('Request CX000042')
+    fireEvent.click(screen.getByLabelText('Budgeted'))
+  }
+
+  it('hides the amount field until Budgeted is checked', async () => {
+    renderAt('/requests/req-1/edit')
+    await screen.findByText('Request CX000042')
+    expect(amountField()).toBeNull()
+    fireEvent.click(screen.getByLabelText('Budgeted'))
+    expect(amountField()).not.toBeNull()
+  })
+
+  it('hides the field again when Budgeted is unchecked', async () => {
+    renderAt('/requests/req-1/edit')
+    await checkBudgeted()
+    fireEvent.click(screen.getByLabelText('Budgeted'))
+    expect(amountField()).toBeNull()
+  })
+
+  it('blocks Next until an amount is entered', async () => {
+    renderAt('/requests/req-1/edit')
+    await checkBudgeted()
+    fireEvent.click(screen.getByRole('button', { name: /^Next$/ }))
+    await screen.findByText('Enter the budgeted amount.')
+    // Leaving the step would have auto-saved the draft; it never happened.
+    await new Promise((r) => setTimeout(r, 0))
+    expect(updateDraft).not.toHaveBeenCalled()
+  })
+
+  it('rejects a zero amount', async () => {
+    renderAt('/requests/req-1/edit')
+    await checkBudgeted()
+    fireEvent.change(amountField()!, { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /^Next$/ }))
+    await screen.findByText('Enter a valid dollar amount.')
+    expect(updateDraft).not.toHaveBeenCalled()
+  })
+
+  it('advances once a valid amount is entered, stripping $ and commas', async () => {
+    renderAt('/requests/req-1/edit')
+    await checkBudgeted()
+    fireEvent.change(amountField()!, { target: { value: '$45,000' } })
+    fireEvent.click(screen.getByRole('button', { name: /^Next$/ }))
+    await waitFor(() => expect(updateDraft).toHaveBeenCalledWith(
+      'req-1', expect.objectContaining({ budgeted: true, budget_amount: '45000' })))
+  })
+
+  it('still saves a draft with the amount blank', async () => {
+    renderAt('/requests/req-1/edit')
+    await checkBudgeted()
+    fireEvent.click(screen.getByRole('button', { name: /Save Draft/i }))
+    await waitFor(() => expect(updateDraft).toHaveBeenCalledWith(
+      'req-1', expect.objectContaining({ budgeted: true, budget_amount: null })))
+  })
+
+  it('sends a null amount when Budgeted is off', async () => {
+    renderAt('/requests/req-1/edit')
+    await checkBudgeted()
+    fireEvent.change(amountField()!, { target: { value: '45000' } })
+    fireEvent.click(screen.getByLabelText('Budgeted'))
+    fireEvent.click(screen.getByRole('button', { name: /Save Draft/i }))
+    await waitFor(() => expect(updateDraft).toHaveBeenCalledWith(
+      'req-1', expect.objectContaining({ budgeted: false, budget_amount: null })))
   })
 })
 
