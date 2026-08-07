@@ -106,6 +106,14 @@ def test_ratio_fields_drop_trailing_zeros(app):
     assert fields["IRR after tax (%)"] == "12.5"
 
 
+def test_useful_asset_life_is_basic_info_even_when_economic_is_hidden(app):
+    # It moved out of the Economic step, so hiding Economic no longer drops it.
+    req = _complete_request(app)
+    sections = pdf_service.request_pdf_sections(req, ["economic"])
+    fields = dict(_by_title(sections, "Basic info")["fields"])
+    assert fields["Useful / asset life"] == "7 years"
+
+
 def test_flags_render_as_yes_no(app):
     req = _complete_request(app)
     fields = dict(_by_title(pdf_service.request_pdf_sections(req, []), "Basic info")["fields"])

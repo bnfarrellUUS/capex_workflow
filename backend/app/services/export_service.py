@@ -58,7 +58,7 @@ COLUMNS = [
     ("Environmental", lambda r: _yn(r.environmental), "text"),
     ("Competitive Bids", lambda r: _yn(r.competitive_bids), "text"),
     ("Lease Recommended", lambda r: _yn(r.lease_recommended), "text"),
-    ("Asset Life", lambda r: r.asset_life, "text"),
+    ("Useful / Asset Life", lambda r: r.asset_life, "text"),
     ("IRR After Tax", lambda r: r.irr_after_tax, "num"),
     ("First-Year EBIT", lambda r: r.first_year_ebit, "money"),
     ("Annual Savings", lambda r: r.annual_savings, "money"),

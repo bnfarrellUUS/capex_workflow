@@ -125,7 +125,9 @@ describe('RequestDetailPage — admin-hidden sections', () => {
 
     expect(await screen.findByText(/Because the old forklift died/)).toBeInTheDocument()
     expect(screen.queryByText('Economic analysis')).toBeNull()
-    expect(screen.queryByText(/7 years/)).toBeNull()
+    // Useful / asset life lives in Basic info now, so hiding Economic keeps it.
+    expect(screen.getByText(/Useful \/ asset life:/)).toBeInTheDocument()
+    expect(screen.getByText(/7 years/)).toBeInTheDocument()
   })
 
   it('omits the justification and effect blocks when those sections are hidden', async () => {

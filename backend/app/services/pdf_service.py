@@ -33,7 +33,6 @@ _FLAGS = [
 # (attribute, label, formatter key): "money" → $1,234.56, "ratio" → 12.5
 # (Numeric(9,4) would otherwise print 12.5000), "plain" → as-is.
 _ECONOMIC = [
-    ("asset_life", "Asset / project life", "plain"),
     ("irr_after_tax", "IRR after tax (%)", "ratio"),
     ("first_year_ebit", "First-year EBIT", "money"),
     ("annual_savings", "Annual savings", "money"),
@@ -107,7 +106,8 @@ def request_pdf_sections(req, hidden):
             ("Total cost", _money(req.total_cost)),
         ]},
         {"kind": "fields", "title": "Basic info", "fields": (
-            [("Asset / project description", _plain(req.description))]
+            [("Asset / project description", _plain(req.description)),
+             ("Useful / asset life", _plain(req.asset_life))]
             + [(label, "Yes" if getattr(req, key) else "No") for key, label in _FLAGS]
             # Only budgeted requests carry an amount.
             + ([("Budget amount", _money(req.budget_amount))] if req.budgeted else [])

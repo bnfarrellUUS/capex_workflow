@@ -108,7 +108,7 @@ def test_build_workbook_neutralizes_formula_injection(app):
     headers = [c.value for c in ws[1]]
     by_header = dict(zip(headers, list(ws[2])))
 
-    asset_life_cell = by_header["Asset Life"]
+    asset_life_cell = by_header["Useful / Asset Life"]
     assert asset_life_cell.data_type == "s"
     assert asset_life_cell.value == "=1+1"
 

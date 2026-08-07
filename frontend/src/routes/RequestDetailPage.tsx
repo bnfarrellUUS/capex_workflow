@@ -291,7 +291,7 @@ export default function RequestDetailPage() {
 
 type FlagField = 'budgeted' | 'replacement' | 'health_safety' | 'revenue_generating'
   | 'environmental' | 'competitive_bids' | 'lease_recommended'
-type EconField = 'asset_life' | 'irr_after_tax' | 'first_year_ebit'
+type EconField = 'irr_after_tax' | 'first_year_ebit'
   | 'annual_savings' | 'payback_years' | 'npv_savings'
 
 const FLAG_FIELDS: [FlagField, string][] = [
@@ -302,7 +302,6 @@ const FLAG_FIELDS: [FlagField, string][] = [
 ]
 
 const ECONOMIC_FIELDS: { key: EconField; label: string; money?: boolean }[] = [
-  { key: 'asset_life', label: 'Asset / project life' },
   { key: 'irr_after_tax', label: 'IRR after tax (%)' },
   { key: 'first_year_ebit', label: 'First-year EBIT', money: true },
   { key: 'annual_savings', label: 'Annual savings', money: true },
@@ -325,6 +324,7 @@ function FullDetails({ req, hidden }: { req: CapexRequestData; hidden: string[] 
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Basic info</h3>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1">
               <div><span className="font-medium">Request date:</span> {req.request_date ? req.request_date.slice(0, 10) : '—'}</div>
+              <div><span className="font-medium">Useful / asset life:</span> {req.asset_life || '—'}</div>
               {FLAG_FIELDS.map(([key, label]) => (
                 <div key={key}><span className="font-medium">{label}:</span> {req[key] ? 'Yes' : 'No'}</div>
               ))}

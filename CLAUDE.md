@@ -137,8 +137,13 @@ build`; there is no live dev server.)
   `replacement`, `health_safety`, `revenue_generating`, `environmental`,
   `competitive_bids`, `lease_recommended`) plus `budget_amount` (the dollar
   figure that `budgeted` requires — see "Budgeted amount" below); narrative (`justification`,
-  `effect_on_operations`); economic fields (`asset_life`, `irr_after_tax`,
-  `first_year_ebit`, `annual_savings`, `payback_years`, `npv_savings`); finance
+  `effect_on_operations`); economic fields (`irr_after_tax`,
+  `first_year_ebit`, `annual_savings`, `payback_years`, `npv_savings`) plus
+  `asset_life` — an economic *column* that since 2026-08-07 is presented on
+  **Basic Info** as "Useful / asset life" (wizard, detail page, record PDF;
+  export column "Useful / Asset Life"), so hiding the Economic section no longer
+  hides it. Not to be confused with Finance's
+  `useful_life_years`/`useful_life_months`; finance
   cost breakdown (`cost_*`, asset details `asset_number`/`gl_account`/
 `useful_life_years`+`useful_life_months`/`in_service_date`,
   `finance_completed`); `total_cost`,

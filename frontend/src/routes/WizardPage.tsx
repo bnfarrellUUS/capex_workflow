@@ -265,6 +265,9 @@ function BasicInfo({ form, set, number, requestorName, divisions, budgetError }:
         <textarea className="min-h-24 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg outline-none focus:border-accent"
           value={form.description} onChange={(e) => set('description', e.target.value)} />
       </Field>
+      <Field label="Useful / asset life">
+        <Input value={form.asset_life} onChange={(e) => set('asset_life', e.target.value)} />
+      </Field>
       <Field label="Division">
         <Select value={form.division_id} onChange={(e) => set('division_id', e.target.value)}>
           <option value="">— Select division —</option>
@@ -352,7 +355,6 @@ function Economic({ form, set }: { form: RequestForm; set: Setter }) {
   const autoPayback = annual > 0 ? (total / annual).toFixed(2) : ''
   return (
     <div className="grid grid-cols-2 gap-4">
-      <LabeledInput label="Asset / project life" value={form.asset_life} onChange={(v) => set('asset_life', v)} w="" />
       <LabeledInput label="IRR after tax (%)" value={form.irr_after_tax} onChange={(v) => set('irr_after_tax', v)} w="" />
       <LabeledInput label="First-year EBIT" value={form.first_year_ebit} onChange={(v) => set('first_year_ebit', v)} w="" />
       <LabeledInput label="Annual savings" value={form.annual_savings} onChange={(v) => set('annual_savings', v)} w="" />
