@@ -1,7 +1,7 @@
 /**
- * The UUS CAPRI dark lockup — the mark beside a small letterspaced "UUS" over
- * the two-tone CAPRI wordmark, as delivered in `brand/capri-dark-lockup.png`
- * (brand direction 1d, dark variant).
+ * The CAPRI dark lockup — the mark beside the two-tone CAPRI wordmark
+ * (brand direction 1d, dark variant; the letterspaced "UUS" from
+ * `brand/capri-dark-lockup.png` was dropped 2026-08-18 at Bryan's request).
  *
  * `panel` wraps it in the navy rounded rectangle from that artwork; the sidebar
  * omits it because it is already navy, the login card needs it.
@@ -21,12 +21,7 @@ export function Lockup({
   const inner = (
     <>
       <Logo size={markSize} />
-      <div className="leading-none">
-        <div className="mb-1.5 text-[10px] font-semibold tracking-[0.24em] text-brand-accent">
-          UUS
-        </div>
-        <Wordmark tone="dark" className="text-xl font-extrabold tracking-tight" />
-      </div>
+      <Wordmark tone="dark" className="text-xl font-extrabold tracking-tight leading-none" />
     </>
   )
   if (!panel) {

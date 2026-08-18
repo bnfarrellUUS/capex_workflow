@@ -426,8 +426,9 @@ carries Submit) and the API rejects them as hideable keys.
   changed appearance at the rename. Wordmark is two-tone `CAP` + `RI`
   (`components/Wordmark.tsx`; accent = `brand-accent` `#5B9BFF` on navy,
   `brand-blue` on light). **The sidebar and login card use the brand's dark
-  lockup** — `components/Lockup.tsx`: mark + letterspaced `UUS` over `CAPRI`,
-  left-justified, with a navy rounded `panel` on the light login card. Both
+  lockup** — `components/Lockup.tsx`: mark + `CAPRI` wordmark (the
+  letterspaced `UUS` was dropped 2026-08-18), left-justified, with a navy
+  rounded `panel` on the light login card. Both
   screens spell out the acronym — "Capital Approval, Planning, Reporting &
   Investment" — in small muted text under the lockup (login card + sidebar
   header). Bryan
