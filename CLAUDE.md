@@ -427,7 +427,10 @@ carries Submit) and the API rejects them as hideable keys.
   (`components/Wordmark.tsx`; accent = `brand-accent` `#5B9BFF` on navy,
   `brand-blue` on light). **The sidebar and login card use the brand's dark
   lockup** — `components/Lockup.tsx`: mark + letterspaced `UUS` over `CAPRI`,
-  left-justified, with a navy rounded `panel` on the light login card. Bryan
+  left-justified, with a navy rounded `panel` on the light login card. Both
+  screens spell out the acronym — "Capital Approval, Planning, Reporting &
+  Investment" — in small muted text under the lockup (login card + sidebar
+  header). Bryan
   picked this over the earlier "United Uptime Services / CAPRI" stack
   (`brand/capri-dark-lockup.png` is the artwork he chose). The **email band
   keeps** the full company name + tagline and the duller `#93BBF5` mark, which

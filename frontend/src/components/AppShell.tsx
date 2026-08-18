@@ -80,6 +80,9 @@ export function AppShell() {
       <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-fg">
         <div className="border-b border-white/10 px-5 py-4">
           <Lockup markSize={38} />
+          <div className="mt-2 text-[10px] leading-snug text-sidebar-muted">
+            Capital Approval, Planning, Reporting &amp; Investment
+          </div>
         </div>
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
           {sections.map((s) => (
