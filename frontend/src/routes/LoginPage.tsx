@@ -39,7 +39,7 @@ export default function LoginPage() {
           {/* Left-justified, matching the brand lockup artwork. */}
           <Lockup
             panel
-            markSize={56}
+            markSize={72}
             subtitle="Capital Approval, Planning, Reporting & Investment"
             className="w-full"
           />

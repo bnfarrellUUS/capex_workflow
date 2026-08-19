@@ -433,7 +433,7 @@ carries Submit) and the API rejects them as hideable keys.
   `subtitle` prop, which renders in a sky-tinted column **under the wordmark,
   beside the mark** (2026-08-19: it used to be a separate full-width line
   below the lockup, which wrapped under the symbol; mark sizes went up to
-  48 sidebar / 56 login to balance the taller text block). Bryan
+  56 sidebar / 72 login to balance the taller text block). Bryan
   picked this over the earlier "United Uptime Services / CAPRI" stack
   (`brand/capri-dark-lockup.png` is the artwork he chose). The **email band
   keeps** the full company name + tagline and the duller `#93BBF5` mark, which
