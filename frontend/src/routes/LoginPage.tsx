@@ -37,10 +37,12 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-sm">
         <div className="mb-6">
           {/* Left-justified, matching the brand lockup artwork. */}
-          <Lockup panel markSize={44} className="mb-3 w-full" />
-          <div className="text-xs text-muted">
-            Capital Approval, Planning, Reporting &amp; Investment
-          </div>
+          <Lockup
+            panel
+            markSize={56}
+            subtitle="Capital Approval, Planning, Reporting & Investment"
+            className="w-full"
+          />
         </div>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
           <div className="space-y-1">

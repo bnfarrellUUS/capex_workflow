@@ -428,10 +428,12 @@ carries Submit) and the API rejects them as hideable keys.
   `brand-blue` on light). **The sidebar and login card use the brand's dark
   lockup** — `components/Lockup.tsx`: mark + `CAPRI` wordmark (the
   letterspaced `UUS` was dropped 2026-08-18), left-justified, with a navy
-  rounded `panel` on the light login card. Both
-  screens spell out the acronym — "Capital Approval, Planning, Reporting &
-  Investment" — in small muted text under the lockup (login card + sidebar
-  header). Bryan
+  rounded `panel` on the light login card. Both screens spell out the acronym
+  — "Capital Approval, Planning, Reporting & Investment" — via Lockup's
+  `subtitle` prop, which renders in a sky-tinted column **under the wordmark,
+  beside the mark** (2026-08-19: it used to be a separate full-width line
+  below the lockup, which wrapped under the symbol; mark sizes went up to
+  48 sidebar / 56 login to balance the taller text block). Bryan
   picked this over the earlier "United Uptime Services / CAPRI" stack
   (`brand/capri-dark-lockup.png` is the artwork he chose). The **email band
   keeps** the full company name + tagline and the duller `#93BBF5` mark, which
