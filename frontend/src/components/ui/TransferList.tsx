@@ -53,13 +53,14 @@ export function TransferList({
   }
 
   const panel = 'h-48 overflow-y-auto rounded-md border border-border bg-surface'
-  const row = 'cursor-pointer px-3 py-1.5 text-sm text-fg'
+  const row = 'cursor-pointer break-words px-3 py-1.5 text-sm text-fg'
   const hiRow = 'bg-accent text-accent-fg'
 
   return (
     <div className="flex items-stretch gap-3">
-      {/* Available */}
-      <div className="flex-1">
+      {/* Available (min-w-0: let the panel shrink instead of pushing the
+          reorder buttons outside the parent card) */}
+      <div className="min-w-0 flex-1">
         <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">{availableLabel}</div>
         <ul className={panel}>
           {availableItems.length === 0 ? (
@@ -90,7 +91,7 @@ export function TransferList({
       </div>
 
       {/* Selected */}
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">{selectedLabel}</div>
         <ul className={panel}>
           {selectedItems.length === 0 ? (
@@ -104,7 +105,7 @@ export function TransferList({
                 onDoubleClick={() => remove(o.id)}
               >
                 {numbered && <span className="w-5 shrink-0 tabular-nums opacity-70">{idx + 1}</span>}
-                {o.label}
+                <span className="min-w-0 flex-1">{o.label}</span>
               </li>
             ))
           )}

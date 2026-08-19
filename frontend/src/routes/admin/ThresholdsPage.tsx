@@ -41,7 +41,7 @@ export default function ThresholdsPage() {
         subtitle='Approval goes up to the highest level whose cap the request exceeds — leave the top max empty for "no limit"'>
       <div className="space-y-4">
         {rows.map((r) => (
-          <div key={r.level} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+          <div key={r.level} className="rounded-xl border border-slate-300 bg-surface p-4 shadow-sm dark:border-border">
             <div className="mb-2 font-medium text-fg">{LABELS[r.level]}</div>
             <div className="space-y-3">
               <div className="max-w-xs space-y-1">
