@@ -52,10 +52,12 @@ export default function ThresholdsPage() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted">
-                  Approvers {r.level === 1 ? '(set per division)' : '(any one may approve)'}
+                  Approvers {r.level === 3 ? '(any one may approve)' : r.level === 2 ? '(set per region)' : '(set per division)'}
                 </label>
                 {r.level === 1 ? (
                   <p className="text-sm text-muted">Level-1 approvers are configured on each division.</p>
+                ) : r.level === 2 ? (
+                  <p className="text-sm text-muted">Level-2 approvers come from each region's VP list (Admin → Regions).</p>
                 ) : (
                   <TransferList
                     options={approvers.map((u) => ({ id: u.id, label: `${u.name} (${u.email})` }))}
