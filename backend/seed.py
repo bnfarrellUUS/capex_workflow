@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from app import create_app
 from app.extensions import db
-from app.models import User, Division, ApprovalThreshold
+from app.models import User, Division, ApprovalThreshold, Region
 from app.services.security import hash_password
 
 
@@ -31,6 +31,14 @@ def seed(session) -> None:
     _get_or_create(session, ApprovalThreshold, level=1, defaults={"max_amount": Decimal("50000")})
     _get_or_create(session, ApprovalThreshold, level=2, defaults={"max_amount": Decimal("250000")})
     _get_or_create(session, ApprovalThreshold, level=3, defaults={"max_amount": None})
+    admin = session.query(User).filter_by(email="admin@uniteduptime.com").one()
+    region = _get_or_create(session, Region, name="Central")
+    if admin not in region.vp_approvers:
+        region.vp_approvers.append(admin)
+    for number in ("100", "200"):
+        div = session.query(Division).filter_by(number=number).one()
+        if div.region_id is None:
+            div.region = region
     session.commit()
 
 
