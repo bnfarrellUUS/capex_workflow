@@ -26,7 +26,11 @@ def _default_region():
     return db.session.query(Region).filter_by(name=_DEFAULT_REGION_NAME).one_or_none()
 
 
-def make_region(name=_DEFAULT_REGION_NAME, vp_ids=None):
+# Deliberately NOT `_DEFAULT_REGION_NAME`: an unnamed make_region() must
+# never collide with set_thresholds()'s shared default region below, or a
+# later bare set_thresholds() call would silently zero out this region's
+# vp_approvers (it owns that name and rewrites whatever it finds there).
+def make_region(name="West", vp_ids=None):
     r = Region(name=name)
     r.vp_approvers = _users(vp_ids or [])
     db.session.add(r)
@@ -51,7 +55,10 @@ def set_thresholds(l1="50000", l2="250000", l2_approver=None, l3_approver=None,
     # L2 approvers live on a region now. Keep this factory's signature: route
     # the given users into a shared default region and attach it to every
     # division that doesn't have one yet (make_division picks it up too, so
-    # either call order works).
+    # either call order works). This function OWNS the `_DEFAULT_REGION_NAME`
+    # region: it unconditionally overwrites whatever region has that name, so
+    # nothing else should ever create or name a region `_DEFAULT_REGION_NAME`
+    # (that's exactly why make_region()'s own default name is different).
     region = _default_region() or Region(name=_DEFAULT_REGION_NAME)
     region.vp_approvers = _users(l2_approvers if l2_approvers is not None else [l2_approver])
     db.session.add(region)
