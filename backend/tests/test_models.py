@@ -64,3 +64,16 @@ def test_must_change_password_defaults_false(app):
 
 def test_default_password_config(app):
     assert app.config["DEFAULT_PASSWORD"] == "Welcome@1"
+
+
+def test_region_links_divisions_and_vps(app):
+    from app.models import Region, Division, User
+    from app.extensions import db
+    vp = User(email="vp@x.com", name="VP", password_hash="x")
+    region = Region(name="West", vp_approvers=[vp])
+    div = Division(number="900", name="Yard", region=region)
+    db.session.add_all([vp, region, div])
+    db.session.commit()
+    assert div.region.name == "West"
+    assert [u.email for u in div.region.vp_approvers] == ["vp@x.com"]
+    assert region.active is True

@@ -11,7 +11,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.extensions import db
 
 # Level approvers are many-to-many: any one of them can act at that level.
-# L1 approvers are per-division; L2/L3 approvers hang off the threshold row.
+# L1 approvers are per-division; L2 approvers are per-region (a region's VP
+# pool); L3 approvers hang off the threshold row.
 division_l1_approvers = Table(
     "division_l1_approvers", db.metadata,
     Column("division_id", String(36), ForeignKey("divisions.id", ondelete="CASCADE"), primary_key=True),
@@ -20,6 +21,11 @@ division_l1_approvers = Table(
 threshold_approvers = Table(
     "threshold_approvers", db.metadata,
     Column("threshold_id", String(36), ForeignKey("approval_thresholds.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", String(36), ForeignKey("users.id", ondelete="NO ACTION"), primary_key=True),
+)
+region_vp_approvers = Table(
+    "region_vp_approvers", db.metadata,
+    Column("region_id", String(36), ForeignKey("regions.id", ondelete="CASCADE"), primary_key=True),
     Column("user_id", String(36), ForeignKey("users.id", ondelete="NO ACTION"), primary_key=True),
 )
 
@@ -85,6 +91,19 @@ class User(UserMixin, db.Model):
         return json.loads(self.roles)
 
 
+class Region(db.Model):
+    __tablename__ = "regions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    name: Mapped[str] = mapped_column(String(150), unique=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Level-2 approvers (the region's VP + backups; any one may approve).
+    vp_approvers: Mapped[list["User"]] = relationship("User", secondary=region_vp_approvers)
+
+    divisions: Mapped[list["Division"]] = relationship(back_populates="region")
+
+
 class Division(db.Model):
     __tablename__ = "divisions"
 
@@ -97,6 +116,12 @@ class Division(db.Model):
     l1_approvers: Mapped[list["User"]] = relationship(
         "User", secondary=division_l1_approvers
     )
+
+    # Nullable because divisions predate regions; the admin form requires it.
+    region_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("regions.id", ondelete="NO ACTION"), nullable=True
+    )
+    region: Mapped[Optional["Region"]] = relationship(back_populates="divisions")
 
     users: Mapped[list["User"]] = relationship(
         back_populates="division", foreign_keys="User.division_id"
