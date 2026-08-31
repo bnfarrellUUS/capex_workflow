@@ -7,6 +7,8 @@ export interface Division {
   active: boolean
   l1_approver_ids: string[]
   l1_approver_names?: string[]
+  region_id: string | null
+  region_name?: string | null
 }
 
 export interface DivisionInput {
@@ -14,6 +16,7 @@ export interface DivisionInput {
   name: string
   active?: boolean
   l1_approver_ids?: string[]
+  region_id: string
 }
 
 export function listDivisions(): Promise<Division[]> {

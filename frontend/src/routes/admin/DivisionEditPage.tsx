@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listDivisions, updateDivision, type DivisionInput } from '../../api/divisions'
 import { listUsers } from '../../api/users'
+import { listRegions } from '../../api/regions'
 import { ApiError } from '../../api/client'
 import { DivisionForm } from './DivisionForm'
 
@@ -11,6 +12,7 @@ export default function DivisionEditPage() {
   const qc = useQueryClient()
   const { data: divisions = [] } = useQuery({ queryKey: ['divisions'], queryFn: listDivisions })
   const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: listUsers })
+  const { data: regions = [] } = useQuery({ queryKey: ['regions'], queryFn: listRegions })
   const approvers = users.filter((u) => u.roles.includes('APPROVER'))
   const division = divisions.find((d) => d.id === id)
 
@@ -24,7 +26,7 @@ export default function DivisionEditPage() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold text-fg">Edit division: {division.number}</h1>
-      <DivisionForm approvers={approvers} division={division} pending={mutation.isPending} error={error}
+      <DivisionForm approvers={approvers} regions={regions} division={division} pending={mutation.isPending} error={error}
         onSubmit={(body) => mutation.mutate(body)} />
     </div>
   )
