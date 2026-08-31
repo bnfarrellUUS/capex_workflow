@@ -302,7 +302,13 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   (inactive regions are hidden from the picker unless currently assigned) and
   `DivisionsPage` shows a Region column; the Approval Thresholds page's L2 card
   shows a pointer note instead of a `TransferList` since that pool is no longer
-  read (see the vestigial-column note above).
+  read (see the vestigial-column note above). The Users/Divisions/Regions list
+  tables are client-side sortable and filterable: shared pieces are
+  `components/ui/SortHeader` (clickable th + chevrons + `aria-sort`, extracted
+  from the Requests list's pattern) and `routes/admin/tableSort.ts`
+  (`sortRows` — natural string order so "2" < "10", true-before-false booleans,
+  blanks always last); each page has a search box, and Divisions adds a Region
+  dropdown (with a "No region" choice) and an Active filter.
 - `WizardPage` — 7-step request wizard (Basic Info, Description, Effect on
   Ops, Asset Details, Economic, Attachments, Review), styled as an email-look
   brand card (navy header band with Logo, numbered stepper [✓ done / accent
