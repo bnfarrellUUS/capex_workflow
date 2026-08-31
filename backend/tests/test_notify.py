@@ -52,6 +52,24 @@ def test_notify_assignment_notifies_current_level_approvers(app):
     assert row.recipient == approver.email
 
 
+def test_notify_assignment_excludes_requestor_from_pool(app):
+    other_approver = make_user("other_appr")
+    owner = make_user("req", roles='["REQUESTOR"]')
+    # requestor also sits in the current level's approver pool
+    div = make_division(l1_approver_ids=[owner.id, other_approver.id])
+    req = make_draft(owner.id, div.id)
+    req.current_level = 1
+    req.status = "PENDING_L1"
+    db.session.commit()
+
+    notify.notify_assignment(req)
+
+    rows = db.session.query(NotificationLog).filter_by(type="ASSIGNED").all()
+    recipients = {r.recipient for r in rows}
+    assert recipients == {other_approver.email}
+    assert owner.email not in recipients
+
+
 def test_notify_assignment_uses_template_html(app, monkeypatch):
     sent = {}
     monkeypatch.setattr("app.services.email_outlook.send",

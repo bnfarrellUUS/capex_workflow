@@ -58,7 +58,8 @@ def notify_assignment(req):
     # Notify every eligible approver at the current level (any one may act).
     from app.services import threshold_service, workflow_service
     actors = workflow_service.eligible_actors(
-        req.current_level, req.division, threshold_service.list_thresholds())
+        req.current_level, req.division, threshold_service.list_thresholds(),
+        exclude_id=req.requestor_id)
     level = f"Level {req.current_level}"
     if req.required_levels:
         level += f" of {req.required_levels}"
@@ -93,7 +94,8 @@ def notify_comment(req, comment):
         # Whoever is holding the request answers the requestor.
         if req.status.startswith("PENDING_L"):
             recipients = workflow_service.eligible_actors(
-                req.current_level, req.division, threshold_service.list_thresholds())
+                req.current_level, req.division, threshold_service.list_thresholds(),
+                exclude_id=req.requestor_id)
         elif req.status == "APPROVED":
             recipients = [u for u in db.session.query(User)
                           .filter(User.active.is_(True)).all()

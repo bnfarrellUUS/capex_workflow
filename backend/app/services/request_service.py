@@ -30,7 +30,8 @@ def _can_view(req, viewer):
     if req.status.startswith("PENDING_L"):
         from app.services import threshold_service, workflow_service
         actors = workflow_service.eligible_actors(
-            req.current_level, req.division, threshold_service.list_thresholds())
+            req.current_level, req.division, threshold_service.list_thresholds(),
+            exclude_id=req.requestor_id)
         return viewer.id in {u.id for u in actors}
     return False
 
@@ -55,7 +56,7 @@ def list_requests(viewer, scope="mine", status=None, division_id=None):
         return [
             r for r in rows
             if viewer.id in {u.id for u in workflow_service.eligible_actors(
-                r.current_level, r.division, thresholds)}
+                r.current_level, r.division, thresholds, exclude_id=r.requestor_id)}
         ]
     elif scope == "all" and ("ADMIN" in viewer.roles_list or "FINANCE" in viewer.roles_list):
         pass
@@ -135,7 +136,8 @@ def request_out(req):
     approvers = []
     if req.status.startswith("PENDING_L"):
         approvers = workflow_service.eligible_actors(
-            req.current_level, req.division, threshold_service.list_thresholds())
+            req.current_level, req.division, threshold_service.list_thresholds(),
+            exclude_id=req.requestor_id)
     return {
         "id": req.id,
         "number": req.number,
