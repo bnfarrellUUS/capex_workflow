@@ -8,21 +8,32 @@ def _users(ids):
     return db.session.query(User).filter(User.id.in_(ids)).all() if ids else []
 
 
+def _region(region_id):
+    if not region_id:
+        return None
+    from app.models import Region
+    region = db.session.get(Region, region_id)
+    if region is None:
+        raise ServiceError("Region not found.", 400)
+    return region
+
+
 def list_divisions():
     return db.session.query(Division).order_by(Division.number).all()
 
 
-def create_division(*, number, name):
+def create_division(*, number, name, region_id=None):
     num = number.strip()
     if db.session.query(Division).filter_by(number=num).first() is not None:
         raise ServiceError("Division number already exists.", 409)
     div = Division(number=num, name=name.strip())
+    div.region = _region(region_id)
     db.session.add(div)
     db.session.commit()
     return div
 
 
-def update_division(division_id, *, number, name, active, l1_approver_ids):
+def update_division(division_id, *, number, name, active, l1_approver_ids, region_id=None):
     div = db.session.get(Division, division_id)
     if div is None:
         raise ServiceError("Division not found.", 404)
@@ -36,5 +47,6 @@ def update_division(division_id, *, number, name, active, l1_approver_ids):
     div.name = name.strip()
     div.active = active
     div.l1_approvers = _users(l1_approver_ids)
+    div.region = _region(region_id)
     db.session.commit()
     return div

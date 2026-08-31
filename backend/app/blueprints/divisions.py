@@ -13,6 +13,8 @@ def division_out(d):
         "active": d.active,
         "l1_approver_ids": [u.id for u in d.l1_approvers],
         "l1_approver_names": [u.name for u in d.l1_approvers],
+        "region_id": d.region_id,
+        "region_name": d.region.name if d.region else None,
     }
 
 

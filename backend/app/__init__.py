@@ -55,6 +55,9 @@ def create_app(config_object=None):
     from .blueprints.divisions import bp as divisions_bp
     app.register_blueprint(divisions_bp)
 
+    from .blueprints.regions import bp as regions_bp
+    app.register_blueprint(regions_bp)
+
     from .blueprints.thresholds import bp as thresholds_bp
     app.register_blueprint(thresholds_bp)
 
