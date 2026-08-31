@@ -5,7 +5,7 @@ import { BrandCard, type PageMark } from './BrandCard'
 
 const MARKS: PageMark[] = [
   'dashboard', 'newRequest', 'requests', 'users',
-  'divisions', 'thresholds', 'emailTemplates', 'profile',
+  'divisions', 'regions', 'thresholds', 'emailTemplates', 'profile',
 ]
 
 describe('BrandCard', () => {

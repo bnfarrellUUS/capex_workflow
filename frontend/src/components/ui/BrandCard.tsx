@@ -5,6 +5,7 @@ import {
   MyRequestsIcon,
   UsersIcon,
   DivisionsIcon,
+  RegionsIcon,
   ThresholdsIcon,
   EmailTemplatesIcon,
   ProfileIcon,
@@ -25,6 +26,7 @@ export type PageMark =
   | 'requests'
   | 'users'
   | 'divisions'
+  | 'regions'
   | 'thresholds'
   | 'emailTemplates'
   | 'profile'
@@ -36,6 +38,7 @@ const MARKS: Record<PageMark, React.ComponentType<NavIconProps>> = {
   requests: MyRequestsIcon,
   users: UsersIcon,
   divisions: DivisionsIcon,
+  regions: RegionsIcon,
   thresholds: ThresholdsIcon,
   emailTemplates: EmailTemplatesIcon,
   profile: ProfileIcon,

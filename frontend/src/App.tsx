@@ -10,6 +10,9 @@ import UserEditPage from './routes/admin/UserEditPage'
 import DivisionsPage from './routes/admin/DivisionsPage'
 import DivisionNewPage from './routes/admin/DivisionNewPage'
 import DivisionEditPage from './routes/admin/DivisionEditPage'
+import RegionsPage from './routes/admin/RegionsPage'
+import RegionNewPage from './routes/admin/RegionNewPage'
+import RegionEditPage from './routes/admin/RegionEditPage'
 import ThresholdsPage from './routes/admin/ThresholdsPage'
 import RequestSectionsPage from './routes/admin/RequestSectionsPage'
 import EmailTemplatesPage from './routes/admin/EmailTemplatesPage'
@@ -37,6 +40,9 @@ export default function App() {
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/new" element={<UserNewPage />} />
           <Route path="/admin/users/:id" element={<UserEditPage />} />
+          <Route path="/admin/regions" element={<RegionsPage />} />
+          <Route path="/admin/regions/new" element={<RegionNewPage />} />
+          <Route path="/admin/regions/:id" element={<RegionEditPage />} />
           <Route path="/admin/divisions" element={<DivisionsPage />} />
           <Route path="/admin/divisions/new" element={<DivisionNewPage />} />
           <Route path="/admin/divisions/:id" element={<DivisionEditPage />} />

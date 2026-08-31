@@ -79,6 +79,15 @@ export function DivisionsIcon(props: NavIconProps) {
   )
 }
 
+export function RegionsIcon(props: NavIconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z" />
+      <path d="M9 4v14M15 6v14" />
+    </Icon>
+  )
+}
+
 export function ThresholdsIcon(props: NavIconProps) {
   return (
     <Icon {...props}>

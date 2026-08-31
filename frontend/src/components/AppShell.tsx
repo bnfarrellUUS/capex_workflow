@@ -7,6 +7,7 @@ import {
   MyRequestsIcon,
   UsersIcon,
   DivisionsIcon,
+  RegionsIcon,
   ThresholdsIcon,
   EmailTemplatesIcon,
   ProfileIcon,
@@ -43,6 +44,7 @@ const NAV_SECTIONS: { section: string; items: NavItem[] }[] = [
     section: 'Admin',
     items: [
       { to: '/admin/users', label: 'Users', icon: UsersIcon, roles: ['ADMIN'] },
+      { to: '/admin/regions', label: 'Regions', icon: RegionsIcon, roles: ['ADMIN'] },
       { to: '/admin/divisions', label: 'Divisions', icon: DivisionsIcon, roles: ['ADMIN'] },
       { to: '/admin/thresholds', label: 'Approval Thresholds', icon: ThresholdsIcon, roles: ['ADMIN'] },
       { to: '/admin/request-sections', label: 'Request Sections', icon: NewRequestIcon, roles: ['ADMIN'] },
