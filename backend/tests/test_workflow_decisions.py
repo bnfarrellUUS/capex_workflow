@@ -12,7 +12,10 @@ def _two_level():
     l1 = make_user("l1")
     l2 = make_user("l2")
     requestor = make_user("req", roles='["REQUESTOR"]')
-    region = make_region(l2_approver_id=l2.id)
+    # Named distinctly from the shared default region set_thresholds() uses,
+    # so set_thresholds()'s default-region routing below doesn't clobber
+    # these explicitly-configured VP approvers.
+    region = make_region(name="Two-Level Region", vp_ids=[l2.id])
     div = make_division(l1_approver_id=l1.id, region=region)
     set_thresholds()
     req = make_draft(requestor.id, div.id, costs=("100000",))  # needs L1+L2

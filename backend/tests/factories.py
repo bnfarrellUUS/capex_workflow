@@ -19,21 +19,25 @@ def _users(ids):
     return db.session.query(User).filter(User.id.in_(ids)).all() if ids else []
 
 
-def make_region(name="West", l2_approver_id=None, l2_approver_ids=None):
+_DEFAULT_REGION_NAME = "Test Region"
+
+
+def _default_region():
+    return db.session.query(Region).filter_by(name=_DEFAULT_REGION_NAME).one_or_none()
+
+
+def make_region(name=_DEFAULT_REGION_NAME, vp_ids=None):
     r = Region(name=name)
-    r.vp_approvers = _users(l2_approver_ids if l2_approver_ids is not None else [l2_approver_id])
+    r.vp_approvers = _users(vp_ids or [])
     db.session.add(r)
     db.session.commit()
     return r
 
 
-def make_division(number="100", l1_approver_id=None, l1_approver_ids=None, region_id=None, region=None):
+def make_division(number="100", l1_approver_id=None, l1_approver_ids=None, region=None):
     d = Division(number=number, name="Field Services")
     d.l1_approvers = _users(l1_approver_ids if l1_approver_ids is not None else [l1_approver_id])
-    if region is not None:
-        d.region = region
-    elif region_id is not None:
-        d.region_id = region_id
+    d.region = region if region is not None else _default_region()
     db.session.add(d)
     db.session.commit()
     return d
@@ -44,7 +48,16 @@ def set_thresholds(l1="50000", l2="250000", l2_approver=None, l3_approver=None,
     rows = {t.level: t for t in threshold_service.list_thresholds()}
     rows[1].max_amount = Decimal(l1)
     rows[2].max_amount = Decimal(l2)
-    rows[2].approvers = _users(l2_approvers if l2_approvers is not None else [l2_approver])
+    # L2 approvers live on a region now. Keep this factory's signature: route
+    # the given users into a shared default region and attach it to every
+    # division that doesn't have one yet (make_division picks it up too, so
+    # either call order works).
+    region = _default_region() or Region(name=_DEFAULT_REGION_NAME)
+    region.vp_approvers = _users(l2_approvers if l2_approvers is not None else [l2_approver])
+    db.session.add(region)
+    for d in db.session.query(Division).all():
+        if d.region_id is None:
+            d.region = region
     rows[3].max_amount = None
     rows[3].approvers = _users(l3_approvers if l3_approvers is not None else [l3_approver])
     db.session.commit()

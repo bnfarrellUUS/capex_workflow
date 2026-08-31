@@ -87,14 +87,18 @@ def _open_workflow(req):
     if req.budgeted and (req.budget_amount is None or req.budget_amount <= 0):
         raise ServiceError("Enter the budgeted amount for this request.")
     thresholds = threshold_service.list_thresholds()
-    l1 = first_assignee(1, req.division, thresholds)
-    if l1 is None:
-        raise ServiceError("The division has no level-1 approver assigned.")
+    first = next_pending_level(0, req.division, thresholds, exclude_id=req.requestor_id)
+    if first is None:
+        raise ServiceError(
+            "No eligible approver was found at any level — requestors cannot "
+            "approve their own requests. Check the division's level-1 approvers, "
+            "the region's VP list, and the level-3 approvers.")
     req.total_cost = total
     req.required_levels = compute_required_levels(total, thresholds)
-    req.current_level = 1
-    req.status = "PENDING_L1"
-    req.assignee_id = l1.id
+    req.current_level = first
+    req.status = f"PENDING_L{first}"
+    req.assignee_id = first_assignee(
+        first, req.division, thresholds, exclude_id=req.requestor_id).id
 
 
 def submit(request_id, actor_id):
@@ -106,7 +110,7 @@ def submit(request_id, actor_id):
     if req.requestor_id != actor_id:
         raise ServiceError("Only the requestor can submit this request.", 403)
     _open_workflow(req)
-    _add_action(req, actor_id, "SUBMITTED", level=1)
+    _add_action(req, actor_id, "SUBMITTED", level=req.current_level)
     db.session.commit()
     return req
 
@@ -128,7 +132,8 @@ def _guarded_transition(request_id, expected_level, expected_status, values):
 def _require_current_approver(req, actor_id, thresholds):
     if not req.status.startswith("PENDING_L"):
         raise ServiceError("This request is not awaiting a decision.")
-    actor_ids = {u.id for u in eligible_actors(req.current_level, req.division, thresholds)}
+    actor_ids = {u.id for u in eligible_actors(
+        req.current_level, req.division, thresholds, exclude_id=req.requestor_id)}
     if actor_id not in actor_ids:
         raise ServiceError("This request is not assigned to you.", 403)
 
@@ -136,6 +141,8 @@ def _require_current_approver(req, actor_id, thresholds):
 def _acted_for(req, level, actor_id, thresholds):
     # If the actor is standing in for an approver (their delegate), record whom.
     for approver in intended_approvers(level, req.division, thresholds):
+        if approver.id == req.requestor_id:
+            continue
         actor = effective_assignee(approver)
         if actor is not None and actor.id == actor_id and approver.id != actor_id:
             return approver.id
@@ -154,11 +161,15 @@ def approve(request_id, actor_id, comment=None):
     if level >= req.required_levels:
         values = {"status": "APPROVED", "assignee_id": None}
     else:
-        nxt = level + 1
-        assignee = first_assignee(nxt, req.division, thresholds)
-        if assignee is None:
-            raise ServiceError(f"No approver configured for level {nxt}.")
-        values = {"status": f"PENDING_L{nxt}", "current_level": nxt, "assignee_id": assignee.id}
+        nxt = next_pending_level(level, req.division, thresholds,
+                                 exclude_id=req.requestor_id)
+        if nxt is None:
+            raise ServiceError(
+                "No eligible approver is configured above this level.")
+        assignee = first_assignee(nxt, req.division, thresholds,
+                                  exclude_id=req.requestor_id)
+        values = {"status": f"PENDING_L{nxt}", "current_level": nxt,
+                  "assignee_id": assignee.id}
 
     _guarded_transition(req.id, level, f"PENDING_L{level}", values)
     _add_action(req, actor_id, "APPROVED", level=level, acted_for_id=acted_for, comment=comment)
@@ -201,7 +212,7 @@ def resubmit(request_id, actor_id):
     if req.requestor_id != actor_id:
         raise ServiceError("Only the requestor can resubmit.", 403)
     _open_workflow(req)
-    _add_action(req, actor_id, "RESUBMITTED", level=1)
+    _add_action(req, actor_id, "RESUBMITTED", level=req.current_level)
     db.session.commit()
     return req
 
