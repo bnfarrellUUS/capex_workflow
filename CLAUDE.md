@@ -76,7 +76,9 @@ build`; there is no live dev server.)
   (`/api/email-templates`, ADMIN-only), `reports` (`/api/reports`, FINANCE/ADMIN
   summary endpoint), `request_sections` (`/api/request-sections` — which wizard
   steps are hidden; **GET is open to any signed-in user** because the wizard
-  needs it, PUT is ADMIN-only). Routes are thin; they validate input
+  needs it, PUT is ADMIN-only), `regions` (`/api/regions`, ADMIN-only GET/POST/
+  PATCH; `region_out` serializes id/name/active/vp_approver_ids/names/
+  division_count). Routes are thin; they validate input
   with Pydantic schemas and delegate to services. A flagged
   `must_change_password` user is blocked from the rest of the API by an
   app-level `before_request` (403 `PASSWORD_CHANGE_REQUIRED`), exempting only
@@ -103,6 +105,8 @@ build`; there is no live dev server.)
   `--all`, which produces button pills a few px wider than the committed ones),
   `email_outlook` (Outlook COM sender; attaches referenced `cid:capri-*`
   assets), `security`, `errors` (`ServiceError(msg, status)`),
+  `region_service` (CRUD for regions — `list_regions`, `create_region`,
+  `update_region`; enforces unique region name),
   `export_service` (xlsx export of the requests list via openpyxl),
   `report_service` (year summary aggregates, computed Python-side),
   `pdf_service` (record PDF of one request via reportlab — see "Record PDF"
@@ -127,11 +131,21 @@ build`; there is no live dev server.)
   (out-of-office delegate), lockout fields, reset token. `roles_list` property
   parses roles.
 - **Division** — `number`, `name`, `active`, `l1_approvers` (many-to-many via
-  `division_l1_approvers`: the Level-1 approver pool for its requests).
+  `division_l1_approvers`: the Level-1 approver pool for its requests),
+  `region_id` (nullable FK to `Region`; the Division form requires picking one
+  even though the column is nullable at the DB level).
+- **Region** — `name` (unique), `active`, `vp_approvers` (many-to-many via
+  `region_vp_approvers`: the Level-2 approver pool for every division in the
+  region); `divisions` back-populates `Division.region`. Migration
+  `d4e5f6a7b8c9`.
 - **ApprovalThreshold** — one row per `level` (1/2/3), `max_amount` (top level
-  usually null = no cap), `approvers` (many-to-many via `threshold_approvers`:
-  the L2/L3 approver pool; L1 comes from the division). Each level can have
-  multiple approvers and **any one** may act.
+  usually null = no cap), `approvers` (many-to-many via `threshold_approvers`;
+  L1 comes from the division, L3 still comes from here). Each level can have
+  multiple approvers and **any one** may act. **The level-2 `approvers` column
+  is now vestigial** — L2 routing reads the request's division's region's
+  `vp_approvers` instead (see Roles & approval workflow below); the rows are
+  kept and the threshold PUT still accepts `approver_ids` for level 2, but
+  nothing reads them.
 - **CapexRequest** — `number`, `status`, `requestor_id`, `assignee_id` (current
   approver), `division_id`, `request_date`; Basic-info flags (`budgeted`,
   `replacement`, `health_safety`, `revenue_generating`, `environmental`,
@@ -175,13 +189,34 @@ with `REJECTED` as a side state (the owner can fix and resubmit via the wizard).
 Owners can delete their own drafts (`DELETE /api/requests/<id>`, DRAFT-only;
 removes stored attachment files, children cascade). `required_levels` is
 derived from `total_cost` vs the `ApprovalThreshold` caps. Each level has a
-**pool** of approvers (L1 from the request's division, L2/L3 from the threshold
-rows), each mapped through their out-of-office delegate; **any one** eligible
-approver may approve (advances) or reject. The pool appears on every member's
-"assigned" worklist; `assignee_id` is just a display hint (the first current
-approver) — `request_service._can_view` therefore admits **every eligible actor
-at the current level**, not just `assignee_id` (before 2026-08-05 it didn't, so
-a second pool approver got a 403 opening a request from their own worklist).
+**pool** of approvers — L1 from the request's division, **L2 from the
+division's region's `vp_approvers`** (not the threshold row —
+`workflow_service.intended_approvers` reads `division.region.vp_approvers`),
+L3 from the threshold row — each mapped through their out-of-office delegate;
+**any one** eligible approver may approve (advances) or reject. The pool
+appears on every member's "assigned" worklist; `assignee_id` is just a display
+hint (the first current approver) — `request_service._can_view` therefore
+admits **every eligible actor at the current level**, not just `assignee_id`
+(before 2026-08-05 it didn't, so a second pool approver got a 403 opening a
+request from their own worklist).
+
+**Requestors cannot approve their own requests.** Every pool computation
+(`workflow_service.eligible_actors`, `first_assignee`, `next_pending_level`)
+takes an `exclude_id` — the requestor is filtered out both if they sit directly
+in a pool and if they're another approver's out-of-office delegate. If that
+leaves a level with nobody eligible, `next_pending_level` skips it and opens
+(or advances into) the next non-empty level above it, so `submit`/`resubmit`
+can open a request at L2 or L3 directly, and `approve()` can jump past an empty
+level — the request still reaches `APPROVED` once the acting level meets or
+exceeds `required_levels`, so one escalated approval can suffice. If **no**
+level has an eligible approver anywhere, `_open_workflow` raises: "No eligible
+approver was found at any level — requestors cannot approve their own
+requests. Check the division's level-1 approvers, the region's VP list, and
+the level-3 approvers." The same requestor exclusion is threaded through
+`request_service` (`_can_view`, the assigned worklist, `request_out`'s
+approver lists) and `notify` (assignment + comment recipients), so a requestor
+never sees their own request on an approval worklist even if they'd otherwise
+qualify for a pool.
 
 An approver has a **third response**: the **comment thread** on the detail page
 (`POST /api/requests/<id>/comments`). A comment changes no status, level, or
@@ -238,7 +273,7 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   mark — the page's own nav icon in a sky-blue rounded tile — + white title +
   sky subtitle; optional actions/subheader/footer slots; `mark` is a page key
   mapped to `NavIcons`: `dashboard`/`newRequest`/`requests`/`users`/
-  `divisions`/`thresholds`/`emailTemplates`/`profile`/`reports`).
+  `divisions`/`thresholds`/`emailTemplates`/`profile`/`reports`/`regions`).
 - Icons: `components/NavIcons.tsx` (custom per-page sidebar line-icons — 24px
   grid, rounded joins, `currentColor`; AppShell uses these for nav, lucide
   only supplies non-nav glyphs like Sign Out) and `components/ActionIcons.tsx`
@@ -259,8 +294,15 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   an xlsx, and an ADMIN/FINANCE-only "All" scope tab),
   `RequestDetailPage`, `ProfilePage`, `ReportsPage` (`/reports`, FINANCE/ADMIN
   only: year picker, spend-by-division/month/status tables with inline CSS
-  bars, cycle time), and `routes/admin/` (Users, Divisions,
-  Approval Thresholds, Request Sections, Email Templates + forms).
+  bars, cycle time), and `routes/admin/` (Users, Divisions, Regions,
+  Approval Thresholds, Request Sections, Email Templates + forms). Regions
+  (`RegionsPage`/`RegionNewPage`/`RegionEditPage`/`RegionForm`, `api/regions.ts`,
+  nav item above Divisions, ADMIN-only) manage a region's name/active flag and
+  VP-approver pool via `TransferList`; `DivisionForm` requires picking a Region
+  (inactive regions are hidden from the picker unless currently assigned) and
+  `DivisionsPage` shows a Region column; the Approval Thresholds page's L2 card
+  shows a pointer note instead of a `TransferList` since that pool is no longer
+  read (see the vestigial-column note above).
 - `WizardPage` — 7-step request wizard (Basic Info, Description, Effect on
   Ops, Asset Details, Economic, Attachments, Review), styled as an email-look
   brand card (navy header band with Logo, numbered stepper [✓ done / accent
