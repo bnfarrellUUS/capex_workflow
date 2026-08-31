@@ -12,11 +12,11 @@ def list_regions():
     return db.session.query(Region).order_by(Region.name).all()
 
 
-def create_region(*, name):
+def create_region(*, name, active=True, vp_approver_ids=None):
     nm = name.strip()
     if db.session.query(Region).filter_by(name=nm).first() is not None:
         raise ServiceError("Region name already exists.", 409)
-    region = Region(name=nm)
+    region = Region(name=nm, active=active, vp_approvers=_users(vp_approver_ids))
     db.session.add(region)
     db.session.commit()
     return region

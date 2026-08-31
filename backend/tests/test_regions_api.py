@@ -49,6 +49,22 @@ def test_create_list_update_region(client, app):
     assert body["vp_approver_names"] == ["VP Approver"]
 
 
+def test_create_region_with_vp_approvers_and_active_flag(client, app):
+    _admin(client)
+    vp = User(email="vp2@x.com", name="VP Two",
+              password_hash=hash_password("secret123"), roles='["APPROVER"]')
+    db.session.add(vp)
+    db.session.commit()
+
+    created = client.post("/api/regions", json={
+        "name": "North", "active": False, "vp_approver_ids": [vp.id]})
+    assert created.status_code == 201
+    region = created.get_json()
+    assert region["active"] is False
+    assert region["vp_approver_ids"] == [vp.id]
+    assert region["vp_approver_names"] == ["VP Two"]
+
+
 def test_duplicate_name_conflicts(client, app):
     _admin(client)
     assert client.post("/api/regions", json={"name": "East"}).status_code == 201
