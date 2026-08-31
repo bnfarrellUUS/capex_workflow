@@ -5,15 +5,16 @@ from app.extensions import db
 from app.models import ApprovalAction, CapexRequest
 from app.services.errors import ServiceError
 from app.services.workflow_service import submit, approve, reject, _guarded_transition
-from tests.factories import make_user, make_division, set_thresholds, make_draft
+from tests.factories import make_user, make_division, set_thresholds, make_draft, make_region
 
 
 def _two_level():
     l1 = make_user("l1")
     l2 = make_user("l2")
     requestor = make_user("req", roles='["REQUESTOR"]')
-    div = make_division(l1_approver_id=l1.id)
-    set_thresholds(l2_approver=l2.id)
+    region = make_region(l2_approver_id=l2.id)
+    div = make_division(l1_approver_id=l1.id, region=region)
+    set_thresholds()
     req = make_draft(requestor.id, div.id, costs=("100000",))  # needs L1+L2
     submit(req.id, requestor.id)
     return requestor, l1, l2, req

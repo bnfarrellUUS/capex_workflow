@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from app.extensions import db
-from app.models import User, Division, CapexRequest, EquipmentItem
+from app.models import User, Division, Region, CapexRequest, EquipmentItem
 from app.services import threshold_service
 from app.services.security import hash_password
 
@@ -19,9 +19,21 @@ def _users(ids):
     return db.session.query(User).filter(User.id.in_(ids)).all() if ids else []
 
 
-def make_division(number="100", l1_approver_id=None, l1_approver_ids=None):
+def make_region(name="West", l2_approver_id=None, l2_approver_ids=None):
+    r = Region(name=name)
+    r.vp_approvers = _users(l2_approver_ids if l2_approver_ids is not None else [l2_approver_id])
+    db.session.add(r)
+    db.session.commit()
+    return r
+
+
+def make_division(number="100", l1_approver_id=None, l1_approver_ids=None, region_id=None, region=None):
     d = Division(number=number, name="Field Services")
     d.l1_approvers = _users(l1_approver_ids if l1_approver_ids is not None else [l1_approver_id])
+    if region is not None:
+        d.region = region
+    elif region_id is not None:
+        d.region_id = region_id
     db.session.add(d)
     db.session.commit()
     return d

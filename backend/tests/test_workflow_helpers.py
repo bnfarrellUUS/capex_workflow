@@ -1,9 +1,9 @@
 from decimal import Decimal
 
-from app.models import Division, User, ApprovalThreshold
+from app.models import Division, User, ApprovalThreshold, Region
 from app.services.workflow_service import (
     compute_required_levels, intended_approvers, effective_assignee,
-    eligible_actors, first_assignee,
+    eligible_actors, first_assignee, next_pending_level,
 )
 
 
@@ -48,3 +48,43 @@ def test_eligible_actors_map_through_delegate():
     div = Division(number="100", name="F", l1_approvers=[appr])
     assert eligible_actors(1, div, _thresholds()) == [delegate]
     assert first_assignee(1, div, _thresholds()) is delegate
+
+
+def test_intended_approvers_l2_come_from_region():
+    vp = User(id="vp", email="vp@x", name="VP", password_hash="x")
+    div = Division(number="100", name="F", region=Region(name="West", vp_approvers=[vp]))
+    assert intended_approvers(2, div, _thresholds()) == [vp]
+
+
+def test_intended_approvers_l2_empty_without_region():
+    div = Division(number="100", name="F")
+    assert intended_approvers(2, div, _thresholds()) == []
+
+
+def test_eligible_actors_exclude_requestor_directly():
+    a1 = User(id="a1", email="a@x", name="A", password_hash="x")
+    rq = User(id="rq", email="r@x", name="R", password_hash="x")
+    div = Division(number="100", name="F", l1_approvers=[a1, rq])
+    assert eligible_actors(1, div, _thresholds(), exclude_id="rq") == [a1]
+
+
+def test_eligible_actors_exclude_requestor_as_delegate():
+    rq = User(id="rq", email="r@x", name="R", password_hash="x")
+    appr = User(id="a1", email="a@x", name="A", password_hash="x",
+                delegate_id="rq", delegate=rq)
+    div = Division(number="100", name="F", l1_approvers=[appr])
+    assert eligible_actors(1, div, _thresholds(), exclude_id="rq") == []
+
+
+def test_next_pending_level_skips_empty_levels():
+    vp = User(id="vp", email="vp@x", name="VP", password_hash="x")
+    div = Division(number="100", name="F", l1_approvers=[],
+                   region=Region(name="West", vp_approvers=[vp]))
+    assert next_pending_level(0, div, _thresholds()) == 2
+    assert next_pending_level(2, div, _thresholds()) is None
+
+
+def test_next_pending_level_none_when_requestor_is_everyone():
+    rq = User(id="rq", email="r@x", name="R", password_hash="x")
+    div = Division(number="100", name="F", l1_approvers=[rq])
+    assert next_pending_level(0, div, _thresholds(), exclude_id="rq") is None

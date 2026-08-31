@@ -21,6 +21,9 @@ def intended_approvers(level, division, thresholds):
     """The users configured to approve at a level (any one of them may act)."""
     if level == 1:
         return list(division.l1_approvers) if division is not None else []
+    if level == 2:
+        region = division.region if division is not None else None
+        return list(region.vp_approvers) if region is not None else []
     match = next((t for t in thresholds if t.level == level), None)
     return list(match.approvers) if match is not None else []
 
@@ -31,21 +34,39 @@ def effective_assignee(user):
     return user.delegate if user.delegate_id else user
 
 
-def eligible_actors(level, division, thresholds):
+def eligible_actors(level, division, thresholds, exclude_id=None):
     """Who may actually act at a level: each configured approver mapped through
-    their out-of-office delegate, de-duplicated."""
+    their out-of-office delegate, de-duplicated. `exclude_id` (the requestor)
+    is barred in any capacity — as a configured approver or as the delegate
+    who would act for one."""
     seen, out = set(), []
     for approver in intended_approvers(level, division, thresholds):
+        if exclude_id is not None and approver.id == exclude_id:
+            continue
         actor = effective_assignee(approver)
-        if actor is not None and actor.id not in seen:
-            seen.add(actor.id)
-            out.append(actor)
+        if actor is None or actor.id in seen:
+            continue
+        if exclude_id is not None and actor.id == exclude_id:
+            continue
+        seen.add(actor.id)
+        out.append(actor)
     return out
 
 
-def first_assignee(level, division, thresholds):
-    actors = eligible_actors(level, division, thresholds)
+def first_assignee(level, division, thresholds, exclude_id=None):
+    actors = eligible_actors(level, division, thresholds, exclude_id=exclude_id)
     return actors[0] if actors else None
+
+
+def next_pending_level(after_level, division, thresholds, exclude_id=None):
+    """The lowest level above `after_level` where someone may act; empty
+    levels — unconfigured, or emptied by the requestor exclusion — are
+    skipped uniformly. None when nobody is left."""
+    for level in (1, 2, 3):
+        if level > after_level and eligible_actors(
+                level, division, thresholds, exclude_id=exclude_id):
+            return level
+    return None
 
 
 # ---- transactional actions ----
