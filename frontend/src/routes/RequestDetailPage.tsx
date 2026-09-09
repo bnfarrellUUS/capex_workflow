@@ -24,7 +24,7 @@ import {
 } from '../components/ActionIcons'
 import { CommentThread } from '../components/CommentThread'
 import { PingModal, type PingInit } from '../components/PingModal'
-import { touchOpenRequest, closeOpenRequest } from '../openRequests'
+import { touchOpenRequest, closeOpenRequest, readOpenRequests } from '../openRequests'
 
 const PIPELINE = ['DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED']
 
@@ -75,7 +75,9 @@ export default function RequestDetailPage() {
   if (isError) {
     return (
       <div className="max-w-3xl">
-        <BrandCard title="Request unavailable" subtitle={id} mark="requests">
+        <BrandCard title="Request unavailable"
+          subtitle={me?.id ? readOpenRequests(me.id).find((t) => t.id === id)?.number ?? id : id}
+          mark="requests">
           <p role="alert" className="mb-3 text-sm text-red-600 dark:text-red-400">
             This request could not be loaded. It may have been deleted, or you may no longer have access to it.
           </p>
@@ -302,6 +304,9 @@ export default function RequestDetailPage() {
                     setBusy(true)
                     try {
                       await deleteRequest(id)
+                      // The request is gone; leaving its tab in the strip would
+                      // only offer a click straight to "Request unavailable".
+                      closeOpenRequest(me.id, id)
                       navigate('/requests', { replace: true })
                     } catch (e) {
                       setErr(e instanceof ApiError ? e.message : 'Delete failed.')

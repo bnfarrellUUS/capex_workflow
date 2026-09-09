@@ -15,7 +15,9 @@ vi.mock('../api/requests', () => ({
   updateDraft: vi.fn(() => Promise.resolve({})),
   submitRequest: vi.fn(() => Promise.resolve({})),
   resubmitRequest: vi.fn(() => Promise.resolve({})),
-  uploadAttachment: vi.fn(() => Promise.resolve({})),
+  // No default value: the real endpoint returns the full updated request, and
+  // that value lands in the query cache -- each uploading test supplies one.
+  uploadAttachment: vi.fn(),
   deleteAttachment: vi.fn(() => Promise.resolve({})),
   attachmentUrl: (id: string, attId: string) => `/api/requests/${id}/attachments/${attId}`,
 }))
@@ -300,6 +302,10 @@ describe('WizardPage — attachments on an existing draft', () => {
   })
 
   it('uploads to the existing request without creating a new draft', async () => {
+    vi.mocked(uploadAttachment).mockResolvedValueOnce({
+      ...makeRequest('DRAFT'),
+      attachments: [{ id: 'att-1', filename: 'quote.pdf', content_type: 'application/pdf', size: 3 }],
+    })
     renderAt('/requests/req-1/edit')
     await screen.findByText('Request CX000042')
     fireEvent.click(await screen.findByRole('button', { name: /Attachments/ }))
@@ -373,6 +379,47 @@ describe('WizardPage and the open-request set', () => {
     expect(currentStep()).toHaveTextContent('Basic Info')
     expect(await screen.findByDisplayValue('Two')).toBeInTheDocument()
     expect(screen.queryByDisplayValue('One')).toBeNull()
+  })
+
+  it('shows Loading, not request A’s form, while request B is still loading after a tab switch', async () => {
+    touchOpenRequest('me', { id: 'a', number: 'CX000001', title: 'One', mode: 'edit' })
+    touchOpenRequest('me', { id: 'b', number: 'CX000002', title: 'Two', mode: 'edit' })
+    vi.mocked(getRequest).mockImplementation((id: string) =>
+      id === 'a'
+        ? Promise.resolve({ ...makeRequest('DRAFT'), id: 'a', number: 'CX000001', description: 'One' })
+        : new Promise<CapexRequestData>(() => {}))
+
+    renderAt('/requests/a/edit', <Switcher to="/requests/b/edit" />)
+    await screen.findByDisplayValue('One')
+
+    fireEvent.click(screen.getByRole('button', { name: 'switch' }))
+
+    // The form still holds a's values, but the URL says b: showing it here
+    // would let Save Draft / Next / Submit write a's fields into b.
+    expect(await screen.findByText('Loading…')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('One')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Save Draft' })).toBeNull()
+    expect(updateDraft).not.toHaveBeenCalled()
+  })
+
+  it('drops one request’s “Saved.” when you switch to another tab', async () => {
+    touchOpenRequest('me', { id: 'a', number: 'CX000001', title: 'One', mode: 'edit' })
+    touchOpenRequest('me', { id: 'b', number: 'CX000002', title: 'Two', mode: 'edit' })
+    vi.mocked(getRequest).mockImplementation(async (id: string) => ({
+      ...makeRequest('DRAFT'), id,
+      number: id === 'a' ? 'CX000001' : 'CX000002',
+      description: id === 'a' ? 'One' : 'Two',
+    }))
+
+    renderAt('/requests/a/edit', <Switcher to="/requests/b/edit" />)
+    await screen.findByText('Request CX000001')
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }))
+    await screen.findByText('Saved.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'switch' }))
+
+    await screen.findByText('Request CX000002')
+    expect(screen.queryByText('Saved.')).toBeNull()
   })
 
   it('carries a new request’s step into its tab across the first-save redirect', async () => {

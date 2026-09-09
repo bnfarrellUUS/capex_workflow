@@ -68,12 +68,17 @@ export default function WizardPage() {
   // as -- or saved into -- request B. The ref, not `data`, decides: a refetch
   // of the same request must not wipe unsaved edits.
   const seededFor = useRef<string | null>(null)
+  // The same fact as the ref, but in state, so the render gate below can ask
+  // "does the form on screen belong to the request in the URL?". The ref alone
+  // cannot: it changes without a re-render.
+  const [seededId, setSeededId] = useState<string | null>(null)
   useEffect(() => {
     if (routeId) {
       if (data && seededFor.current !== routeId) {
         setForm(toForm(data))
         setBudgetError(null)
         seededFor.current = routeId
+        setSeededId(routeId)
       }
     } else if (me && !form) {
       setForm(blankForm(me.division_id ?? '', today()))
@@ -110,6 +115,11 @@ export default function WizardPage() {
     mutationFn: persist,
     onSuccess: (savedId) => {
       setSaved(true)
+      // The in-memory form IS this request's -- we just wrote it -- so claim the
+      // id before the new→edit redirect and the hand-off stays seamless instead
+      // of flashing the "not my request yet" gate below.
+      seededFor.current = savedId
+      setSeededId(savedId)
       if (isNew) navigate(`/requests/${savedId}/edit`, { replace: true, state: { step } })
     },
   })
@@ -134,6 +144,9 @@ export default function WizardPage() {
     onSuccess: ({ id, updated }) => {
       qc.setQueryData(['request', id], updated)
       setSaved(true)
+      // Same claim as save.onSuccess: persist() wrote this form to this id.
+      seededFor.current = id
+      setSeededId(id)
       if (isNew) navigate(`/requests/${id}/edit`, { replace: true, state: { step } })
     },
   })
@@ -141,6 +154,18 @@ export default function WizardPage() {
     mutationFn: (attId: string) => deleteAttachment(routeId!, attId),
     onSuccess: (updated) => qc.setQueryData(['request', routeId], updated),
   })
+
+  // Switching tabs keeps this component mounted, so one request's "Saved." or
+  // error must not linger under another. Skipped on the new→edit redirect
+  // (prev === undefined), which would otherwise wipe the "Saved." just shown.
+  const prevRouteId = useRef<string | undefined>(routeId)
+  useEffect(() => {
+    const prev = prevRouteId.current
+    prevRouteId.current = routeId
+    if (prev === undefined || prev === routeId) return
+    setSaved(false)
+    save.reset(); submit.reset(); upload.reset(); removeAttachment.reset()
+  }, [routeId, save.reset, submit.reset, upload.reset, removeAttachment.reset])
   const submitError = submit.error instanceof ApiError ? submit.error.message : null
   const saveError = save.error instanceof ApiError ? save.error.message : null
   const attachError = [upload, removeAttachment].find((m) => m.error)?.error
@@ -171,7 +196,9 @@ export default function WizardPage() {
   if (routeId && isError) {
     return (
       <div className="max-w-3xl">
-        <BrandCard title="Request unavailable" subtitle={routeId} mark="newRequest">
+        <BrandCard title="Request unavailable"
+          subtitle={userId ? readOpenRequests(userId).find((t) => t.id === routeId)?.number ?? routeId : routeId}
+          mark="newRequest">
           <p role="alert" className="mb-3 text-sm text-red-600 dark:text-red-400">
             This request could not be loaded. It may have been deleted, or you may no longer have access to it.
           </p>
@@ -187,8 +214,13 @@ export default function WizardPage() {
   }
 
   // Wait for the section config too, so the stepper never renders with the
-  // wrong numbering and then reflows.
-  if (!form || !hidden) return <p className="text-sm text-muted">Loading…</p>
+  // wrong numbering and then reflows. The seededId check is the real guard: a
+  // tab switch changes :id under a mounted page and `data` for the new request
+  // is undefined until it loads, so without it request A's form would render
+  // -- and be saveable -- under request B's URL.
+  if (!form || !hidden || (routeId ?? null) !== seededId) {
+    return <p className="text-sm text-muted">Loading…</p>
+  }
 
   const set: Setter = (k, v) => { setForm({ ...form, [k]: v }); setSaved(false); setBudgetError(null) }
 

@@ -34,7 +34,7 @@ vi.mock('../api/pings', () => ({
   pingSuggestions: vi.fn(() => Promise.resolve([])),
 }))
 
-import { getRequest, resendRecord } from '../api/requests'
+import { getRequest, resendRecord, deleteRequest } from '../api/requests'
 import { getHiddenSections } from '../api/requestSections'
 import { ApiError } from '../api/client'
 import { readOpenRequests, touchOpenRequest } from '../openRequests'
@@ -293,5 +293,22 @@ describe('RequestDetailPage and the open-request set', () => {
 
     expect(readOpenRequests('approver-1')).toEqual([])
     expect(await screen.findByText('List')).toBeInTheDocument()
+  })
+
+  it('closes the tab when the owner deletes the draft', async () => {
+    mockRoles = ['REQUESTOR']
+    vi.mocked(getRequest).mockResolvedValue({
+      ...makeRequest(), status: 'DRAFT', requestor_id: 'approver-1',
+    })
+    vi.mocked(deleteRequest).mockResolvedValue(undefined as never)
+    touchOpenRequest('approver-1', { id: 'req-1', number: 'CX000042', title: 'Forklift', mode: 'view' })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /Delete draft/ }))
+
+    // The request is gone; a tab pointing at it would only lead to
+    // "Request unavailable".
+    await waitFor(() => expect(readOpenRequests('approver-1')).toEqual([]))
   })
 })
