@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Optional
 
 from flask_login import UserMixin
-from sqlalchemy import String, Boolean, Integer, Numeric, DateTime, ForeignKey, Text, Table, Column, func
+from sqlalchemy import String, Boolean, Integer, Numeric, DateTime, ForeignKey, Text, Table, Column, func, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
@@ -284,6 +284,52 @@ class RequestComment(db.Model):
     author: Mapped["User"] = relationship("User")
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
+class Ping(db.Model):
+    """One note in a conversation. A REPLY IS A CHILD ROW, not a separate table:
+    `parent_id` points at the conversation root and never at another reply, so a
+    thread is exactly two levels deep and one exchange is one row in the inbox.
+
+    Who it is addressed to lives in `ping_recipients` -- there is deliberately no
+    recipient column here. Immutable once sent, so no updated_at.
+    """
+    __tablename__ = "pings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    parent_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("pings.id"), nullable=True, index=True)
+    sender_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="NO ACTION"), index=True)
+    sender: Mapped["User"] = relationship("User", foreign_keys=[sender_id])
+    note: Mapped[str] = mapped_column(Text)
+    # Optional context: the one thing a CAPRI ping can be "about". NO ACTION,
+    # not cascade -- request_service.delete_draft refuses a draft with pings.
+    request_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("capex_requests.id", ondelete="NO ACTION"), nullable=True, index=True)
+    request: Mapped[Optional["CapexRequest"]] = relationship("CapexRequest")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
+class PingRecipient(db.Model):
+    """Per-person state. Read is personal; done is SHARED and derived at read time
+    (see ping_service.apply_shared_done) -- this row still records each person's
+    own tick, so the roster can show who read and who closed it.
+    """
+    __tablename__ = "ping_recipients"
+    __table_args__ = (
+        # Addressing the same person twice is a dedupe bug, not a state the
+        # database should hold.
+        UniqueConstraint("ping_id", "user_id", name="uq_ping_recipient"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    ping_id: Mapped[str] = mapped_column(ForeignKey("pings.id", ondelete="CASCADE"))
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="NO ACTION"), index=True)
+    user: Mapped["User"] = relationship("User")
+    read_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class NotificationLog(db.Model):
