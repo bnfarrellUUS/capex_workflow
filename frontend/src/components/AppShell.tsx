@@ -21,6 +21,7 @@ import { Button } from './ui/Button'
 import { ThemeToggle } from './ThemeToggle'
 import { Lockup } from './Lockup'
 import { PingBell } from './PingBell'
+import { PingPanel } from './PingPanel'
 
 interface NavItem {
   to: string
@@ -126,7 +127,6 @@ export function AppShell() {
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-fg">{user?.name}</span>
             <PingBell onClick={() => setPingsOpen(true)} />
-            {pingsOpen && null}
             <ThemeToggle />
             <Button variant="secondary" onClick={handleLogout}>
               <LogOut size={15} />
@@ -138,6 +138,8 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {pingsOpen && <PingPanel onClose={() => setPingsOpen(false)} />}
     </div>
   )
 }
