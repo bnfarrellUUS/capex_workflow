@@ -440,3 +440,8 @@ answer. An open-ping count on the detail page (what SCORE's `pings_for_bid`
 was for) would fix that without giving pings any authority over state.
 Deferred until the feature has been used; noted so the next session does not
 treat the missing endpoint as an oversight.
+
+**Should the sender be able to close a conversation they started?** §7.1 makes
+done/reopen roster-only and §3.3 returns an answered conversation to the
+sender's inbox, so today the sender sees it under Open until a recipient ticks
+it. Flagged by the 2026-09-09 final review; deferred to the owner.

@@ -431,6 +431,11 @@ SCORE's shipped Pings; built 2026-09-09.
   FKs are not enforced here).
 - Ping buttons are `Button variant="primary" size="sm"` with `SendIcon`; table rows
   use an icon-only `text-accent` paper plane beside View.
+- **Only recipients can Mark done.** The sender is not on the roster, so an
+  answered conversation they started stays under Open in their inbox until a
+  recipient ticks it (spec §3.3 + §7.1, kept as SCORE shipped it). Whether the
+  sender may close their own conversation is an open product question — see
+  spec §12.
 
 ## Budgeted amount
 
