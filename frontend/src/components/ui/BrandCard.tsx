@@ -10,6 +10,7 @@ import {
   EmailTemplatesIcon,
   ProfileIcon,
   ReportsIcon,
+  MessagesIcon,
   type NavIconProps,
 } from '../NavIcons'
 
@@ -31,6 +32,7 @@ export type PageMark =
   | 'emailTemplates'
   | 'profile'
   | 'reports'
+  | 'messages'
 
 const MARKS: Record<PageMark, React.ComponentType<NavIconProps>> = {
   dashboard: DashboardIcon,
@@ -43,6 +45,7 @@ const MARKS: Record<PageMark, React.ComponentType<NavIconProps>> = {
   emailTemplates: EmailTemplatesIcon,
   profile: ProfileIcon,
   reports: ReportsIcon,
+  messages: MessagesIcon,
 }
 
 /**

@@ -177,3 +177,14 @@ export function RejectedIcon(props: IconProps) {
     </Icon>
   )
 }
+
+/* ---- messaging ---- */
+
+export function SendIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M21 3 3 10.5l7.5 3L13.5 21 21 3z" />
+      <path d="M10.5 13.5 21 3" />
+    </Icon>
+  )
+}
