@@ -78,7 +78,8 @@ build`; there is no live dev server.)
   steps are hidden; **GET is open to any signed-in user** because the wizard
   needs it, PUT is ADMIN-only), `regions` (`/api/regions`, ADMIN-only GET/POST/
   PATCH; `region_out` serializes id/name/active/vp_approver_ids/names/
-  division_count). Routes are thin; they validate input
+  division_count), `pings` (`/api/pings`, every signed-in user; see Pings).
+  Routes are thin; they validate input
   with Pydantic schemas and delegate to services. A flagged
   `must_change_password` user is blocked from the rest of the API by an
   app-level `before_request` (403 `PASSWORD_CHANGE_REQUIRED`), exempting only
@@ -112,7 +113,9 @@ build`; there is no live dev server.)
   `pdf_service` (record PDF of one request via reportlab — see "Record PDF"
   below; `request_pdf_sections` decides the content as plain dicts and
   `render_pdf` is the only reportlab-aware part, so content rules are testable
-  without parsing PDFs).
+  without parsing PDFs),
+  `ping_service` (in-app messaging between users, optionally referencing a
+  request — see "Pings" below).
   **Email gotchas:** editable template bodies must stay Quill-round-trippable
   (no tables/bgcolor/VML — Quill strips them); preview HTML must equal sent
   HTML (test-pinned); verify email changes against a real Outlook render, not
@@ -176,6 +179,8 @@ build`; there is no live dev server.)
   FINANCE_READY/FINANCE_COMPLETE/COMMENT): live `subject`/`body_html`/`enabled` plus `default_subject`/
   `default_body_html` (admin-set baseline). A row exists only once customized;
   code holds the shipped defaults (`email_template_service.DEFAULTS`).
+- **Ping** / **PingRecipient** — in-app messaging between users, optionally
+  referencing a request. See "Pings (in-app messaging)" below.
 
 ## Roles & approval workflow
 
@@ -264,8 +269,11 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   handler); `LoginPage` navigates to the sanitized `next` (same-app absolute
   paths only) after sign-in.
 - `components/AppShell.tsx` — navy grouped sidebar (icons, active pill) +
-  header (theme toggle, Sign Out).
-- `components/ui/` — `Button` (primary/secondary/ghost), `Input`, `Select`,
+  header (theme toggle, `PingBell`, Sign Out). `PingBell`/`PingPanel`/
+  `PingCard`/`PingDetail`/`PingModal` are the in-app messaging components —
+  see "Pings (in-app messaging)" below.
+- `components/ui/` — `Button` (primary/secondary/ghost; `size` prop `'md' |
+  'sm'`), `Input`, `Select`,
   `PasswordInput` (eye toggle), `Card`/`StatCard`, `Badge`/`StatusBadge`,
   `QuillEditor`, `TransferList` (dual-listbox: Available | Add»/«Remove |
   Selected + ▲▼ reorder; used for approver pools and user roles, not
@@ -294,7 +302,8 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   an xlsx, and an ADMIN/FINANCE-only "All" scope tab),
   `RequestDetailPage`, `ProfilePage`, `ReportsPage` (`/reports`, FINANCE/ADMIN
   only: year picker, spend-by-division/month/status tables with inline CSS
-  bars, cycle time), and `routes/admin/` (Users, Divisions, Regions,
+  bars, cycle time), `MessagesPage` (`/messages` — see "Pings (in-app
+  messaging)" below), and `routes/admin/` (Users, Divisions, Regions,
   Approval Thresholds, Request Sections, Email Templates + forms). Regions
   (`RegionsPage`/`RegionNewPage`/`RegionEditPage`/`RegionForm`, `api/regions.ts`,
   nav item above Divisions, ADMIN-only) manage a region's name/active flag and
@@ -398,6 +407,30 @@ Built 2026-08-05 — it is Phase 2 proposal #4.
   wizard step.
 - **Immutable on purpose.** There is no edit or delete route; don't add one
   without deciding what that does to the audit copy.
+
+## Pings (in-app messaging)
+
+Spec: `docs/superpowers/specs/2026-09-09-in-app-messaging-design.md`. Ported from
+SCORE's shipped Pings; built 2026-09-09.
+
+- **Naming is split on purpose:** the sidebar/page say **Messages** (`/messages`,
+  `MessagesPage`); every button and all code say **ping** (`pings`,
+  `ping_recipients`, `ping_service`, `/api/pings`, `Ping*` components).
+- **A reply is a child row** (`pings.parent_id` → the root, never another reply).
+  Read is **personal** (`ping_recipients.read_at`); done is **shared** — first tick
+  closes it for the roster, derived at read time by `apply_shared_done`, never stored.
+- **Unscoped by design:** anyone can ping anyone (`directory()` is every active
+  user). A ping may reference a request the recipient cannot open: the summary
+  renders, the deep link only when `request_service.can_view` says so.
+- **Not the comment thread.** Comments belong to the request, print in the PDF and
+  email the other side. Pings belong to people, carry read/done state, never print,
+  never email (deliberately deferred), never change workflow state.
+- Ordering is `(last_activity_at, last_activity_id)` — ids are uuid4, so the id is
+  only a tiebreaker.
+- `delete_draft` returns **409** for a draft that has pings (explicit check; SQLite
+  FKs are not enforced here).
+- Ping buttons are `Button variant="primary" size="sm"` with `SendIcon`; table rows
+  use an icon-only `text-accent` paper plane beside View.
 
 ## Budgeted amount
 
