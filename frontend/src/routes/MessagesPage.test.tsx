@@ -13,7 +13,7 @@ vi.mock('../api/pings', () => ({
   listPings: vi.fn(), getPing: vi.fn(), replyToPing: vi.fn(), markPingDone: vi.fn(),
   reopenPing: vi.fn(), createPing: vi.fn(), pingDirectory: vi.fn(), pingSuggestions: vi.fn(),
 }))
-import { listPings, getPing } from '../api/pings'
+import { listPings, getPing, pingDirectory } from '../api/pings'
 vi.mock('../auth/useMe', () => ({
   useMe: () => ({ data: { id: 'u2', name: 'Me', email: 'me@x.com', roles: ['APPROVER'],
                           division_id: null, must_change_password: false } }),
@@ -105,6 +105,7 @@ describe('MessagesPage', () => {
 
   it('has a New Ping button that opens the modal', async () => {
     vi.mocked(listPings).mockResolvedValue([])
+    vi.mocked(pingDirectory).mockResolvedValue([])
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: /new ping/i }))
     expect(screen.getByRole('dialog', { name: /new ping/i })).toBeInTheDocument()
