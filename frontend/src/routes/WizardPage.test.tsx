@@ -149,6 +149,13 @@ describe('WizardPage — new request defers draft creation', () => {
   })
 
   it('uploading on the Attachments step creates the draft then attaches', async () => {
+    // The real endpoint returns the full updated request (like getRequest),
+    // not {} -- an honest mock here is what the reseed-on-id-change effect
+    // (WizardPage.tsx) actually receives once the redirect lands on /new-1/edit.
+    vi.mocked(uploadAttachment).mockResolvedValueOnce({
+      ...makeRequest('DRAFT'), id: 'new-1',
+      attachments: [{ id: 'att-1', filename: 'quote.pdf', content_type: 'application/pdf', size: 3 }],
+    })
     renderAt('/requests/new')
     await screen.findByText('New Request')
     fireEvent.click(await screen.findByRole('button', { name: /Attachments/ }))
