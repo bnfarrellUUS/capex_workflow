@@ -464,3 +464,80 @@ def test_suggestions_404_an_unknown_request(app):
     with pytest.raises(ServiceError) as excinfo:
         ping_service.suggested_recipients(viewer, "no-such-request")
     assert excinfo.value.status == 404
+
+
+def _login(client, key, roles='["APPROVER"]'):
+    u = make_user(key, roles=roles)
+    client.post("/api/auth/login", json={"email": f"{key}@x.com", "password": "secret123"})
+    return u
+
+
+def test_every_ping_route_requires_a_session(client):
+    assert client.get("/api/pings/unread_count").status_code == 401
+    assert client.get("/api/pings").status_code == 401
+    assert client.post("/api/pings", json={}).status_code == 401
+
+
+def test_post_get_and_list_pings_over_http(client, app):
+    me = _login(client, "me")
+    mate = make_user("mate")
+
+    res = client.post("/api/pings", json={"recipient_ids": [mate.id],
+                                          "note": "Please look at this."})
+    assert res.status_code == 200
+    ping_id = res.get_json()["ping"]["id"]
+
+    body = client.get("/api/pings?box=sent").get_json()
+    assert [p["note"] for p in body["pings"]] == ["Please look at this."]
+    assert client.get("/api/pings").get_json()["pings"] == []       # my inbox
+    detail = client.get(f"/api/pings/{ping_id}").get_json()["ping"]
+    assert detail["sender"]["id"] == me.id and detail["replies"] == []
+
+
+def test_blank_note_and_unknown_field_are_400s(client, app):
+    _login(client, "me")
+    mate = make_user("mate")
+    assert client.post("/api/pings", json={"recipient_ids": [mate.id], "note": ""}
+                       ).status_code == 400
+    assert client.post("/api/pings", json={"recipient_ids": [mate.id], "note": "x",
+                                           "bid_id": "b1"}).status_code == 400
+
+
+def test_unread_count_reply_done_and_reopen_over_http(client, app):
+    from app.services import ping_service
+
+    me = _login(client, "me")
+    other = make_user("other")
+    ping = ping_service.create_ping(other, recipient_ids=[me.id], note="Yours")
+
+    assert client.get("/api/pings/unread_count").get_json()["count"] == 1
+    res = client.post(f"/api/pings/{ping.id}/reply", json={"note": "On it."})
+    assert res.status_code == 200 and res.get_json()["ping"]["reply_count"] == 1
+    assert client.post(f"/api/pings/{ping.id}/done").get_json()["ping"]["done_by"] == "Me"
+    assert client.post(f"/api/pings/{ping.id}/reopen").get_json()["ping"]["done_by"] is None
+    assert client.get("/api/pings/unread_count").get_json()["count"] == 0
+
+
+def test_third_party_detail_is_403_over_http(client, app):
+    from app.services import ping_service
+
+    _login(client, "nosy")
+    sender = make_user("sam")
+    ann = make_user("ann")
+    ping = ping_service.create_ping(sender, recipient_ids=[ann.id], note="Private")
+    assert client.get(f"/api/pings/{ping.id}").status_code == 403
+
+
+def test_directory_and_suggestions_over_http(client, app):
+    from tests.factories import make_division, make_draft
+
+    _login(client, "me")
+    owner = make_user("owner", roles='["REQUESTOR"]')
+    div = make_division()
+    req = make_draft(owner.id, div.id)
+
+    names = [u["name"] for u in client.get("/api/pings/directory").get_json()["users"]]
+    assert "Owner" in names and "Me" in names
+    assert client.get("/api/pings/suggestions").status_code == 400
+    suggested = client.get(f"/api/pings/suggestions?request_id={req.id}").get_json()["users"]
+    assert [u["id"] for u in suggested] == [owner.id]

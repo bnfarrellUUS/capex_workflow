@@ -48,3 +48,21 @@ def test_only_drafts_can_be_deleted(client, app):
     _login(client, "own")
     assert client.delete(f"/api/requests/{req.id}").status_code == 400
     assert db.session.get(CapexRequest, req.id) is not None
+
+
+def test_a_draft_with_pings_cannot_be_deleted(client, app):
+    from app.services import ping_service
+
+    owner = make_user("own", roles='["REQUESTOR"]')
+    mate = make_user("mate")
+    div = make_division()
+    req = make_draft(owner.id, div.id)
+    ping_service.create_ping(owner, recipient_ids=[mate.id], note="About this draft",
+                             request_id=req.id)
+
+    _login(client, "own")
+    resp = client.delete(f"/api/requests/{req.id}")
+
+    assert resp.status_code == 409
+    assert "messages attached" in resp.get_json()["error"]
+    assert db.session.get(CapexRequest, req.id) is not None

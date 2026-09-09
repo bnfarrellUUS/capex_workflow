@@ -123,6 +123,12 @@ def delete_draft(request_id, viewer):
         raise ServiceError("You can only delete your own requests.", 403)
     if req.status != "DRAFT":
         raise ServiceError("Only drafts can be deleted.")
+    from app.models import Ping
+    if db.session.query(Ping).filter(Ping.request_id == req.id).count():
+        # Explicit, not left to the FK: CAPRI never turns on SQLite's
+        # PRAGMA foreign_keys, so the NO ACTION FK alone would not fire in
+        # dev or tests (spec section 2.1).
+        raise ServiceError("This draft has messages attached and cannot be deleted.", 409)
     from app.services.storage import get_storage
     storage = get_storage()
     for att in req.attachments:
