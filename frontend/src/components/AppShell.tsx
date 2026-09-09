@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { LogOut } from 'lucide-react'
@@ -19,6 +20,7 @@ import { logout } from '../api/auth'
 import { Button } from './ui/Button'
 import { ThemeToggle } from './ThemeToggle'
 import { Lockup } from './Lockup'
+import { PingBell } from './PingBell'
 
 interface NavItem {
   to: string
@@ -64,6 +66,7 @@ export function AppShell() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const qc = useQueryClient()
+  const [pingsOpen, setPingsOpen] = useState(false)
   const roles = user?.roles ?? []
   const can = (item: NavItem) => item.roles.length === 0 || item.roles.some((r) => roles.includes(r))
 
@@ -122,6 +125,8 @@ export function AppShell() {
           <div className="text-xs text-muted">Data last updated {todayLabel}</div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-fg">{user?.name}</span>
+            <PingBell onClick={() => setPingsOpen(true)} />
+            {pingsOpen && null}
             <ThemeToggle />
             <Button variant="secondary" onClick={handleLogout}>
               <LogOut size={15} />
