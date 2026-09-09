@@ -65,6 +65,14 @@ describe('MessagesPage', () => {
     expect(sent).toHaveAttribute('aria-selected', 'true')
   })
 
+  it('shows the recipients, not the sender, in the From / To cell on Sent', async () => {
+    vi.mocked(listPings).mockResolvedValue([ping])
+    renderPage()
+    const sent = await screen.findByRole('tab', { name: /sent/i })
+    fireEvent.click(sent)
+    expect(await screen.findByText('→ Me')).toBeInTheDocument()
+  })
+
   it('only bolds the sender cell for an unread ping', async () => {
     vi.mocked(listPings).mockResolvedValue([ping, readPing])
     renderPage()

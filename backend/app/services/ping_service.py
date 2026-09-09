@@ -283,9 +283,18 @@ def _my_row(viewer, ping_id: str) -> PingRecipient:
     return row
 
 
+def _require_root(ping_id: str) -> None:
+    """Mirrors reply()'s guard: 404 on a reply's id before anything writes,
+    so a reply's PingRecipient row is never touched by done/reopen."""
+    ping = db.session.get(Ping, ping_id)
+    if ping is None or ping.parent_id is not None:
+        raise ServiceError("No such ping.", 404)
+
+
 def complete_ping(viewer, ping_id: str) -> dict:
     """Stamp only the ticker's row. The SHARED close is derived by
     apply_shared_done, so a later tick cannot rewrite who finished it."""
+    _require_root(ping_id)
     row = _my_row(viewer, ping_id)
     if row.completed_at is None:
         row.completed_at = datetime.now(timezone.utc)
@@ -294,6 +303,7 @@ def complete_ping(viewer, ping_id: str) -> dict:
 
 
 def reopen_ping(viewer, ping_id: str) -> dict:
+    _require_root(ping_id)
     row = _my_row(viewer, ping_id)
     row.completed_at = None
     db.session.commit()

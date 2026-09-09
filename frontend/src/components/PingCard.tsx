@@ -1,6 +1,16 @@
 import type { PingSummary } from '../api/pings'
 import { formatActionDate } from '../routes/formatDate'
 
+export type Box = 'inbox' | 'sent'
+
+/** Inbox names the sender; Sent names the recipients (never the viewer, who is
+ *  always the sender on a Sent card). */
+export function who(ping: PingSummary, box: Box): string {
+  if (box === 'inbox') return ping.sender.name
+  const names = ping.recipients.map((r) => r.name)
+  return names.length > 2 ? `→ ${names.slice(0, 2).join(', ')} +${names.length - 2}` : `→ ${names.join(', ')}`
+}
+
 const PILL: Record<string, string> = {
   unread: 'text-accent border-accent',
   read: 'text-muted border-muted',
@@ -23,12 +33,7 @@ export function PingStatusPill({ ping }: { ping: PingSummary }) {
   )
 }
 
-export function PingCard({ ping, onOpen }: { ping: PingSummary; onOpen: () => void }) {
-  const who =
-    ping.recipients.length > 2
-      ? `${ping.recipients.slice(0, 2).map((r) => r.name).join(', ')} +${ping.recipients.length - 2}`
-      : ping.recipients.map((r) => r.name).join(', ')
-
+export function PingCard({ ping, box, onOpen }: { ping: PingSummary; box: Box; onOpen: () => void }) {
   return (
     <button
       type="button"
@@ -38,7 +43,7 @@ export function PingCard({ ping, onOpen }: { ping: PingSummary; onOpen: () => vo
       }`}
     >
       <div className="mb-1 flex items-center gap-2">
-        <span className="flex-1 truncate text-xs font-bold">{ping.sender.name || who}</span>
+        <span className="flex-1 truncate text-xs font-bold">{who(ping, box)}</span>
         <span className="whitespace-nowrap text-[10px] text-muted">{formatActionDate(ping.last_activity_at)}</span>
         <PingStatusPill ping={ping} />
       </div>

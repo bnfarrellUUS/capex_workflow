@@ -71,6 +71,20 @@ describe('PingPanel', () => {
     expect(screen.getByText('Finished one.')).toBeInTheDocument()
   })
 
+  it('names the recipients, not the sender, on a Sent card', async () => {
+    vi.mocked(listPings).mockResolvedValue([makePing({
+      recipients: [
+        { user_id: 'u2', name: 'Ann', email: 'a@x.com', read_at: null, completed_at: null },
+        { user_id: 'u3', name: 'Bob', email: 'b@x.com', read_at: null, completed_at: null },
+      ],
+    })])
+    renderPanel()
+    await screen.findByText('Root note about the forklift.')
+    fireEvent.click(screen.getByRole('button', { name: /^sent$/i }))
+    expect(await screen.findByText('→ Ann, Bob')).toBeInTheDocument()
+    expect(screen.queryByText('Sam Sender')).toBeNull()
+  })
+
   it('closes the panel when the detail\'s request link is followed', async () => {
     vi.mocked(listPings).mockResolvedValue([makePing({ request_id: 'req-1' })])
     vi.mocked(getPing).mockResolvedValue({

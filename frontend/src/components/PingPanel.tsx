@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { listPings, type PingSummary } from '../api/pings'
 import { Button } from './ui/Button'
 import { SendIcon } from './ActionIcons'
-import { PingCard, statusOf } from './PingCard'
+import { PingCard, statusOf, type Box } from './PingCard'
 import { PingDetail } from './PingDetail'
 import { PingModal, type PingInit } from './PingModal'
 
-export type Box = 'inbox' | 'sent'
+export type { Box } from './PingCard'
 export type Filter = 'open' | 'unread' | 'read' | 'done'
 
 export const FILTERS: [Filter, string][] = [
@@ -99,7 +99,7 @@ export function PingPanel({ onClose }: { onClose: () => void }) {
           <div className="flex-1 overflow-y-auto p-3">
             {shown.length === 0
               ? <p className="p-3 text-xs text-muted">Nothing here.</p>
-              : shown.map((p) => <PingCard key={p.id} ping={p} onOpen={() => setOpenId(p.id)} />)}
+              : shown.map((p) => <PingCard key={p.id} ping={p} box={box} onOpen={() => setOpenId(p.id)} />)}
           </div>
         )}
       </aside>

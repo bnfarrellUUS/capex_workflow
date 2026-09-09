@@ -335,6 +335,26 @@ def test_done_and_reopen_refuse_a_non_recipient(app):
         assert excinfo.value.status == 403
 
 
+def test_done_404s_on_a_replys_id_without_writing_the_replys_row(app):
+    from app.models import PingRecipient
+    from app.services import ping_service
+    from app.services.errors import ServiceError
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    root = ping_service.create_ping(sender, recipient_ids=[a.id], note="Root")
+    reply = ping_service.create_ping(sender, recipient_ids=[a.id], note="Reply",
+                                     parent_id=root.id)
+
+    with pytest.raises(ServiceError) as excinfo:
+        ping_service.complete_ping(a, reply.id)
+    assert excinfo.value.status == 404
+
+    row = db.session.query(PingRecipient).filter_by(
+        ping_id=reply.id, user_id=a.id).one()
+    assert row.completed_at is None
+
+
 def test_a_reply_returns_the_conversation_to_the_senders_inbox(app):
     from app.services import ping_service
 
@@ -475,7 +495,13 @@ def _login(client, key, roles='["APPROVER"]'):
 def test_every_ping_route_requires_a_session(client):
     assert client.get("/api/pings/unread_count").status_code == 401
     assert client.get("/api/pings").status_code == 401
+    assert client.get("/api/pings/directory").status_code == 401
+    assert client.get("/api/pings/suggestions?request_id=x").status_code == 401
+    assert client.get("/api/pings/some-id").status_code == 401
     assert client.post("/api/pings", json={}).status_code == 401
+    assert client.post("/api/pings/some-id/reply", json={}).status_code == 401
+    assert client.post("/api/pings/some-id/done").status_code == 401
+    assert client.post("/api/pings/some-id/reopen").status_code == 401
 
 
 def test_post_get_and_list_pings_over_http(client, app):

@@ -1,23 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, useState } from 'react'
 
-import { listPings, type PingSummary } from '../api/pings'
+import { listPings } from '../api/pings'
 import { BrandCard } from '../components/ui/BrandCard'
 import { Button } from '../components/ui/Button'
 import { SendIcon } from '../components/ActionIcons'
-import { PingStatusPill } from '../components/PingCard'
+import { PingStatusPill, who } from '../components/PingCard'
 import { PingDetail } from '../components/PingDetail'
 import { PingModal, type PingInit } from '../components/PingModal'
 import { FilterChips, haystack, matches, type Box, type Filter } from '../components/PingPanel'
 import { formatActionDate } from './formatDate'
 
-function who(ping: PingSummary, box: Box): string {
-  if (box === 'inbox') return ping.sender.name
-  const names = ping.recipients.map((r) => r.name)
-  return names.length > 2 ? `→ ${names.slice(0, 2).join(', ')} +${names.length - 2}` : `→ ${names.join(', ')}`
-}
-
-const TH = 'border-b border-border bg-brand-sky/25 text-left text-xs uppercase tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky [&>th]:px-3 [&>th]:py-2 [&>th]:font-semibold'
+const TH ='border-b border-border bg-brand-sky/25 text-left text-xs uppercase tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky [&>th]:px-3 [&>th]:py-2 [&>th]:font-semibold'
 
 /** The full page is a TABLE in CAPRI's RequestsTable idiom, not the panel's
  *  card list (spec section 8.3). Clicking a row expands the detail INLINE
