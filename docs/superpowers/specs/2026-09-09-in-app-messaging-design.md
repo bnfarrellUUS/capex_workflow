@@ -62,11 +62,15 @@ deep and one conversation is one root row. The list query groups by root, so a
 twelve-reply exchange is one line in the inbox.
 
 **`request_id` is `NO ACTION`, not cascade.** Owners can delete their own drafts
-(`DELETE /api/requests/<id>`). A draft with pings attached is refused by the
-FK rather than silently orphaning the conversation; `request_service.delete_draft`
-should turn the `IntegrityError` into `ServiceError("This draft has messages
-attached and cannot be deleted.", 409)`. Pings about a draft are rare, and a
-refused delete is a clearer outcome than a ping whose subject has vanished.
+(`DELETE /api/requests/<id>`). A draft with pings attached is refused rather
+than silently orphaning the conversation: `request_service.delete_draft` counts
+`pings` rows for the request **before** deleting and raises
+`ServiceError("This draft has messages attached and cannot be deleted.", 409)`.
+The check is explicit because CAPRI does not turn on SQLite's
+`PRAGMA foreign_keys`, so the FK alone would not fire in dev or tests; on SQL
+Server the `NO ACTION` FK is a second line of defence. Pings about a draft are
+rare, and a refused delete is a clearer outcome than a ping whose subject has
+vanished.
 
 ### 2.2 `ping_recipients`
 
@@ -129,12 +133,12 @@ answered ping therefore appears in both, which is what surfaces the answer.
 ### 3.4 Ordering
 
 Conversations sort by newest activity — the latest reply, falling back to the
-root. SCORE orders **by row id** because its ids are monotonic. CAPRI ids are
-random UUIDs, not monotonic, so "latest row id" is **not** enough here — the
-port must order by `(created_at DESC, id DESC)` with `id` as the deterministic
-tiebreaker. Same outcome (stable order), different mechanism from SCORE; the
-test for same-second rows still applies and is the guard against copying
-SCORE's id-only sort.
+root — ordered by `(last_activity_at DESC, last_activity_id DESC)`. Ids in
+both SCORE and CAPRI are random `uuid4().hex`, **not** monotonic, so the id is
+only a deterministic tiebreaker for rows stamped in the same instant, never a
+recency key by itself. (SCORE's design doc says "by row id"; its shipped
+`_summarize` already does created_at-then-id, and that is what is ported.) The
+same-second test pins the tiebreak.
 
 ## 4. Context: the request
 
@@ -297,12 +301,20 @@ tracking-wide text-brand-navy dark:bg-brand-sky/10 dark:text-brand-sky`, body
 rows `border-b border-border last:border-0 hover:bg-surface-2`. **Not** SCORE's
 navy DataGrid header: that is SCORE's idiom, and CAPRI's tables are sky-tinted.
 
-Columns: **From / To** · **Ping** (note preview) · **Request** (number chip,
-linked when visible) · **Replies** · **Status** · **Last activity**. Unread rows
-carry an accent dot and semibold sender. Status filter chips (Open / Unread /
-Read / Done, each with a count) sit above the table beside **New Ping**;
-default Open so done work leaves the working list. Clicking a row opens the
-detail (`PingDetail`) in the slide-over.
+Layout follows what the owner settled on for SCORE (2026-09-01) after using
+it: title and **New Ping** on one line, then full-width **Inbox / Sent**
+underline tabs, a search box, and the status filter chips (Open / Unread /
+Read / Done, each with a count; default Open so done work leaves the working
+list).
+
+Columns: **From / To** · **Ping** (note preview) · **Request** (number chip)
+· **Replies** · **Status** · **Last activity**. Unread rows carry an accent dot
+and semibold sender. **Clicking a row expands the detail inline** — a
+full-width row directly beneath it hosting `PingDetail`; clicking again
+collapses it. Not a side panel: the owner's SCORE feedback was "instead of it
+expanding on the screen to right it would probably be better just expand down
+in same panel", and a request link inside the expanded row then navigates with
+nothing to dismiss first.
 
 The page header uses `BrandCard` with a new `messages` mark key mapped to
 `MessagesIcon`, like every other page.
