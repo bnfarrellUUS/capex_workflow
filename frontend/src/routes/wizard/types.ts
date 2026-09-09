@@ -51,7 +51,7 @@ export function toForm(r: CapexRequestData): RequestForm {
     npv_savings: r.npv_savings ?? '',
     division_id: r.division_id ?? '',
     request_date: r.request_date ? r.request_date.slice(0, 10) : '',
-    equipment_items: r.equipment_items.map((i) => ({ ...i })),
+    equipment_items: (r.equipment_items ?? []).map((i) => ({ ...i })),
   }
 }
 

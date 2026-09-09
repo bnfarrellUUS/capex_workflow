@@ -18,6 +18,9 @@ import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, blankForm, equipmentTotal } from './wizard/types'
 import { visibleSections, isSectionVisible, clampStep } from './wizard/sections'
 import { budgetAmountError } from './wizard/validate'
+import {
+  readOpenRequests, useOpenRequests, touchOpenRequest, setOpenRequestStep, closeOpenRequest,
+} from '../openRequests'
 
 type Setter = <K extends keyof RequestForm>(k: K, v: RequestForm[K]) => void
 
@@ -29,7 +32,7 @@ export default function WizardPage() {
   const navigate = useNavigate()
   const { data: me } = useMe()
   // Existing draft: load it. New request (no id): stay unsaved until first save.
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: ['request', routeId],
     queryFn: () => getRequest(routeId!),
     enabled: !!routeId,
@@ -38,19 +41,58 @@ export default function WizardPage() {
   // Which sections an admin has hidden; the stepper is built from this.
   const { data: hidden } = useQuery({ queryKey: ['request-sections'], queryFn: getHiddenSections })
   const [form, setForm] = useState<RequestForm | null>(null)
-  const [step, setStep] = useState<number>((location.state as { step?: number } | null)?.step ?? 0)
+  // The step lives on the tab (openRequests.ts), so switching tabs lands where
+  // you were. React Router keeps this component mounted when only :id changes,
+  // so a useState step would carry request A's step onto request B. A brand-new
+  // request has no tab until its first save redirects here with an id, so it
+  // keeps a local step until then; the redirect passes that step in
+  // location.state and the load effect below seeds it into the new tab.
+  const userId = me?.id ?? null
+  const tabs = useOpenRequests(userId ?? '')
+  const initialStep = (location.state as { step?: number } | null)?.step ?? 0
+  const [newStep, setNewStep] = useState<number>(initialStep)
+  const step = routeId ? (tabs.find((t) => t.id === routeId)?.step ?? initialStep) : newStep
+  const setStep = (next: number) => {
+    if (routeId && userId) setOpenRequestStep(userId, routeId, next)
+    else setNewStep(next)
+  }
   const [saved, setSaved] = useState(false)
   const [budgetError, setBudgetError] = useState<string | null>(null)
 
   const isNew = !routeId
   const isRejected = data?.status === 'REJECTED'
 
-  // Seed the form once: from the loaded draft (edit) or a blank form (new).
+  // Seed the form from the loaded draft (edit) or a blank form (new), and
+  // reseed whenever the route id changes: the tab strip switches :id under a
+  // mounted WizardPage, and a form seeded for request A must never be shown
+  // as -- or saved into -- request B. The ref, not `data`, decides: a refetch
+  // of the same request must not wipe unsaved edits.
+  const seededFor = useRef<string | null>(null)
   useEffect(() => {
-    if (form) return
-    if (routeId) { if (data) setForm(toForm(data)) }
-    else if (me) setForm(blankForm(me.division_id ?? '', today()))
+    if (routeId) {
+      if (data && seededFor.current !== routeId) {
+        setForm(toForm(data))
+        setBudgetError(null)
+        seededFor.current = routeId
+      }
+    } else if (me && !form) {
+      setForm(blankForm(me.division_id ?? '', today()))
+    }
   }, [routeId, data, me, form])
+
+  // One hook point covers every way in -- the list, the dashboard, an email deep
+  // link, the new-request redirect -- because all of them route here.
+  const loadedId = data?.id
+  const loadedNumber = data?.number
+  const loadedTitle = data?.description ?? ''
+  useEffect(() => {
+    if (!userId || !loadedId || !loadedNumber) return
+    const isNewTab = !readOpenRequests(userId).some((t) => t.id === loadedId)
+    touchOpenRequest(userId, { id: loadedId, number: loadedNumber, title: loadedTitle, mode: 'edit' })
+    // A tab created just now starts at step 0; the new-request redirect carried
+    // the step the person was on, so seed it once.
+    if (isNewTab && initialStep) setOpenRequestStep(userId, loadedId, initialStep)
+  }, [userId, loadedId, loadedNumber, loadedTitle, initialStep])
 
   // Persist the form: for a new request this creates the draft first (so merely
   // opening the wizard writes nothing); for an existing draft it just updates.
@@ -122,6 +164,26 @@ export default function WizardPage() {
       return // error surfaced via saveError; stay put
     }
     setStep(i)
+  }
+
+  // A stored tab is exactly how a request that no longer exists gets opened;
+  // without this branch the page would show "Loading…" forever.
+  if (routeId && isError) {
+    return (
+      <div className="max-w-3xl">
+        <BrandCard title="Request unavailable" subtitle={routeId} mark="newRequest">
+          <p role="alert" className="mb-3 text-sm text-red-600 dark:text-red-400">
+            This request could not be loaded. It may have been deleted, or you may no longer have access to it.
+          </p>
+          <Button variant="secondary" onClick={() => {
+            if (userId) closeOpenRequest(userId, routeId)
+            navigate('/requests')
+          }}>
+            Close this tab
+          </Button>
+        </BrandCard>
+      </div>
+    )
   }
 
   // Wait for the section config too, so the stepper never renders with the

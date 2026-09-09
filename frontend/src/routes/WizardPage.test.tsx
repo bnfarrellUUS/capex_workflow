@@ -2,9 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import WizardPage from './WizardPage'
 import type { CapexRequestData } from '../api/requests'
+import { ApiError } from '../api/client'
+import { readOpenRequests, setOpenRequestStep, touchOpenRequest } from '../openRequests'
 
 vi.mock('../api/requests', () => ({
   getRequest: vi.fn(),
@@ -52,20 +55,31 @@ function makeRequest(status: string): CapexRequestData {
   }
 }
 
-function renderAt(path: string) {
+function renderAt(path: string, extra?: ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[path]}>
+        {extra}
         <Routes>
           <Route path="/requests/new" element={<WizardPage />} />
           <Route path="/requests/:id/edit" element={<WizardPage />} />
           <Route path="/requests/:id" element={<div>Detail</div>} />
+          <Route path="/requests" element={<div>List</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   )
 }
+
+function Switcher({ to }: { to: string }) {
+  const navigate = useNavigate()
+  return <button type="button" onClick={() => navigate(to)}>switch</button>
+}
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 describe('WizardPage — submit routing (existing draft)', () => {
   beforeEach(() => {
@@ -288,5 +302,97 @@ describe('WizardPage — attachments on an existing draft', () => {
     fireEvent.change(input, { target: { files: [file] } })
     await waitFor(() => expect(uploadAttachment).toHaveBeenCalledWith('req-1', file))
     expect(createDraft).not.toHaveBeenCalled()
+  })
+})
+
+describe('WizardPage and the open-request set', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getRequest).mockResolvedValue(makeRequest('DRAFT'))
+  })
+
+  const currentStep = () =>
+    screen.getAllByRole('button', { current: 'step' })[0]
+
+  it('opens an edit tab for the request it loaded', async () => {
+    renderAt('/requests/req-1/edit')
+    await screen.findByText('Request CX000042')
+
+    expect(readOpenRequests('me')).toMatchObject([
+      { id: 'req-1', number: 'CX000042', title: 'Forklift', mode: 'edit', step: 0 },
+    ])
+  })
+
+  it('reopens the request on the step it was left on', async () => {
+    touchOpenRequest('me', { id: 'req-1', number: 'CX000042', title: 'Forklift', mode: 'edit' })
+    setOpenRequestStep('me', 'req-1', 2)
+
+    renderAt('/requests/req-1/edit')
+    await screen.findByText('Request CX000042')
+
+    expect(currentStep()).toHaveTextContent('Effect on Ops')
+  })
+
+  it('remembers the step when you move through the wizard', async () => {
+    renderAt('/requests/req-1/edit')
+    await screen.findByText('Request CX000042')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+
+    await waitFor(() => expect(readOpenRequests('me')[0].step).toBe(1))
+    expect(currentStep()).toHaveTextContent('Description')
+  })
+
+  it('keeps each request on its own step when you switch between tabs', async () => {
+    touchOpenRequest('me', { id: 'a', number: 'CX000001', title: 'One', mode: 'edit' })
+    setOpenRequestStep('me', 'a', 2)
+    touchOpenRequest('me', { id: 'b', number: 'CX000002', title: 'Two', mode: 'edit' })
+    vi.mocked(getRequest).mockImplementation(async (id: string) => ({
+      ...makeRequest('DRAFT'), id,
+      number: id === 'a' ? 'CX000001' : 'CX000002',
+      description: id === 'a' ? 'One' : 'Two',
+    }))
+
+    renderAt('/requests/a/edit', <Switcher to="/requests/b/edit" />)
+    await screen.findByText('Request CX000001')
+    expect(currentStep()).toHaveTextContent('Effect on Ops')
+
+    // Same route component, changed param -- local step state would carry
+    // request a's step across and land b on Effect on Ops, and a form seeded
+    // once for a would show (and save!) a's fields as b's.
+    fireEvent.click(screen.getByRole('button', { name: 'switch' }))
+
+    await screen.findByText('Request CX000002')
+    expect(currentStep()).toHaveTextContent('Basic Info')
+    expect(await screen.findByDisplayValue('Two')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('One')).toBeNull()
+  })
+
+  it('carries a new request’s step into its tab across the first-save redirect', async () => {
+    vi.mocked(getRequest).mockResolvedValue({ ...makeRequest('DRAFT'), id: 'new-1' })
+    renderAt('/requests/new')
+    await screen.findByText('New Request')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    expect(currentStep()).toHaveTextContent('Description')
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }))
+
+    await waitFor(() => expect(readOpenRequests('me')).toMatchObject([{ id: 'new-1', step: 1 }]))
+    expect(currentStep()).toHaveTextContent('Description')
+  })
+
+  it('offers to close the tab when the request cannot be loaded', async () => {
+    touchOpenRequest('me', { id: 'req-1', number: 'CX000042', title: 'Gone', mode: 'edit' })
+    vi.mocked(getRequest).mockRejectedValue(new ApiError(404, 'Request not found.'))
+
+    renderAt('/requests/req-1/edit')
+
+    // Without this the route shows "Loading…" forever -- and a stored tab is
+    // exactly how a request that no longer exists gets opened.
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not be loaded/i)
+    fireEvent.click(screen.getByRole('button', { name: /Close this tab/ }))
+
+    expect(readOpenRequests('me')).toEqual([])
+    expect(await screen.findByText('List')).toBeInTheDocument()
   })
 })
