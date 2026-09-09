@@ -209,3 +209,66 @@ def list_pings(viewer, box: str) -> list[dict]:
     out.sort(key=lambda p: (p["last_activity_at"], p["last_activity_id"]),
              reverse=True)
     return out[:200]
+
+
+def _may_see(viewer, ping: Ping) -> bool:
+    """Membership is the WHOLE thread, not just the root.
+
+    list_pings's roots_via_replies puts a root in someone's inbox when they are
+    addressed only on a REPLY, never on the root itself -- so this must agree,
+    or the inbox lists a conversation the detail view then refuses. Membership
+    is: the root's sender, the root's recipients, every reply's sender, and
+    every reply's recipients.
+    """
+    ping_ids = [ping.id] + list(db.session.scalars(
+        select(Ping.id).where(Ping.parent_id == ping.id)).all())
+    if db.session.scalar(
+        select(func.count(Ping.id))
+        .where(Ping.id.in_(ping_ids), Ping.sender_id == viewer.id)) > 0:
+        return True
+    return db.session.scalar(
+        select(func.count(PingRecipient.id))
+        .where(PingRecipient.ping_id.in_(ping_ids),
+               PingRecipient.user_id == viewer.id)) > 0
+
+
+def unread_count(viewer) -> int:
+    return db.session.scalar(
+        select(func.count(PingRecipient.id))
+        .where(PingRecipient.user_id == viewer.id,
+               PingRecipient.read_at.is_(None))) or 0
+
+
+def _stamp_read(viewer, ping_ids: list[str]) -> None:
+    """Stamp only THIS viewer's rows. Read is personal."""
+    rows = db.session.scalars(
+        select(PingRecipient).where(PingRecipient.ping_id.in_(ping_ids),
+                                    PingRecipient.user_id == viewer.id,
+                                    PingRecipient.read_at.is_(None))).all()
+    if not rows:
+        return
+    now = datetime.now(timezone.utc)
+    for row in rows:
+        row.read_at = now
+    db.session.commit()
+
+
+def get_ping(viewer, ping_id: str) -> dict:
+    ping = db.session.get(Ping, ping_id)
+    if ping is None or ping.parent_id is not None:
+        raise ServiceError("No such ping.", 404)
+    if not _may_see(viewer, ping):
+        raise ServiceError("Forbidden.", 403)
+
+    replies = db.session.scalars(
+        select(Ping).where(Ping.parent_id == ping.id)
+        .order_by(Ping.created_at, Ping.id)).all()
+    _stamp_read(viewer, [ping.id] + [r.id for r in replies])
+
+    payload = _summarize(ping, viewer)
+    payload["replies"] = [
+        {"id": r.id, "note": r.note, "created_at": _iso(r.created_at),
+         "sender": {"id": r.sender_id,
+                    "name": db.session.get(User, r.sender_id).name}}
+        for r in replies]
+    return payload

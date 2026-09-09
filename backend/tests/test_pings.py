@@ -189,3 +189,99 @@ def test_summary_carries_the_live_request(app):
     assert summary["total_cost"] is not None   # money_str of the stored total
     # Rae is neither the owner nor an approver: she can see the summary, not the request.
     assert summary["visible"] is False
+
+
+def test_detail_stamps_read_for_the_recipient_only(app):
+    from app.services import ping_service
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    b = make_user("ben")
+    ping = ping_service.create_ping(sender, recipient_ids=[a.id, b.id], note="Hi")
+
+    assert ping_service.unread_count(a) == 1
+    assert ping_service.unread_count(b) == 1
+
+    ping_service.get_ping(a, ping.id)
+
+    # Read is PERSONAL: Ann's open must not clear Ben's badge.
+    assert ping_service.unread_count(a) == 0
+    assert ping_service.unread_count(b) == 1
+
+
+def test_detail_refuses_a_third_party(app):
+    from app.services import ping_service
+    from app.services.errors import ServiceError
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    nosy = make_user("nosy")
+    ping = ping_service.create_ping(sender, recipient_ids=[a.id], note="Hi")
+
+    with pytest.raises(ServiceError) as excinfo:
+        ping_service.get_ping(nosy, ping.id)
+    assert excinfo.value.status == 403
+
+
+def test_detail_404s_on_an_unknown_ping_and_on_a_replys_id(app):
+    from app.services import ping_service
+    from app.services.errors import ServiceError
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    root = ping_service.create_ping(sender, recipient_ids=[a.id], note="Root")
+    reply = ping_service.create_ping(sender, recipient_ids=[a.id], note="Reply",
+                                     parent_id=root.id)
+    for bad in ("no-such-id", reply.id):
+        with pytest.raises(ServiceError) as excinfo:
+            ping_service.get_ping(a, bad)
+        assert excinfo.value.status == 404
+
+
+def test_a_reply_only_recipient_may_open_the_conversation_their_inbox_lists(app):
+    from app.services import ping_service
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    ben = make_user("ben")
+    root = ping_service.create_ping(sender, recipient_ids=[a.id], note="Root")
+    # Ben is addressed only on the REPLY, never on the root -- exactly the case
+    # list_pings's roots_via_replies puts in his inbox, so get_ping must agree
+    # or the inbox lists what the detail refuses.
+    ping_service.create_ping(a, recipient_ids=[ben.id], note="Reply",
+                             parent_id=root.id)
+
+    assert [p["id"] for p in ping_service.list_pings(ben, "inbox")] == [root.id]
+    assert ping_service.unread_count(ben) == 1
+    detail = ping_service.get_ping(ben, root.id)
+    assert [r["note"] for r in detail["replies"]] == ["Reply"]
+    assert ping_service.unread_count(ben) == 0
+
+
+def test_detail_has_iso_timestamps(app):
+    import re
+
+    from app.services import ping_service
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    ping = ping_service.create_ping(sender, recipient_ids=[a.id], note="Hi")
+    detail = ping_service.get_ping(a, ping.id)
+    assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", detail["created_at"])
+    assert re.match(r"^\d{4}-\d{2}-\d{2}T", detail["recipients"][0]["read_at"])
+
+
+def test_request_summary_is_visible_to_the_requestor(app):
+    from app.services import ping_service
+    from tests.factories import make_division, make_draft
+
+    owner = make_user("owner", roles='["REQUESTOR"]')
+    div = make_division()
+    req = make_draft(owner.id, div.id)
+    rae = make_user("rae")
+
+    ping = ping_service.create_ping(rae, recipient_ids=[owner.id], note="Question",
+                                    request_id=req.id)
+
+    assert ping_service.get_ping(owner, ping.id)["request"]["visible"] is True
+    assert ping_service.get_ping(rae, ping.id)["request"]["visible"] is False
