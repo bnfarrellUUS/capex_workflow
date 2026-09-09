@@ -285,3 +285,182 @@ def test_request_summary_is_visible_to_the_requestor(app):
 
     assert ping_service.get_ping(owner, ping.id)["request"]["visible"] is True
     assert ping_service.get_ping(rae, ping.id)["request"]["visible"] is False
+
+
+def test_done_is_shared_and_earliest_tick_wins(app):
+    from app.services import ping_service
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    b = make_user("ben")
+    ping = ping_service.create_ping(sender, recipient_ids=[a.id, b.id], note="Job")
+
+    ping_service.complete_ping(a, ping.id)
+    ping_service.complete_ping(b, ping.id)
+
+    # One job, not one job each: Ann closed it for the roster and keeps the credit.
+    for viewer in (a, b, sender):
+        assert ping_service.get_ping(viewer, ping.id)["done_by"] == "Ann"
+    roster = {r["name"]: r for r in ping_service.get_ping(a, ping.id)["recipients"]}
+    # Ben's own tick is still recorded on his row.
+    assert roster["Ben"]["completed_at"] is not None
+
+
+def test_reopen_clears_this_persons_tick_and_falls_back_to_the_next_ticker(app):
+    from app.services import ping_service
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    b = make_user("ben")
+    ping = ping_service.create_ping(sender, recipient_ids=[a.id, b.id], note="Job")
+    ping_service.complete_ping(a, ping.id)
+    ping_service.complete_ping(b, ping.id)
+    ping_service.reopen_ping(a, ping.id)
+    assert ping_service.get_ping(a, ping.id)["done_by"] == "Ben"
+    ping_service.reopen_ping(b, ping.id)
+    assert ping_service.get_ping(a, ping.id)["done_by"] is None
+
+
+def test_done_and_reopen_refuse_a_non_recipient(app):
+    from app.services import ping_service
+    from app.services.errors import ServiceError
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    ping = ping_service.create_ping(sender, recipient_ids=[a.id], note="Job")
+    # The sender is not on the roster, so the tick is not theirs to make.
+    for fn in (ping_service.complete_ping, ping_service.reopen_ping):
+        with pytest.raises(ServiceError) as excinfo:
+            fn(sender, ping.id)
+        assert excinfo.value.status == 403
+
+
+def test_a_reply_returns_the_conversation_to_the_senders_inbox(app):
+    from app.services import ping_service
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    ping = ping_service.create_ping(sender, recipient_ids=[a.id], note="Question")
+
+    assert ping_service.list_pings(sender, "inbox") == []
+    ping_service.reply(a, ping.id, "Answer")
+
+    inbox = ping_service.list_pings(sender, "inbox")
+    assert [p["id"] for p in inbox] == [ping.id]
+    assert inbox[0]["reply_count"] == 1
+    assert inbox[0]["unread_for_me"] is True      # the unread REPLY counts
+    assert "Answer" in inbox[0]["search_blob"]
+
+    ping_service.get_ping(sender, ping.id)
+    assert ping_service.list_pings(sender, "inbox")[0]["unread_for_me"] is False
+
+
+def test_a_later_reply_reaches_everyone_the_conversation_has_ever_addressed(app):
+    from app.services import ping_service
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    ben = make_user("ben")
+    root = ping_service.create_ping(sender, recipient_ids=[a.id], note="Root")
+    # A reply that added Ben -- a recipient the root never named.
+    ping_service.create_ping(a, recipient_ids=[sender.id, ben.id],
+                             note="Bringing Ben in", parent_id=root.id)
+
+    further = ping_service.reply(sender, root.id, "Following up")
+    assert ben.id in {r["user_id"] for r in ping_service._roster(further.id)}
+
+
+def test_a_deactivated_participant_does_not_block_replies_to_the_rest(app):
+    from app.services import ping_service
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    ben = make_user("ben")
+    root = ping_service.create_ping(sender, recipient_ids=[a.id, ben.id], note="Root")
+    ben.active = False
+    db.session.commit()
+
+    further = ping_service.reply(sender, root.id, "Following up")
+    recipients = {r["user_id"] for r in ping_service._roster(further.id)}
+    assert a.id in recipients and ben.id not in recipients
+
+
+def test_reply_refuses_a_non_participant(app):
+    from app.services import ping_service
+    from app.services.errors import ServiceError
+
+    sender = make_user("sam")
+    a = make_user("ann")
+    nosy = make_user("nosy")
+    root = ping_service.create_ping(sender, recipient_ids=[a.id], note="Root")
+    with pytest.raises(ServiceError) as excinfo:
+        ping_service.reply(nosy, root.id, "Butting in")
+    assert excinfo.value.status == 403
+
+
+def test_directory_is_unscoped_but_excludes_inactive(app):
+    from app.services import ping_service
+    from tests.factories import make_division
+
+    div = make_division()
+    dee = make_user("dee", roles='["ADMIN"]')
+    dee.division_id = div.id
+    make_user("eli", roles='["REQUESTOR"]')
+    gone = make_user("gone")
+    gone.active = False
+    db.session.commit()
+
+    users = {u["name"]: u for u in ping_service.directory()}
+    assert "Dee" in users and "Eli" in users and "Gone" not in users
+    assert users["Dee"]["roles"] == ["ADMIN"]
+    assert users["Dee"]["division_name"] == "100 — Field Services"
+    assert users["Eli"]["division_name"] is None
+
+
+def test_suggestions_are_the_requestor_and_the_pending_pool_minus_the_viewer(app):
+    from app.services import ping_service, workflow_service
+    from tests.factories import make_division, make_draft, set_thresholds
+
+    owner = make_user("owner", roles='["REQUESTOR"]')
+    l1 = make_user("lone")
+    l3 = make_user("lthree")
+    div = make_division(l1_approver_id=l1.id)
+    set_thresholds(l3_approver=l3.id)
+    req = make_draft(owner.id, div.id)            # 30000 < L1 cap, so PENDING_L1
+    workflow_service.submit(req.id, owner.id)
+    assert req.status == "PENDING_L1"
+
+    viewer = make_user("viewer")
+    ids = [u["id"] for u in ping_service.suggested_recipients(viewer, req.id)]
+    assert set(ids) == {owner.id, l1.id}
+
+    # The viewer never suggests themself.
+    ids = [u["id"] for u in ping_service.suggested_recipients(l1, req.id)]
+    assert ids == [owner.id]
+
+
+def test_suggestions_switch_to_finance_once_approved(app):
+    from app.services import ping_service
+    from tests.factories import make_division, make_draft
+
+    owner = make_user("owner", roles='["REQUESTOR"]')
+    fin = make_user("fin", roles='["FINANCE"]')
+    make_user("approver")
+    div = make_division()
+    req = make_draft(owner.id, div.id)
+    req.status = "APPROVED"
+    db.session.commit()
+
+    viewer = make_user("viewer")
+    ids = {u["id"] for u in ping_service.suggested_recipients(viewer, req.id)}
+    assert ids == {owner.id, fin.id}
+
+
+def test_suggestions_404_an_unknown_request(app):
+    from app.services import ping_service
+    from app.services.errors import ServiceError
+
+    viewer = make_user("viewer")
+    with pytest.raises(ServiceError) as excinfo:
+        ping_service.suggested_recipients(viewer, "no-such-request")
+    assert excinfo.value.status == 404

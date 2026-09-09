@@ -272,3 +272,106 @@ def get_ping(viewer, ping_id: str) -> dict:
                     "name": db.session.get(User, r.sender_id).name}}
         for r in replies]
     return payload
+
+
+def _my_row(viewer, ping_id: str) -> PingRecipient:
+    row = db.session.scalar(
+        select(PingRecipient).where(PingRecipient.ping_id == ping_id,
+                                    PingRecipient.user_id == viewer.id))
+    if row is None:
+        raise ServiceError("Forbidden.", 403)
+    return row
+
+
+def complete_ping(viewer, ping_id: str) -> dict:
+    """Stamp only the ticker's row. The SHARED close is derived by
+    apply_shared_done, so a later tick cannot rewrite who finished it."""
+    row = _my_row(viewer, ping_id)
+    if row.completed_at is None:
+        row.completed_at = datetime.now(timezone.utc)
+        db.session.commit()
+    return get_ping(viewer, ping_id)
+
+
+def reopen_ping(viewer, ping_id: str) -> dict:
+    row = _my_row(viewer, ping_id)
+    row.completed_at = None
+    db.session.commit()
+    return get_ping(viewer, ping_id)
+
+
+def reply(viewer, ping_id: str, note: str) -> Ping:
+    """A reply is addressed to the whole CONVERSATION, not just the root's
+    roster -- root sender, root recipients, and every reply's own sender and
+    recipients, minus this reply's author. This must agree with _may_see's
+    whole-thread membership, or someone in the conversation stops receiving
+    its replies. Inactive participants are filtered out here (not refused), so
+    someone who has left cannot block replies for everyone else.
+    """
+    root = db.session.get(Ping, ping_id)
+    if root is None or root.parent_id is not None:
+        raise ServiceError("No such ping.", 404)
+    if not _may_see(viewer, root):
+        raise ServiceError("Forbidden.", 403)
+
+    replies = db.session.scalars(
+        select(Ping).where(Ping.parent_id == root.id)).all()
+    party = {root.sender_id} | {r["user_id"] for r in _roster(root.id)}
+    for r in replies:
+        party.add(r.sender_id)
+        party |= {rr["user_id"] for rr in _roster(r.id)}
+    party.discard(viewer.id)
+    if party:
+        active = set(db.session.scalars(
+            select(User.id).where(User.id.in_(party), User.active.is_(True))).all())
+        party &= active
+    if not party:
+        raise ServiceError("There is nobody to reply to.", 400)
+    return create_ping(viewer, recipient_ids=sorted(party), note=note,
+                       parent_id=root.id)
+
+
+def _user_out(u: User) -> dict:
+    return {"id": u.id, "name": u.name, "email": u.email, "roles": u.roles_list,
+            "division_name": (f"{u.division.number} — {u.division.name}"
+                              if u.division else None)}
+
+
+def directory() -> list[dict]:
+    """Every active user. Deliberately UNSCOPED -- see the module docstring."""
+    rows = db.session.scalars(
+        select(User).where(User.active.is_(True)).order_by(User.name)).all()
+    return [_user_out(u) for u in rows]
+
+
+def suggested_recipients(viewer, request_id: str) -> list[dict]:
+    """The people most likely to answer a request-attached ping, ranked first in
+    the picker: the requestor; while pending, the eligible approver pool at the
+    current level (the same `workflow_service.eligible_actors` the worklists
+    use, with the requestor excluded exactly as everywhere else); once
+    APPROVED, every active FINANCE user. The viewer is never suggested to
+    themself. Matching is on user ids from the request's own fields, never on
+    name text.
+    """
+    from app.services import threshold_service, workflow_service
+
+    req = db.session.get(CapexRequest, request_id)
+    if req is None:
+        raise ServiceError("Request not found.", 404)
+
+    found: dict[str, User] = {}
+    if req.requestor is not None and req.requestor.active:
+        found[req.requestor.id] = req.requestor
+    if req.status.startswith("PENDING_L"):
+        for actor in workflow_service.eligible_actors(
+                req.current_level, req.division, threshold_service.list_thresholds(),
+                exclude_id=req.requestor_id):
+            if actor.active:
+                found.setdefault(actor.id, actor)
+    elif req.status == "APPROVED":
+        for u in db.session.scalars(
+                select(User).where(User.active.is_(True))).all():
+            if "FINANCE" in u.roles_list:
+                found.setdefault(u.id, u)
+    found.pop(viewer.id, None)
+    return [_user_out(u) for u in sorted(found.values(), key=lambda u: u.name)]
