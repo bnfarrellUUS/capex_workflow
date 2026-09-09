@@ -267,9 +267,12 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   `auth/loginRedirect.ts` — deep-link preservation: unauthenticated visits
   redirect to `/login?next=<path>` (set by `ProtectedLayout` and the 401
   handler); `LoginPage` navigates to the sanitized `next` (same-app absolute
-  paths only) after sign-in.
+  paths only) after sign-in. `openRequests.ts` — the open-request tab store,
+  per-user `localStorage`; see "Open-request tabs" below.
 - `components/AppShell.tsx` — navy grouped sidebar (icons, active pill) +
-  header (theme toggle, `PingBell`, Sign Out). `PingBell`/`PingPanel`/
+  header (theme toggle, `PingBell`, Sign Out), with `RequestTabs` (the
+  open-request tab strip) mounted between the header and main content.
+  `PingBell`/`PingPanel`/
   `PingCard`/`PingDetail`/`PingModal` are the in-app messaging components —
   see "Pings (in-app messaging)" below.
 - `components/ui/` — `Button` (primary/secondary/ghost; `size` prop `'md' |
@@ -436,6 +439,33 @@ SCORE's shipped Pings; built 2026-09-09.
   recipient ticks it (spec §3.3 + §7.1, kept as SCORE shipped it). Whether the
   sender may close their own conversation is an open product question — see
   spec §12.
+
+## Open-request tabs
+
+Spec: `docs/superpowers/specs/2026-09-09-open-request-tabs-design.md`. Ported from
+SCORE's bid tab strip; built 2026-09-09. **Frontend only** — no backend change.
+
+- **A tab is a pointer plus a label snapshot** in `localStorage`, keyed per user
+  (`capri_open_requests:<userId>`): `{id, number, title, mode, step, seq}`.
+  Store: `frontend/src/openRequests.ts` (`touchOpenRequest`, `setOpenRequestStep`,
+  `closeOpenRequest`, `useOpenRequests`, `MAX_OPEN_REQUESTS = 8`). On-screen order
+  is insertion order; `seq` only picks the least-recently-opened tab to evict.
+- **The active tab is read from the URL** (`/requests/:id` or `/requests/:id/edit`;
+  `/requests/new` never matches). `RequestTabs` renders nothing when no request is
+  open. A tab remembers `mode` (`view`/`edit`) and opens that page on click.
+- **Both request pages call `touchOpenRequest` when their request loads** — that
+  one hook point covers the list, dashboard, email deep links and the new-request
+  redirect. Both have a "Request unavailable → Close this tab" branch for a stored
+  tab whose request is gone.
+- **The wizard's step lives on the tab**, not in `useState`: React Router keeps
+  `WizardPage` mounted when only `:id` changes, so local state carried request A's
+  step onto request B. A brand-new request keeps a local step until its first save
+  redirects to `/requests/:id/edit`, which seeds the new tab from `location.state`.
+- Tests need `frontend/src/test-setup.ts` (vitest `setupFiles`): Node ≥ 22 ships an
+  inert `globalThis.localStorage` that jsdom does not replace, so the shim installs
+  an in-memory `Storage`. Any test touching the store clears it in `beforeEach`.
+- No confirm on close (nothing is unsaved), no reorder/pin/close-all, no server-side
+  persistence, no status badge on the tab, no nav change.
 
 ## Budgeted amount
 
