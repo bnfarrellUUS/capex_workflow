@@ -36,6 +36,8 @@ vi.mock('../api/pings', () => ({
 
 import { getRequest, resendRecord } from '../api/requests'
 import { getHiddenSections } from '../api/requestSections'
+import { ApiError } from '../api/client'
+import { readOpenRequests, touchOpenRequest } from '../openRequests'
 
 function makeRequest(): CapexRequestData {
   return {
@@ -68,11 +70,14 @@ function renderPage() {
       <MemoryRouter initialEntries={['/requests/req-1']}>
         <Routes>
           <Route path="/requests/:id" element={<RequestDetailPage />} />
+          <Route path="/requests" element={<div>List</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   )
 }
+
+beforeEach(() => { localStorage.clear() })
 
 describe('RequestDetailPage — full request details', () => {
   beforeEach(() => {
@@ -258,5 +263,35 @@ describe('RequestDetailPage — ping entry point', () => {
     fireEvent.click(ping)
     expect(screen.getByRole('dialog', { name: /new ping/i })).toBeInTheDocument()
     expect(screen.getByText('CX000042')).toBeInTheDocument()
+  })
+})
+
+describe('RequestDetailPage and the open-request set', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRoles = ['APPROVER']
+  })
+
+  it('opens a view tab for the request it loaded', async () => {
+    vi.mocked(getRequest).mockResolvedValue(makeRequest())
+    renderPage()
+    await screen.findByText('Request CX000042')
+
+    expect(readOpenRequests('approver-1')).toMatchObject([
+      { id: 'req-1', number: 'CX000042', title: 'Forklift', mode: 'view', step: 0 },
+    ])
+  })
+
+  it('offers to close the tab when the request cannot be loaded', async () => {
+    touchOpenRequest('approver-1', { id: 'req-1', number: 'CX000042', title: 'Gone', mode: 'view' })
+    vi.mocked(getRequest).mockRejectedValue(new ApiError(404, 'Request not found.'))
+
+    renderPage()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not be loaded/i)
+    fireEvent.click(screen.getByRole('button', { name: /Close this tab/ }))
+
+    expect(readOpenRequests('approver-1')).toEqual([])
+    expect(await screen.findByText('List')).toBeInTheDocument()
   })
 })

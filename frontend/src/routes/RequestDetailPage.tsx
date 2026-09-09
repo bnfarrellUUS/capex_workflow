@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -24,6 +24,7 @@ import {
 } from '../components/ActionIcons'
 import { CommentThread } from '../components/CommentThread'
 import { PingModal, type PingInit } from '../components/PingModal'
+import { touchOpenRequest, closeOpenRequest } from '../openRequests'
 
 const PIPELINE = ['DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED']
 
@@ -32,7 +33,7 @@ export default function RequestDetailPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { data: me } = useMe()
-  const { data: req } = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id) })
+  const { data: req, isError } = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id) })
   // Sections an admin hid in the wizard are omitted here too, so readers don't
   // page through blank rows. Attachments is the exception — see below.
   const { data: hidden = [] } = useQuery({ queryKey: ['request-sections'], queryFn: getHiddenSections })
@@ -42,6 +43,17 @@ export default function RequestDetailPage() {
   const [recordSent, setRecordSent] = useState(false)
   const [pinging, setPinging] = useState<PingInit | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Register this request in the tab strip. Primitive deps, not the object, so
+  // a refetch that returns an equal request does not re-touch and bump seq.
+  const userId = me?.id
+  const reqId = req?.id
+  const reqNumber = req?.number
+  const reqTitle = req?.description ?? ''
+  useEffect(() => {
+    if (!userId || !reqId || !reqNumber) return
+    touchOpenRequest(userId, { id: reqId, number: reqNumber, title: reqTitle, mode: 'view' })
+  }, [userId, reqId, reqNumber, reqTitle])
 
   /** Runs a request action, refreshing the cache. Returns whether it succeeded. */
   async function act(fn: () => Promise<CapexRequestData>): Promise<boolean> {
@@ -56,6 +68,26 @@ export default function RequestDetailPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  // A stored tab is exactly how a request that no longer exists gets opened;
+  // without this branch the page would show "Loading…" forever.
+  if (isError) {
+    return (
+      <div className="max-w-3xl">
+        <BrandCard title="Request unavailable" subtitle={id} mark="requests">
+          <p role="alert" className="mb-3 text-sm text-red-600 dark:text-red-400">
+            This request could not be loaded. It may have been deleted, or you may no longer have access to it.
+          </p>
+          <Button variant="secondary" onClick={() => {
+            if (me) closeOpenRequest(me.id, id)
+            navigate('/requests')
+          }}>
+            Close this tab
+          </Button>
+        </BrandCard>
+      </div>
+    )
   }
 
   if (!req || !me) return <p className="text-sm text-muted">Loading…</p>
