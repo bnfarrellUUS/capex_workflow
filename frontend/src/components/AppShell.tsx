@@ -23,6 +23,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { Lockup } from './Lockup'
 import { PingBell } from './PingBell'
 import { PingPanel } from './PingPanel'
+import { RequestTabs } from './RequestTabs'
 
 interface NavItem {
   to: string
@@ -136,6 +137,7 @@ export function AppShell() {
             </Button>
           </div>
         </header>
+        {user && <RequestTabs userId={user.id} />}
         <main className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
