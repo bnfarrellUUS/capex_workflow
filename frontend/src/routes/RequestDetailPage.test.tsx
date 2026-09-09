@@ -29,6 +29,10 @@ vi.mock('../api/requestSections', () => ({
   getHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
   saveHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
 }))
+vi.mock('../api/pings', () => ({
+  createPing: vi.fn(), pingDirectory: vi.fn(() => Promise.resolve([])),
+  pingSuggestions: vi.fn(() => Promise.resolve([])),
+}))
 
 import { getRequest, resendRecord } from '../api/requests'
 import { getHiddenSections } from '../api/requestSections'
@@ -235,5 +239,24 @@ describe('RequestDetailPage — comments', () => {
     renderPage()
     await screen.findByText('Request CX000042')
     expect(screen.getByText('Comments')).toBeInTheDocument()
+  })
+})
+
+describe('RequestDetailPage — ping entry point', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRoles = ['APPROVER']
+    vi.mocked(getHiddenSections).mockResolvedValue([])
+  })
+
+  it('offers a small filled Ping button that opens the modal with the request attached', async () => {
+    vi.mocked(getRequest).mockResolvedValue(makeRequest())
+    renderPage()
+    const ping = await screen.findByRole('button', { name: /^ping$/i })
+    expect(ping.className).toContain('bg-accent')
+    expect(ping.className).toContain('text-xs')
+    fireEvent.click(ping)
+    expect(screen.getByRole('dialog', { name: /new ping/i })).toBeInTheDocument()
+    expect(screen.getByText('CX000042')).toBeInTheDocument()
   })
 })

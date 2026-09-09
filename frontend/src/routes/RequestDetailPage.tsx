@@ -20,9 +20,10 @@ import { Select } from '../components/ui/Select'
 import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
 import {
-  ApproveIcon, RejectIcon, SubmitIcon, EditIcon, DeleteIcon, UploadIcon, DownloadIcon,
+  ApproveIcon, RejectIcon, SubmitIcon, EditIcon, DeleteIcon, UploadIcon, DownloadIcon, SendIcon,
 } from '../components/ActionIcons'
 import { CommentThread } from '../components/CommentThread'
+import { PingModal, type PingInit } from '../components/PingModal'
 
 const PIPELINE = ['DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED']
 
@@ -39,6 +40,7 @@ export default function RequestDetailPage() {
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [recordSent, setRecordSent] = useState(false)
+  const [pinging, setPinging] = useState<PingInit | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   /** Runs a request action, refreshing the cache. Returns whether it succeeded. */
@@ -102,6 +104,10 @@ export default function RequestDetailPage() {
           href={requestPdfUrl(id)}>
           <DownloadIcon size={16} />Download PDF
         </a>
+        <Button size="sm" disabled={busy}
+          onClick={() => setPinging({ request: { id: req.id, number: req.number } })}>
+          <SendIcon size={14} />Ping
+        </Button>
         {canResendRecord && (
           <Button variant="secondary" disabled={busy}
             onClick={async () => setRecordSent(await act(() => resendRecord(id)))}>
@@ -285,6 +291,7 @@ export default function RequestDetailPage() {
       </BrandCard>
 
       <button className="text-sm text-muted hover:text-fg" onClick={() => navigate('/')}>← Back to dashboard</button>
+      {pinging && <PingModal init={pinging} onClose={() => setPinging(null)} />}
     </div>
   )
 }

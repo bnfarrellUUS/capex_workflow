@@ -8,8 +8,9 @@ import { Select } from '../components/ui/Select'
 import { Button } from '../components/ui/Button'
 import { BrandCard } from '../components/ui/BrandCard'
 import { StatusBadge } from '../components/ui/Badge'
-import { SearchIcon, FilterIcon, ViewIcon, DownloadIcon } from '../components/ActionIcons'
+import { SearchIcon, FilterIcon, ViewIcon, DownloadIcon, SendIcon } from '../components/ActionIcons'
 import { sortRequests, filterRequests, type SortDir, type SortKey } from './requestsSort'
+import { PingModal, type PingInit } from '../components/PingModal'
 
 const STATUSES = ['', 'DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROVED', 'REJECTED']
 
@@ -112,6 +113,7 @@ const COLUMNS: { key: SortKey; label: string; right?: boolean }[] = [
 
 export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null)
+  const [pinging, setPinging] = useState<PingInit | null>(null)
   if (rows.length === 0) return <p className="text-sm text-muted">No requests.</p>
   const sorted = sort ? sortRequests(rows, sort.key, sort.dir) : rows
 
@@ -162,19 +164,31 @@ export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
                 ${Number(r.total_cost ?? 0).toLocaleString()}
               </td>
               <td className="py-2.5 pr-2 text-right">
-                <Link
-                  to={`/requests/${r.id}`}
-                  aria-label={`View ${r.number}`}
-                  title="View"
-                  className="inline-flex text-muted hover:text-accent"
-                >
-                  <ViewIcon size={18} />
-                </Link>
+                <span className="inline-flex items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label={`Ping about ${r.number}`}
+                    title="Ping"
+                    onClick={() => setPinging({ request: { id: r.id, number: r.number } })}
+                    className="inline-flex text-accent hover:opacity-80"
+                  >
+                    <SendIcon size={18} />
+                  </button>
+                  <Link
+                    to={`/requests/${r.id}`}
+                    aria-label={`View ${r.number}`}
+                    title="View"
+                    className="inline-flex text-muted hover:text-accent"
+                  >
+                    <ViewIcon size={18} />
+                  </Link>
+                </span>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      {pinging && <PingModal init={pinging} onClose={() => setPinging(null)} />}
     </div>
   )
 }

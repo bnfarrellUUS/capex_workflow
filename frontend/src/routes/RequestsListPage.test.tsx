@@ -13,6 +13,10 @@ vi.mock('../api/requests', async (importOriginal) => {
   return { ...mod, listRequests: vi.fn(), downloadRequestsExport: vi.fn() }
 })
 vi.mock('../auth/useMe')
+vi.mock('../api/pings', () => ({
+  createPing: vi.fn(), pingDirectory: vi.fn(() => Promise.resolve([])),
+  pingSuggestions: vi.fn(() => Promise.resolve([])),
+}))
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -63,5 +67,19 @@ describe('RequestsListPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Export/i }))
     await waitFor(() => expect(reqApi.downloadRequestsExport)
       .toHaveBeenCalledWith({ scope: 'all', status: '', q: 'CX0001' }))
+  })
+
+  it('each row has an accent Ping icon that opens the modal for that request', async () => {
+    mockMe(['REQUESTOR'])
+    vi.mocked(reqApi.listRequests).mockResolvedValue([{
+      id: 'req-1', number: 'CX000042', status: 'DRAFT', total_cost: '100',
+      division_name: '100 — Ops', requestor_name: 'Owner', assignee_name: null, created_at: null,
+    }])
+    renderPage()
+    const ping = await screen.findByRole('button', { name: 'Ping about CX000042' })
+    expect(ping.className).toContain('text-accent')
+    fireEvent.click(ping)
+    expect(screen.getByRole('dialog', { name: /new ping/i })).toBeInTheDocument()
+    expect(screen.getAllByText('CX000042').length).toBeGreaterThan(1)   // row + modal chip
   })
 })
