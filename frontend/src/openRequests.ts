@@ -72,7 +72,8 @@ function write(userId: string, tabs: OpenRequest[]): OpenRequest[] {
   try {
     localStorage.setItem(storageKey(userId), JSON.stringify(tabs))
   } catch {
-    /* private mode: the strip still works for this session */
+    /* storage blocked (private mode / quota): the write is lost and readers see
+       the previous value; the strip degrades to read-only rather than throwing */
   }
   listeners.forEach((notify) => notify())
   return tabs

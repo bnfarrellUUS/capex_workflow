@@ -461,6 +461,11 @@ SCORE's bid tab strip; built 2026-09-09. **Frontend only** — no backend change
   `WizardPage` mounted when only `:id` changes, so local state carried request A's
   step onto request B. A brand-new request keeps a local step until its first save
   redirects to `/requests/:id/edit`, which seeds the new tab from `location.state`.
+- **A tab click is a navigation:** unsaved edits on the current wizard step are
+  discarded without a prompt (the wizard only auto-saves on Next/stepper).
+  Matches SCORE; deliberate.
+- **Any action that destroys a request must call `closeOpenRequest` on success**
+  — `RequestDetailPage`'s Delete draft does; the list page has no delete action.
 - Tests need `frontend/src/test-setup.ts` (vitest `setupFiles`): Node ≥ 22 ships an
   inert `globalThis.localStorage` that jsdom does not replace, so the shim installs
   an in-memory `Storage`. Any test touching the store clears it in `beforeEach`.
