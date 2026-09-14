@@ -323,10 +323,16 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   dropdown (with a "No region" choice) and an Active filter.
 - `WizardPage` — 7-step request wizard (Basic Info, Description, Effect on
   Ops, Asset Details, Economic, Attachments, Review), styled as an email-look
-  brand card (navy header band with Logo, numbered stepper [✓ done / accent
-  active], footer action bar). **Steps are a keyed registry**
-  (`routes/wizard/sections.ts`), not positional indexes — add a step there, and
-  see "Hideable wizard sections" below. Two modes keyed on the route: **new**
+  brand card (navy header band with Logo, a step-card stepper, footer action
+  bar). The stepper (`routes/wizard/Stepper.tsx`, ported 2026-09-14 from
+  SCORE's) is a row of equal-width cards, each with a badge + label + one-line
+  `hint`; badge colours track progress the way SCORE's do — **green check for
+  every step before the current one, accent blue for the current step, grey
+  number for steps not yet reached** ("done" is positional, not tracked per
+  field). Because seven cards need room, the wizard card is `max-w-5xl` where
+  the other pages are `max-w-3xl`. **Steps are a keyed registry**
+  (`routes/wizard/sections.ts`, each with its `hint`), not positional indexes —
+  add a step there, and see "Hideable wizard sections" below. Two modes keyed on the route: **new**
   (`/requests/new`) starts from a blank form (division prefilled from
   `useMe().division_id`, date today) and **creates nothing** until the first
   Save Draft / Submit — those call `createDraft` then `updateDraft` and swap

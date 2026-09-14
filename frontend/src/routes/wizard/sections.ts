@@ -9,18 +9,20 @@ export type SectionKey =
 export interface Section {
   key: SectionKey
   label: string
+  /** Sub-label on the step card, so a step explains itself without training. */
+  hint: string
   /** Basic Info carries the Division that drives L1 routing; Review carries Submit. */
   always?: boolean
 }
 
 export const ALL_SECTIONS: Section[] = [
-  { key: 'basic_info', label: 'Basic Info', always: true },
-  { key: 'description', label: 'Description' },
-  { key: 'effect_on_ops', label: 'Effect on Ops' },
-  { key: 'asset_details', label: 'Asset Details' },
-  { key: 'economic', label: 'Economic' },
-  { key: 'attachments', label: 'Attachments' },
-  { key: 'review', label: 'Review', always: true },
+  { key: 'basic_info', label: 'Basic Info', hint: 'division & flags', always: true },
+  { key: 'description', label: 'Description', hint: 'justification' },
+  { key: 'effect_on_ops', label: 'Effect on Ops', hint: 'operations impact' },
+  { key: 'asset_details', label: 'Asset Details', hint: 'equipment line items' },
+  { key: 'economic', label: 'Economic', hint: 'IRR, payback, NPV' },
+  { key: 'attachments', label: 'Attachments', hint: 'quotes, drawings' },
+  { key: 'review', label: 'Review', hint: 'summary & submit', always: true },
 ]
 
 export function isSectionVisible(key: SectionKey, hidden: string[]): boolean {

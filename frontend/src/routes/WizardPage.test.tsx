@@ -179,16 +179,16 @@ describe('WizardPage — admin-hidden sections', () => {
 
   it('shows all seven numbered steps when nothing is hidden', async () => {
     renderAt('/requests/req-1/edit')
-    expect((await screen.findByRole('button', { name: /Economic/ })).textContent).toBe('5Economic')
-    expect(screen.getByRole('button', { name: /Attachments/ }).textContent).toBe('6Attachments')
-    expect(screen.getByRole('button', { name: /Review/ }).textContent).toBe('7Review')
+    expect((await screen.findByRole('button', { name: /Economic/ })).textContent).toMatch(/^5Economic/)
+    expect(screen.getByRole('button', { name: /Attachments/ }).textContent).toMatch(/^6Attachments/)
+    expect(screen.getByRole('button', { name: /Review/ }).textContent).toMatch(/^7Review/)
   })
 
   it('drops a hidden step from the stepper and renumbers the rest', async () => {
     vi.mocked(getHiddenSections).mockResolvedValue(['economic'])
     renderAt('/requests/req-1/edit')
-    expect((await screen.findByRole('button', { name: /Attachments/ })).textContent).toBe('5Attachments')
-    expect(screen.getByRole('button', { name: /Review/ }).textContent).toBe('6Review')
+    expect((await screen.findByRole('button', { name: /Attachments/ })).textContent).toMatch(/^5Attachments/)
+    expect(screen.getByRole('button', { name: /Review/ }).textContent).toMatch(/^6Review/)
     expect(screen.queryByRole('button', { name: /Economic/ })).toBeNull()
   })
 

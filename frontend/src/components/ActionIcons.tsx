@@ -37,6 +37,15 @@ export function ApproveIcon(props: IconProps) {
   )
 }
 
+/** Bare check, no ring — for the wizard stepper's done badge. */
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon {...props} strokeWidth={props.strokeWidth ?? 2.6}>
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </Icon>
+  )
+}
+
 export function RejectIcon(props: IconProps) {
   return (
     <Icon {...props}>

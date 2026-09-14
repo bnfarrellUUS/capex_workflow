@@ -16,6 +16,7 @@ import { BrandCard } from '../components/ui/BrandCard'
 import { AddIcon, DeleteIcon, SubmitIcon, UploadIcon, DownloadIcon } from '../components/ActionIcons'
 import type { RequestForm } from './wizard/types'
 import { toForm, toPayload, blankForm, equipmentTotal } from './wizard/types'
+import { Stepper } from './wizard/Stepper'
 import { visibleSections, isSectionVisible, clampStep } from './wizard/sections'
 import { budgetAmountError } from './wizard/validate'
 import {
@@ -230,41 +231,11 @@ export default function WizardPage() {
   const currentKey = sections[at].key
 
   const stepper = (
-    <ol className="flex items-center gap-1 overflow-x-auto border-b border-border bg-surface-2 px-7 py-3">
-      {sections.map(({ key, label }, i) => (
-        <li key={key} className="flex min-w-0 items-center gap-1">
-          {i > 0 && <span aria-hidden className="h-px w-4 shrink-0 bg-border sm:w-6" />}
-          <button
-            type="button"
-            disabled={save.isPending}
-            aria-current={i === at ? 'step' : undefined}
-            onClick={() => { if (i !== at) goToStep(i) }}
-            className="group flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition hover:bg-accent/10 disabled:opacity-60"
-          >
-            <span
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition ${
-                i === at
-                  ? 'bg-accent text-accent-fg ring-2 ring-accent/30'
-                  : i < at
-                    ? 'bg-accent/15 text-accent'
-                    : 'border border-border bg-surface text-muted'
-              }`}
-            >
-              {i < at ? '✓' : i + 1}
-            </span>
-            <span className={`whitespace-nowrap text-xs ${
-              i === at ? 'font-semibold text-fg' : 'text-muted group-hover:text-fg'
-            }`}>
-              {label}
-            </span>
-          </button>
-        </li>
-      ))}
-    </ol>
+    <Stepper sections={sections} current={at} disabled={save.isPending} onSelect={goToStep} />
   )
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <BrandCard
         title={data ? `Request ${data.number}` : 'New Request'}
         subtitle="New Capital Request"
