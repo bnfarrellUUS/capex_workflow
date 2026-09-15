@@ -292,7 +292,7 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
   View/Edit/Delete/Download/Search/Filter/Add/Upload, workflow-status icons;
   used by `StatusBadge`, RequestDetailPage action buttons, the Wizard, and the
   Requests list — `currentColor`, so icons take their button/badge color).
-  Both derive from `brand/project/UUS CAPEX Flow Nav Icons.html`. `components/Logo.tsx`
+  Both derive from `brand/project/UUS CAPEX Flow - Nav Icons.dc.html`. `components/Logo.tsx`
   (primary Capital-Cycle mark: sidebar/login); `BrandMark.tsx` (four brand
   marks, currently not wired into any page). `ThemeToggle.tsx`, `theme.ts`.
 - `routes/` — `DashboardPage` (KPI StatCards + approvals table), `LoginPage`,
@@ -545,8 +545,14 @@ carries Submit) and the API rejects them as hideable keys.
   too subtle and solid navy too bold; new tables should match this.
 - **Brand (`brand/project/`, "UUS CAPRI"):** a Claude Design handoff bundle —
   `UUS CAPEX Flow - Logo.dc.html` (the four logo-direction mockups; the
-  filenames still say CAPEX Flow, the contents say CAPRI) and the Nav Icons
-  files. Palette navy `#0B2A4A`, blue `#2563EB`, sky `#93BBF5`. Logo mark =
+  filenames still say CAPEX Flow, the contents say CAPRI) and
+  `UUS CAPEX Flow - Nav Icons.dc.html`. **Read these as source, not in a
+  browser** — the canvas runtime (`support.js`), the print export, the 484 KB
+  `Nav Icons.html` and the canvas thumbnails were removed 2026-09-15, so the
+  `.dc.html` files no longer render interactively; everything that matters
+  (dimensions, colors, geometry) is in their markup, and the shipped output
+  lives in `NavIcons.tsx`/`ActionIcons.tsx`/`Logo.tsx`.
+  Palette navy `#0B2A4A`, blue `#2563EB`, sky `#93BBF5`. Logo mark =
   direction **1d "Capital Cycle"**, geometry on a 100-unit viewBox
   (`components/Logo.tsx` + `public/favicon.svg`) — the chevron points **up**;
   an earlier 48-unit version had it pointing left, which is why the mark
@@ -613,6 +619,18 @@ carries Submit) and the API rejects them as hideable keys.
   not invalidate the target user's existing session/remember cookie.
 - `docs/superpowers/specs/` holds design specs; milestone/phase plans live under
   `docs/`.
+- **Removed 2026-09-15 — older specs still link to them.** These were reference
+  material, never code: `BID-APP-STARTER-GUIDE.md` (blueprint meant to be copied
+  into the Bid Flow repo), `email-rounded-corners-guide.md` (the Outlook
+  rounded-corner recipe — its live descendant is
+  `backend/tools/gen_email_assets.py` plus the email gotchas above), and
+  `2026-07-08-capex-phase1-foundation-plan.md` (the abandoned Next.js/Prisma
+  stack; its companion spec was deleted at the Flask rebuild). Pointers to them
+  in `2026-07-28-bid-app-email-system-design.md`,
+  `2026-07-30-capri-rebrand-design.md` and
+  `2026-09-09-open-request-tabs-design.md` are dead — the specs are kept as
+  historical records and were not rewritten. `2026-07-08-capex-tracking-design.md`
+  **stays**: it is still the master requirements doc.
 
 ## Phase 2 — proposed enhancements (pending Finance review)
 
