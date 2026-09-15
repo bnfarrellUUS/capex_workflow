@@ -577,6 +577,13 @@ carries Submit) and the API rejects them as hideable keys.
   CLAUDE.md (and any relevant `docs/superpowers/specs/`) in sync with the code,
   then make a focused git commit with a clear message describing what changed
   and how it was verified. Don't batch several unrelated changes into one commit.
+- **Two git remotes — push to both.** `origin` is GitHub
+  (`bnfarrellUUS/capex_workflow`) and `azure` is Azure DevOps
+  (`dh-united/FinanceApps/_git/capri`, mirrored 2026-09-15). After committing,
+  push the branch to **both**: `git push origin <branch> && git push azure
+  <branch>`. They are meant to stay identical; if one gets ahead, fast-forward
+  the other rather than forcing (the only force push so far was the initial
+  mirror, which replaced Azure's auto-generated placeholder README commit).
 - Keep routes thin; put logic in `services/`. Raise `ServiceError(msg, status)`
   for handled API errors.
 - New editable request fields must be added in **all** of: model, `request_out`
