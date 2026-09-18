@@ -27,10 +27,21 @@ expenditure. See
   else falls back to SQLite. Both live in **`backend/.env`** (git-ignored);
   `config.py` calls `load_dotenv()` so `python seed.py` sees it too, not just
   the `flask` CLI. Azure SQL needs `pyodbc` plus the system "ODBC Driver 18
-  for SQL Server". The dev server `uus-capri-dev-scus-sql` is
-  **private-endpoint-only** (its hostname resolves to a `privatelink` CNAME
-  with no public A record), so it is unreachable from a laptop off the VNet —
-  the line is left commented in `.env` until VPN/ExpressRoute access exists.
+  for SQL Server".
+  **`quote_plus` is applied twice on purpose** (2026-09-18): the value is
+  decoded *twice* before pyodbc sees it — once when SQLAlchemy parses the URL
+  query string, and again in `sqlalchemy/connectors/pyodbc.py`, which calls
+  `unquote_plus()` on the already-decoded value. Encoding once (the pattern in
+  SQLAlchemy's own docs) silently turns the literal `+` in the password into a
+  space and the login fails with 18456 — while a bare `pyodbc.connect()` with
+  the same string succeeds, which is what makes it confusing to diagnose.
+  `tests/test_config.py` pins the round trip.
+  The dev server `uus-capri-dev-scus-sql` is **private-endpoint-only**; as of
+  **2026-09-18 it is reachable from the office network** — the hostname
+  resolves through its `privatelink` CNAME to **172.16.31.204** and the app
+  runs against it (schema migrated to `e7f8a9b0c1d2` and seeded). Off that
+  network there is still no public A record, so comment `AZURE_SQL_ODBC` back
+  out in `.env` to fall back to the local SQLite file.
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
   Query 5, Tailwind CSS v4, `lucide-react` icons. **Single-server:** the SPA is
   built (`vite build` → `frontend/dist`) and served by Flask itself — the app
@@ -74,7 +85,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 271 tests).
+- Backend: `cd backend && pytest -q` (currently 336 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
