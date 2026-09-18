@@ -8,8 +8,12 @@ Dropping FK-bearing columns is dialect-specific:
 - SQLite (dev): batch_alter_table recreates the table without the column,
   handling the foreign keys automatically.
 - SQL Server (prod): drop the foreign key constraint first, then the column.
-  divisions' FK is named (fk_division_l1_approver); approval_thresholds' FK was
-  created unnamed, so look up its DB-generated name.
+  Both FKs are looked up in sys.foreign_keys rather than assumed: the
+  approval_thresholds one was created unnamed, and the divisions one is
+  declared use_alter=True in 5ee3b5f4876c, which makes op.create_table omit it
+  from the CREATE TABLE without emitting the follow-up ALTER — so on SQL Server
+  fk_division_l1_approver does not exist at all and dropping it by name failed
+  with "'fk_division_l1_approver' is not a constraint" (3728).
 
 Revision ID: c2d3e4f5a6b7
 Revises: b1a2c3d4e5f6
@@ -23,6 +27,17 @@ branch_labels = None
 depends_on = None
 
 
+def _fk_on(bind, table, column):
+    """Name of the foreign key on table.column, or None if there isn't one."""
+    return bind.execute(sa.text(
+        "SELECT fk.name FROM sys.foreign_keys fk "
+        "JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id "
+        "JOIN sys.columns c ON c.object_id = fkc.parent_object_id "
+        "AND c.column_id = fkc.parent_column_id "
+        "WHERE fk.parent_object_id = OBJECT_ID(:table) AND c.name = :column"
+    ), {"table": table, "column": column}).scalar()
+
+
 def upgrade():
     bind = op.get_bind()
     if bind.dialect.name == "sqlite":
@@ -33,20 +48,12 @@ def upgrade():
         return
 
     # SQL Server (and other non-SQLite dialects): drop FKs before the columns.
-    op.drop_constraint("fk_division_l1_approver", "divisions", type_="foreignkey")
-    op.drop_column("divisions", "l1_approver_id")
-
-    fk_name = bind.execute(sa.text(
-        "SELECT fk.name FROM sys.foreign_keys fk "
-        "JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id "
-        "JOIN sys.columns c ON c.object_id = fkc.parent_object_id "
-        "AND c.column_id = fkc.parent_column_id "
-        "WHERE fk.parent_object_id = OBJECT_ID('approval_thresholds') "
-        "AND c.name = 'approver_id'"
-    )).scalar()
-    if fk_name:
-        op.drop_constraint(fk_name, "approval_thresholds", type_="foreignkey")
-    op.drop_column("approval_thresholds", "approver_id")
+    for table, column in (("divisions", "l1_approver_id"),
+                          ("approval_thresholds", "approver_id")):
+        fk_name = _fk_on(bind, table, column)
+        if fk_name:
+            op.drop_constraint(fk_name, table, type_="foreignkey")
+        op.drop_column(table, column)
 
 
 def downgrade():
