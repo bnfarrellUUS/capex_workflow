@@ -14,13 +14,22 @@ def _database_url(default=None):
     """DATABASE_URL wins; otherwise build one from AZURE_SQL_ODBC, the raw
     ODBC connection string copied from the Azure portal. It has to be
     URL-encoded into ?odbc_connect= because the password contains characters
-    (+ # ) !) that a SQLAlchemy URL would mis-parse."""
+    (+ # ) !) that a SQLAlchemy URL would mis-parse.
+
+    quote_plus is applied **twice** on purpose: the value is decoded twice on
+    the way to pyodbc — once when SQLAlchemy parses the URL query string, and
+    again in sqlalchemy/connectors/pyodbc.py, which calls unquote_plus() on
+    the already-decoded value. Encoding only once (the pattern in SQLAlchemy's
+    own docs) silently turns the literal '+' in the password into a space and
+    the login fails with 18456. test_config.py pins the round trip, so a
+    SQLAlchemy upgrade that drops the second decode fails there rather than at
+    connect time."""
     url = os.environ.get("DATABASE_URL")
     if url:
         return url
     odbc = os.environ.get("AZURE_SQL_ODBC")
     if odbc:
-        return "mssql+pyodbc:///?odbc_connect=" + quote_plus(odbc)
+        return "mssql+pyodbc:///?odbc_connect=" + quote_plus(quote_plus(odbc))
     return default
 
 
