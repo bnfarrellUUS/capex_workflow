@@ -1,6 +1,27 @@
 import os
 import tempfile
 from datetime import timedelta
+from urllib.parse import quote_plus
+
+from dotenv import load_dotenv
+
+# backend/.env holds local secrets (git-ignored). `flask run` loads it itself;
+# this makes `python seed.py` and any other entry point see it too.
+load_dotenv()
+
+
+def _database_url(default=None):
+    """DATABASE_URL wins; otherwise build one from AZURE_SQL_ODBC, the raw
+    ODBC connection string copied from the Azure portal. It has to be
+    URL-encoded into ?odbc_connect= because the password contains characters
+    (+ # ) !) that a SQLAlchemy URL would mis-parse."""
+    url = os.environ.get("DATABASE_URL")
+    if url:
+        return url
+    odbc = os.environ.get("AZURE_SQL_ODBC")
+    if odbc:
+        return "mssql+pyodbc:///?odbc_connect=" + quote_plus(odbc)
+    return default
 
 
 class BaseConfig:
@@ -33,9 +54,7 @@ class BaseConfig:
 
 
 class DevConfig(BaseConfig):
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", "sqlite:///capex_dev.db"
-    )
+    SQLALCHEMY_DATABASE_URI = _database_url("sqlite:///capex_dev.db")
     # Send via Outlook by default in dev; set EMAIL_ENABLED=0 to silence it.
     EMAIL_ENABLED = os.environ.get("EMAIL_ENABLED", "1") == "1"
 
@@ -52,6 +71,6 @@ class ProdConfig(BaseConfig):
     # e.g. mssql+pyodbc://user:pass@host/db?driver=ODBC+Driver+18+for+SQL+Server
     # Read lazily so importing the module never fails when the var is unset
     # (dev/test); deployment must set DATABASE_URL.
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI = _database_url()
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True

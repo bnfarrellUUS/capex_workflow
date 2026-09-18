@@ -20,6 +20,17 @@ expenditure. See
   email deep links survive browser restarts; `REMEMBER_COOKIE_*` in config),
   Pydantic v2 request schemas, Alembic migrations. **SQLite** in dev (`backend/instance/capex_dev.db`), **Azure SQL
   Server** in prod.
+  **Database URL:** `config._database_url()` takes `DATABASE_URL` if set,
+  else builds `mssql+pyodbc:///?odbc_connect=…` by URL-encoding
+  `AZURE_SQL_ODBC` — the raw ODBC string pasted from the Azure portal, whose
+  password characters (`+ # ) !`) a plain SQLAlchemy URL would mis-parse —
+  else falls back to SQLite. Both live in **`backend/.env`** (git-ignored);
+  `config.py` calls `load_dotenv()` so `python seed.py` sees it too, not just
+  the `flask` CLI. Azure SQL needs `pyodbc` plus the system "ODBC Driver 18
+  for SQL Server". The dev server `uus-capri-dev-scus-sql` is
+  **private-endpoint-only** (its hostname resolves to a `privatelink` CNAME
+  with no public A record), so it is unreachable from a laptop off the VNet —
+  the line is left commented in `.env` until VPN/ExpressRoute access exists.
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
   Query 5, Tailwind CSS v4, `lucide-react` icons. **Single-server:** the SPA is
   built (`vite build` → `frontend/dist`) and served by Flask itself — the app
