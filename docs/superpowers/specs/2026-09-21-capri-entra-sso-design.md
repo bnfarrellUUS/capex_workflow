@@ -280,7 +280,10 @@ normalise to `/`, would redirect to another host entirely.
 
 ## 8. Data model
 
-One Alembic revision on top of `e7f8a9b0c1d2`, doing two things.
+**Two** Alembic revisions on top of `e7f8a9b0c1d2`, in two commits. They are
+unrelated changes — one is a pre-existing bug, the other is this feature — and
+CLAUDE.md's "don't batch several unrelated changes into one commit" rule applies.
+The `reset_token` fix goes **first**, since it is the prerequisite.
 
 ### 8.1 `users.entra_oid`
 
