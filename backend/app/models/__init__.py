@@ -75,6 +75,10 @@ class User(UserMixin, db.Model):
 
     failed_logins: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # unique=True is correct on SQLite, which treats NULLs as distinct. SQL
+    # Server does not, so migration b8c9d0e1f2a3 replaces the constraint there
+    # with a unique index filtered to `reset_token IS NOT NULL`. Without that,
+    # the table can hold only ONE row with a NULL reset_token.
     reset_token: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
     reset_token_expiry: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
