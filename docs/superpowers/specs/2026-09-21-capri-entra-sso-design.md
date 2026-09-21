@@ -90,9 +90,17 @@ Codes reach the browser in a query string, so the vocabulary is fixed
 server-side and **never interpolated text** — no exception message, claim value
 or email address may leak that way. The `detail` is logged, never returned.
 
-**Scopes are `[]`.** CAPRI calls nothing on the user's behalf, so there is no
-access token to store, refresh or protect. A token obtained is a token that can
-leak.
+**Scopes are `[]`.** CAPRI calls nothing on the user's behalf, so no token is
+stored, refreshed or protected — everything except `id_token_claims` is
+discarded as soon as the claims are read.
+
+Note that `[]` does **not** mean the authorize request asks for nothing: MSAL
+decorates whatever you pass with `openid profile offline_access`, and there is
+no supported way to suppress that through `initiate_auth_code_flow`. Verified
+against the live tenant on 2026-09-21 — the wire scope is
+`offline_access openid profile`, so a refresh token **is** issued. Nothing
+reads or stores it and it dies with the response object, but "we never ask for
+one" would be untrue and the code must not claim it.
 
 **No hand-rolled token validation.** `acquire_token_by_auth_code_flow` checks the
 signature against the tenant's JWKS, plus issuer, audience, nonce and state.
@@ -430,8 +438,24 @@ Full verification: backend `pytest -q` (336 existing plus new), `npm test`, and
 
 ### 11.3 What tests cannot prove
 
-Nothing above exercises the Entra side. Once IT delivers the values, verify by
-hand in the target environment: a group member with an app row signs in; a member
+Every test fakes `_client`, so no real token is ever issued, signed, validated
+or parsed. The claim shapes the gates depend on — `groups` as a list of GUID
+strings, `preferred_username` vs `email`, the presence of `oid` — are taken
+from the guide, not observed.
+
+**Partially closed on 2026-09-21** by running the real
+`msal.ConfidentialClientApplication` against the live D&H tenant authority
+(no app registration needed for this much). That established: the flow carries
+`state`, `nonce` and PKCE `S256`; `response_type=code`; `response_mode`
+defaults to query as §4.3 requires; the redirect URI is emitted exactly; and a
+bad tenant raises `ValueError`, which is the path `redeem`'s broad `except`
+and the callback's `auth_failed` handler exist for. It also surfaced the
+`offline_access` correction in §3.1 and MSAL's standing `UserWarning`
+recommending the `form_post` mode that §4.3 forbids.
+
+Still unproven, and only provable with a real registration: the token exchange
+itself, every claim shape, and any actual sign-in. Once IT delivers the values,
+verify by hand in the target environment: a group member with an app row signs in; a member
 **without** a row sees `unknown_user`; a non-member sees `not_in_group`; a
 deactivated user sees `inactive_user`.
 

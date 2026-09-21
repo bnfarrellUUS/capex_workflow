@@ -9,9 +9,17 @@ WHAT THIS MODULE DELIBERATELY DOES NOT DO:
     the signature against the tenant's JWKS, the issuer, the audience, the
     nonce and the state. Reimplementing any of that is how signature checks get
     accidentally disabled.
-  - It keeps no token cache and asks for no refresh token. CAPRI acts on
-    nothing on a user's behalf, so the access token is discarded the moment the
-    claims are read. Only the Flask-Login session survives.
+  - It keeps no token cache and retains no token. CAPRI acts on nothing on a
+    user's behalf, so everything except id_token_claims is discarded the moment
+    the claims are read, and only the Flask-Login session survives.
+
+    Note it does not follow that no refresh token is ISSUED. MSAL decorates
+    whatever scopes you pass with `openid profile offline_access`, so the
+    authorize request carries offline_access however empty SCOPES is -- checked
+    against the live tenant on 2026-09-21. There is no supported way to
+    suppress it through initiate_auth_code_flow. Nothing here reads or stores
+    the refresh token, so it dies with the response object; the point of
+    recording this is that "we never asked for one" would be untrue.
 """
 import os
 
@@ -34,7 +42,8 @@ ERROR_CODES = (
 
 # Only the OIDC basics. CAPRI calls no downstream API on the user's behalf, so
 # a Graph scope would obtain an access token nothing uses -- and a token
-# obtained is a token that can leak.
+# obtained is a token that can leak. Empty is as small as this gets: MSAL adds
+# `openid profile offline_access` itself (see the module docstring).
 SCOPES = []
 
 
@@ -123,7 +132,9 @@ def build_auth_flow(cfg):
     usable a second time.
 
     response_mode is left at MSAL's default (query, i.e. a GET redirect) and
-    MUST NOT be changed to form_post. app/config.py sets
+    MUST NOT be changed to form_post -- including when MSAL itself emits
+    `UserWarning: response_mode='form_post' is recommended for better
+    security` on every call, which it does. app/config.py sets
     SESSION_COOKIE_SAMESITE="Lax", which does not send the cookie on a
     cross-site POST -- so a form_post callback would arrive with no session,
     the flow dict would be unreachable, and every sign-in would fail while
