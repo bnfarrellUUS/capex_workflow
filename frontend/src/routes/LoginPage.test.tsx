@@ -88,6 +88,16 @@ describe('LoginPage sso_error messages', () => {
       .toHaveTextContent(/microsoft sign-in failed/i)
   })
 
+  it('still explains the error when SSO is off, so codes can be previewed', async () => {
+    // The alert sits outside the tri-state branches on purpose: visiting
+    // /login?sso_error=<code> shows the message in either mode, which is how
+    // the wording gets reviewed before an Entra registration exists.
+    vi.mocked(getAuthConfig).mockResolvedValue({ ok: true, sso_enabled: false })
+    renderPage('/login?sso_error=unknown_user')
+    expect(await screen.findByRole('alert')).toHaveTextContent(/isn't set up in capri/i)
+    expect(await screen.findByLabelText('Password')).toBeInTheDocument()
+  })
+
   it('shows no alert when there is no sso_error', async () => {
     renderPage('/login')
     await screen.findByRole('button', { name: /microsoft/i })
