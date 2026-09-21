@@ -77,3 +77,13 @@ def test_region_links_divisions_and_vps(app):
     assert div.region.name == "West"
     assert [u.email for u in div.region.vp_approvers] == ["vp@x.com"]
     assert region.active is True
+
+
+def test_user_entra_oid_defaults_to_none(app):
+    from app.services.security import hash_password
+    u = User(email="oid@x.com", name="Oid", password_hash=hash_password("secret123"))
+    db.session.add(u)
+    db.session.commit()
+    # Nullable and unset for every pre-SSO row; sso_service pins it on first
+    # SSO sign-in.
+    assert u.entra_oid is None

@@ -81,6 +81,12 @@ class User(UserMixin, db.Model):
     # the table can hold only ONE row with a NULL reset_token.
     reset_token: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
     reset_token_expiry: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # The Entra ID object ID, pinned on this user's first SSO sign-in and
+    # compared on every one after (sso_service gate 4). NOT unique: the row is
+    # found by email and this only confirms it is the same person, and a
+    # nullable-unique column caps the table at one NULL on SQL Server (see
+    # migration b8c9d0e1f2a3).
+    entra_oid: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=_utcnow, onupdate=_utcnow
