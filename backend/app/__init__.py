@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, jsonify, send_from_directory, abort, request
+from flask import Flask, jsonify, send_from_directory, abort, request, session
 from pydantic import ValidationError
 
 from .config import DevConfig
@@ -17,6 +17,18 @@ def create_app(config_object=None):
     login_manager.init_app(app)
     csrf.init_app(app)
 
+    # Fail open on the flag: CAPRI_ENABLE_SSO=1 with a half-filled config
+    # behaves as SSO-off so a typo cannot lock every user out of a working app.
+    # Log it, so the mistake is visible rather than silent.
+    if os.environ.get("CAPRI_ENABLE_SSO", "").strip() == "1":
+        from app.services.sso_service import sso_config
+        if sso_config() is None:
+            app.logger.warning(
+                "CAPRI_ENABLE_SSO=1 but the SSO configuration is incomplete - "
+                "SSO is DISABLED and password login remains active. Check "
+                "CAPRI_SSO_TENANT_ID, _CLIENT_ID, _CLIENT_SECRET, "
+                "_ALLOWED_GROUPS and _REDIRECT_URI.")
+
     # A user flagged must_change_password may only hit the endpoints needed
     # to set a new password (or leave); everything else on the API is 403.
     exempt = {"auth.set_password", "auth.me", "auth.csrf_token", "auth.logout", "auth.login"}
@@ -27,6 +39,11 @@ def create_app(config_object=None):
         if (request.blueprint is not None
                 and current_user.is_authenticated
                 and current_user.must_change_password
+                # An SSO session has no password to change, so gating it would
+                # lock the user out of everything with no form to escape
+                # through. The flag stays on the row, so it still applies if
+                # CAPRI_ENABLE_SSO is ever set back to 0.
+                and session.get("auth_method") != "sso"
                 and request.endpoint not in exempt):
             return jsonify(error="You must set a new password before continuing.",
                            code="PASSWORD_CHANGE_REQUIRED"), 403

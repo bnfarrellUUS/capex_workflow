@@ -60,6 +60,38 @@ def test_set_password_rejects_the_default(client, app):
     assert r.status_code == 400
 
 
+def test_sso_session_is_not_gated_by_the_password_flag(client, app, monkeypatch):
+    """An SSO user with must_change_password set must still reach the API.
+
+    Under SSO-only there is no password form to escape through, so without this
+    skip an admin-created user is 403'd out of everything with no route
+    forward. The flag stays ON the row deliberately -- it still bites if
+    CAPRI_ENABLE_SSO is ever set back to 0.
+    """
+    from tests.test_sso import FakeMsalApp, sso_env, use_fake
+
+    user = _flagged_user(app, email="sso@x.com")
+    sso_env(monkeypatch)
+    use_fake(monkeypatch, FakeMsalApp())
+    client.get("/api/auth/sso/login")
+    use_fake(monkeypatch, FakeMsalApp(result={"id_token_claims": {
+        "preferred_username": "sso@x.com", "groups": ["group-a"], "oid": "oid-1",
+    }}))
+    assert client.get("/api/auth/sso/callback?code=c&state=st").status_code == 302
+
+    assert client.get("/api/requests").status_code == 200
+    db.session.refresh(user)
+    assert user.must_change_password is True   # skipped, not cleared
+
+
+def test_password_session_is_still_gated(client, app):
+    # The existing behaviour must not regress: a password session with the flag
+    # set is still 403'd.
+    _flagged_user(app)
+    _login(client, app)
+    assert client.get("/api/requests").status_code == 403
+
+
 def test_set_password_rejects_short(client, app):
     _flagged_user(app)
     _login(client, app)
