@@ -377,8 +377,9 @@ APEX. Until then that environment keeps `CAPRI_ENABLE_SSO=0`, which §2.4 gives
 us for free.
 
 A sendable version of all this is a deliverable of this work:
-`docs/it-requests/2026-09-21-capri-entra-sso.md`, modelled on APEX's
-`docs/it-requests/2026-09-21-entra-sso-email.md`.
+`docs/it-requests/2026-09-21-capri-entra-sso.md`, modelled on the equivalent in
+the APEX repo (`../apex/docs/it-requests/2026-09-21-entra-sso-email.md`, which
+lives in that repository, not this one).
 
 ## 11. Testing
 
