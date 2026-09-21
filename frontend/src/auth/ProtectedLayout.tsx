@@ -10,6 +10,10 @@ export function ProtectedLayout() {
   if (isError || !data) {
     return <Navigate to={loginPathWithNext(location.pathname, location.search)} replace />
   }
-  if (data.must_change_password) return <Navigate to="/change-password" replace />
+  // An SSO session has no password to change, so sending them to
+  // /change-password would ask them to invent one nothing uses. The server
+  // skips the same gate in app/__init__.py.
+  if (data.must_change_password && data.auth_method !== 'sso')
+    return <Navigate to="/change-password" replace />
   return <AppShell />
 }

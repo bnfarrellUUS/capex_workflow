@@ -7,6 +7,18 @@ export interface CurrentUser {
   roles: string[]
   division_id: string | null
   must_change_password: boolean
+  /** How this session signed in. SSO users have no password to change. */
+  auth_method: 'sso' | 'password'
+}
+
+export interface AuthConfig {
+  ok: boolean
+  sso_enabled: boolean
+}
+
+/** Unauthenticated: tells the login screen whether to offer SSO. */
+export function getAuthConfig(): Promise<AuthConfig> {
+  return api<AuthConfig>('/auth/config')
 }
 
 export function fetchMe(): Promise<CurrentUser> {
