@@ -282,6 +282,68 @@ redirects every message to a configurable test recipient (default
 sends to the real recipients. `EMAIL_ENABLED` still gates whether Outlook
 sends at all. Defaults live in `email_template_service.DEFAULTS`.
 
+## Entra ID SSO
+
+Spec: `docs/superpowers/specs/2026-09-21-capri-entra-sso-design.md`. House
+recipe: `docs/entra-sso-implementation-guide.md`. Support runbook:
+`docs/sso-support-runbook.md`. IT request:
+`docs/it-requests/2026-09-21-capri-entra-sso.md`. Built 2026-09-21 as **Step 0**
+— the code ships with the flag **unset**, so the SSO routes 404 and nothing
+changes for users until an Entra app registration exists.
+
+- **One switch: `sso_config() is not None`.** SSO is on only when
+  `CAPRI_ENABLE_SSO=1` **and** all five `CAPRI_SSO_*` values are present
+  (tenant, client id, client secret, at least one group object ID, redirect
+  URI). Not-None also means SSO is the **only** way in: `POST /api/auth/login`
+  returns 403 as its first line, and the login screen renders only the
+  Microsoft button. Two independent flags drift apart and leave a door open, so
+  there is only ever one condition. An incomplete config fails **open** (SSO
+  off, password login works) and logs a startup `WARNING` — a typo must not lock
+  everyone out of a working app.
+- All six vars live in `backend/.env` (git-ignored; the repo mirrors to
+  GitHub). `CAPRI_SSO_ALLOWED_GROUPS` takes **object IDs, not display names** —
+  a display name fails every sign-in at gate 2 as `not_in_group`.
+- **`app/services/sso_service.py` is the only module importing `msal`**; routes
+  stay thin in `blueprints/auth.py` (`GET /api/auth/config`,
+  `GET /api/auth/sso/login`, `GET /api/auth/sso/callback`, both 404 when off).
+  `_client(cfg)` is the single seam the tests fake.
+- **Four gates, and the order is load-bearing** — each code names a different
+  fixer, so running them out of order hands an IT problem to an app admin:
+  `no_groups_claim` (claim absent or not a list — *not* "member of nothing";
+  Entra drops it for users in many groups) → `not_in_group` → `unknown_user` /
+  `inactive_user` (no auto-provisioning, no group→role mapping; roles stay in
+  the admin screen) → `identity_mismatch` (`users.entra_oid`, pinned on first
+  sign-in). Plus `auth_failed` from the token exchange. Codes are a fixed
+  vocabulary: no exception text, claim value or email may reach the browser.
+- **`sso_config()` reads `os.environ` at call time and must NOT become a
+  `Config` class attribute.** `config.py` assigns at import, which would make
+  the config untestable and let a developer's `.env` 403 the whole suite — the
+  `_no_ambient_sso` autouse fixture in `tests/conftest.py` is the guard, and
+  removing it makes failures move around as tests are added.
+- **Failures redirect to `/login?sso_error=…`, not `/`** (the guide's target):
+  `/` is inside `ProtectedLayout`, which would bounce to `/login?next=/` and
+  discard the code. Never a JSON body — the browser is mid-navigation.
+- **`response_mode` stays query/GET.** `SESSION_COOKIE_SAMESITE="Lax"` does not
+  send the cookie on a cross-site POST, so a `form_post` callback would arrive
+  with no session and break every sign-in while looking like an Entra
+  misconfiguration.
+- **SSO sessions use `remember=False`** (the password path keeps
+  `remember=True` and its 30-day cookie) so revoking Entra access takes effect
+  promptly; deep links still arrive via `?next=`, validated by `safeNext`
+  client-side and `safe_next_path` server-side.
+- **`must_change_password` is skipped, not cleared, for SSO sessions** — in
+  `_require_password_change` (`app/__init__.py`) and in `ProtectedLayout`, which
+  reads the new `auth_method` field on `/api/auth/me`. There is no password to
+  change, but the flag still applies if `CAPRI_ENABLE_SSO` goes back to 0. The
+  password endpoints, `ChangePasswordPage` and the admin reset all stay —
+  they're what makes `CAPRI_ENABLE_SSO=0` a real recovery lever, and there is
+  deliberately **no in-app break-glass password**.
+- **Migrations:** `c9d0e1f2a3b4` adds `users.entra_oid` (nullable, **not**
+  unique). `b8c9d0e1f2a3` first replaces `users.reset_token`'s plain UNIQUE
+  constraint with a **filtered** unique index on SQL Server — a nullable-unique
+  column allows exactly one NULL there, which capped the table at one user on
+  Azure SQL. Don't reintroduce a nullable-unique column.
+
 ## Frontend layout (`frontend/src/`)
 
 - `main.tsx` (query client, 401 → redirect to /login), `App.tsx` (routes),
