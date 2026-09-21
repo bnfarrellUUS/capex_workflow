@@ -8,10 +8,13 @@ ARIA and APEX were built to.
 off** (guide §10 Step 0). Nothing is blocked on this request except turning it
 on, and nothing changes for users until it is.
 
-**Before sending:** fill in `[name]` and `[secure channel]`, and **attach the
-CAPRI user list** so confirmation 3 has something to map against. The list is
-deliberately not in this file: the repository mirrors to GitHub and staff
-addresses do not belong in it.
+**Status:** drafted, **not yet sent**. The ready-to-paste version is at the
+bottom of this file, addressed to Jordan St. Clair (cc Joe Loner, Eric Arnold,
+Jessica Beltran — the recipients of the APEX request sent 2026-09-21 14:28).
+
+**Before sending:** **attach the CAPRI user list**, which is what makes the UPN
+question answerable per account. The list is deliberately not in this file: the
+repository mirrors to GitHub and staff addresses do not belong in it.
 
 ---
 
@@ -100,6 +103,9 @@ for free.
 - [ ] **Someone owns the client secret expiry date**, with a calendar reminder.
       An expired secret is a total outage with no in-app warning and an error
       that points at the app rather than at the secret.
+- [ ] **The exact UPN of every intended user** — see "The UPN trap" below. This
+      is the one that silently locks people out, and it is not per-app: one
+      answer covers CAPRI, APEX and anything after.
 
 ## How access works, so the right team gets the right ticket
 
@@ -125,53 +131,136 @@ the two steps is missing:
 
 ---
 
-**Subject:** CAPRI SSO — app registration request
+## The UPN trap (added 2026-09-21, after checking)
 
-Hi [name],
+**This is the item most likely to break CAPRI, and it is not in the guide.**
 
-We'd like to put CAPRI (our capital-expenditure approval app) behind Entra SSO,
-the same way ARIA is and APEX is being set up. The code is already written and
-deployed with the feature switched off, so this request is the only thing
-between us and turning it on — and nothing changes for users until we do.
+Gate 3 matches the `preferred_username` claim — which Entra populates with the
+**UPN** — against `users.email` in CAPRI. Those are not the same thing here.
+Checked against Microsoft Graph on 2026-09-21, Bryan's own account resolves as:
 
-Could you please create **a new app registration for CAPRI** and send back:
+| Field | Value |
+|---|---|
+| `userPrincipalName` | `bryan.farrell@dh-united.com` |
+| `mail` | `bryan.farrell@uniteduptime.com` |
+
+So **`dh-united.com` looks like the real UPN suffix and `uniteduptime.com` the
+mail domain** — the opposite of the assumption in APEX's 2026-09-18 note.
+
+CAPRI's user records are currently **16 `@uniteduptime.com`, 2
+`@tanknology.com`, 1 `@dh-united.com`**. If UPNs really are `@dh-united.com`
+across the board, almost every user is refused at sign-in with `unknown_user`,
+and there is no password fallback once SSO is on.
+
+**Do not enable SSO until the UPN for each account is confirmed and the
+`users.email` values are corrected to match.** The `@tanknology.com` pair may
+not be in this tenant at all and needs its own answer.
+
+Related: the Azure SQL dev database currently holds only **2** user rows
+(`admin@uniteduptime.com` and `bryan.farrell@dh-united.com`). The other 17 exist
+only in the local SQLite file, so they would need migrating before SSO is usable
+against Azure regardless of the UPN answer.
+
+---
+
+## The email to send
+
+**To:** Jordan St. Clair · **Cc:** Joe Loner, Eric Arnold, Jessica Beltran
+(the same recipients as the APEX request sent 2026-09-21 14:28)
+
+**Subject:** CAPRI — new Entra app registration needed (5 values + 3 confirmations)
+
+Hi Jordan,
+
+Second one of these today, sorry — this is the same request as the APEX email I
+sent this morning, but for CAPRI (our capital-expenditure approval app).
+Separate app registration, separate thread so it's easier to track. **Two of the
+questions from the APEX email cover both apps**, so please answer those once and
+I'll apply them to each: the UPN-suffix question, and whether the convention
+here is one registration per environment or one per app.
+
+As with APEX: the code is written and deployed with SSO switched off, so nothing
+changes for anyone until this is in place and I've done a test sign-in myself.
+
+**The UPN question, with a concrete data point**
+
+This is the one that will break CAPRI if we get it wrong, and I now have
+evidence that sharpens what I asked this morning. My own account resolves as:
+
+- userPrincipalName: `bryan.farrell@dh-united.com`
+- mail: `bryan.farrell@uniteduptime.com`
+
+So it looks like **dh-united.com is the real UPN suffix and uniteduptime.com is
+the mail domain** — the opposite of what I guessed in the APEX email. That
+matters because CAPRI matches a sign-in on the UPN that Entra puts in the token,
+against the email address stored on the user's record in the app. CAPRI's
+records are currently 16 @uniteduptime.com, 2 @tanknology.com and 1
+@dh-united.com, so if UPNs really are @dh-united.com across the board, almost
+every user would be refused at sign-in — and there is no password fallback once
+SSO is on.
+
+So, for the attached list, could you send **the exact UPN for each account**, or
+just the rule for deriving it if there is one? I'll correct the records before
+anything is switched on. Same question as APEX #2 — one answer does both apps,
+and I don't need it per-app.
+
+The @tanknology.com pair may be a separate case again; if those aren't in this
+tenant at all, tell me and I'll handle them differently.
+
+**The request: a new app registration for CAPRI**
+
+Not a change to ARIA's or APEX's — redirect URIs and secret rotation are
+per-app, so sharing a registration means one app's secret rotation breaks the
+others.
+
+What I need from you:
 
 1. Directory (tenant) ID
 2. Application (client) ID
-3. A client secret — via [secure channel] rather than email, if you don't mind
-4. The object ID of `SEC-App-Capri-Dev`
-5. Confirmation of the registered redirect URI
+3. Client secret — please send through a secure channel, not email, and tell me
+   the expiry date
+4. `SEC-App-Capri-Dev` assigned to the new registration. I own the group, so
+   I'll manage membership and I already have its object ID — but assigning it to
+   the app needs rights over the registration, which is yours. Same
+   easy-to-miss step as APEX: with "Groups assigned to the application", a group
+   only appears in the tokens of apps it is actually assigned to.
+5. Confirmation of the redirect URI you've registered
 
-The redirect URI to register is exactly:
+**Redirect URI to register.** Just one for CAPRI — unlike APEX, it runs as a
+single server on one port, so there's only the one way in. Entra matches
+literally: scheme, host, port, path, no trailing slash.
 
     http://localhost:5100/api/auth/sso/callback
 
-Two settings on the registration matter more than they look:
+**Three things to confirm:**
 
-- Under **Token configuration**, please add the **groups claim** set to
-  **"Groups assigned to the application"**, and assign `SEC-App-Capri-Dev` to
-  the app. Without this the app gets no group information at all and refuses
-  every sign-in. Please avoid "All groups" — for users in many groups Entra
-  replaces the list with a link, and the claim effectively goes missing for
-  exactly those people.
-- I need the group's **object ID (the GUID)**, not the display name. The app
-  compares the GUID from the token, so a display name silently fails every
-  sign-in with what looks like an access-permissions error.
+1. Token configuration emits the groups claim in ID tokens — please use "Groups
+   assigned to the application", not "All groups". Same reasoning as the APEX
+   email: with "All groups", anyone in roughly 200+ groups overflows the claim
+   and Entra sends a link instead of the list, so it goes missing for exactly
+   the most-connected people. Without the claim CAPRI fails closed for everyone,
+   and the error looks like an application bug rather than a directory setting.
+2. The group object ID is what I need for `SEC-App-Capri-Dev`, not the display
+   name. CAPRI compares the GUID that arrives in the token, so a display name
+   silently fails every sign-in with what reads like an access-permissions
+   problem.
+3. Whether you want one registration or two (the APEX question #3). If the
+   convention is per-environment, the localhost URI above belongs on a Dev
+   registration and we can set up Prod when CAPRI has a hostname. Just tell me
+   the shape and I'll match it.
 
-I already own `SEC-App-Capri-Dev`, so I can manage who's in it — the only thing
-I can't do myself is assign it to the new registration.
+**One more:** who owns the client secret's expiry date? Same as APEX — an
+expired secret is a full outage with no warning and nothing diagnosable from
+inside the app, so I'd like a named owner and a calendar reminder.
 
-One note for later: we'll eventually want CAPRI on a proper hostname with HTTPS
-before we can enable SSO anywhere other than a developer machine. Entra only
-accepts `http://` for `localhost`, so an internal IP and port can't be
-registered as a redirect URI. No action needed now, but worth knowing when we
-talk about hosting it.
-
-Finally, could you note who owns the **client secret's expiry date** and set a
-reminder? When one of these expires the app fails every sign-in with an error
-that looks like our bug rather than an expired credential.
-
-I've attached the list of people who'll need access.
+**For later, not now:** CAPRI has no deployed environment yet. When it gets one
+it'll need a DNS name and a certificate before SSO can work there, since Entra
+only accepts http:// for localhost. That's the same DNS/HTTPS dependency APEX is
+waiting on, so it may be worth solving once and covering both — but it doesn't
+block anything here.
 
 Thanks,
 Bryan
+
+**Before sending:** attach the CAPRI user list (deliberately not in this repo —
+it mirrors to GitHub) and let Outlook add your signature.
