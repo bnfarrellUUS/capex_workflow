@@ -58,7 +58,9 @@ through tools that shell out. Two consequences:
 - Double-click **`Start CAPRI.cmd`** (repo root), or run **`run-app.ps1`**
   from a PowerShell prompt (`powershell -ExecutionPolicy Bypass -File
   .\run-app.ps1` if script execution is blocked). It does first-run setup (venv,
-  deps, `flask db upgrade`, `python seed.py`), **builds the frontend**, starts
+  deps, `flask db upgrade`, `python seed.py` — the seed is **skipped with a
+  pointer to `create_admin.py`** when `.env` points at Azure SQL, since
+  `seed.py` refuses non-SQLite; ADO 5909), **builds the frontend**, starts
   the single Flask server (`flask run --port 5100`) in its own window, and opens
   the browser to `http://localhost:5100`. It launches the server from its own
   directory via a *relative* path so the `&`-in-path never reaches a parser.

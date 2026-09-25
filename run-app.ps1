@@ -31,7 +31,15 @@ if (-not (Test-Path -LiteralPath $VenvPy)) {
   Push-Location -LiteralPath $Backend
   try {
     & $VenvPy -m flask db upgrade
-    & $VenvPy seed.py
+    # seed.py refuses any non-SQLite database (its admin password is public),
+    # so skip it when .env points at Azure SQL rather than print a refusal.
+    # Ask config itself, so this matches exactly what seed.py would see.
+    $dbKind = & $VenvPy -c "from app.config import _database_url as u; print((u('sqlite:') or '').split(':')[0])"
+    if ($dbKind -eq 'sqlite') {
+      & $VenvPy seed.py
+    } else {
+      Write-Host "Skipping seed: .env points at a shared database ($dbKind). Create an admin there with: python create_admin.py <email> `"<name>`"" -ForegroundColor Yellow
+    }
   } finally {
     Pop-Location
   }
