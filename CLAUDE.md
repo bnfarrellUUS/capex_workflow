@@ -596,8 +596,7 @@ Built 2026-08-05 — it is Phase 2 proposal #4.
   page refreshes from one round trip (same shape as the attachment routes).
   There is no GET — `request_out` carries `comments`.
 - **Validation:** `CommentIn` (1–4000 chars, whitespace-stripped) via
-  `StringConstraints`, a **type** constraint rather than a raising validator —
-  see the ValidationError→500 gotcha below.
+  `StringConstraints`, a **type** constraint rather than a raising validator.
 - **Sixth email template `COMMENT`** ("New comment"), tokens `{author}` and
   `{comment}`; reuses the `btn-approved` PNG. `notify.notify_comment` mails the
   *other side*, never the author: the requestor's comment goes to whoever holds
@@ -802,14 +801,14 @@ carries Submit) and the API rejects them as hideable keys.
   `FinanceIn` schema, `workflow_service._FINANCE_FIELDS`, `request_out`,
   frontend `CapexRequestData` + the `FinanceForm`/read-only views in
   `RequestDetailPage` (and its test mocks, which build full objects).
-- **Known bug (pre-existing, unfixed):** the app-wide `ValidationError` handler
-  in `app/__init__.py` calls `err.errors()`, which embeds the raw `ValueError`
-  in the error's `ctx` — `jsonify` can't serialize it, so any schema whose
-  `field_validator` *raises* returns a 500 instead of 400. This already affects
-  `PUT /api/email-templates/settings` with a malformed `test_recipient`. Until
-  it's fixed (`err.errors(include_context=False)` or `json.loads(err.json())`),
-  express new constraints as types — `Literal`, bounds — rather than raising
-  validators; see `schemas/request_sections.py`.
+- **Fixed 2026-09-25:** the app-wide `ValidationError` handler in
+  `app/__init__.py` used `err.errors()`, which embeds a raising
+  `field_validator`'s raw `ValueError` in `ctx`; `jsonify` couldn't serialize
+  it, so those failures were 500s (e.g. a malformed `test_recipient` on
+  `PUT /api/email-templates/settings`). It now passes
+  `include_context=False`, so raising validators return a normal 400 —
+  `tests/test_email_settings.py` pins it. Type constraints (`Literal`, bounds)
+  are still the house style where they fit.
 - `index.css` hides the Edge/IE native password-reveal eye (`::-ms-reveal`) —
   `PasswordInput` provides its own toggle; without this users see two eyes.
 - If `DEFAULT_PASSWORD` ever changes, update it in lockstep: the config

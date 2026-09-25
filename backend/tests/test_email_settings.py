@@ -115,3 +115,16 @@ def test_settings_endpoint_requires_admin(client):
     make_user("plain", roles='["REQUESTOR"]')
     client.post("/api/auth/login", json={"email": "plain@x.com", "password": "secret123"})
     assert client.get("/api/email-templates/settings").status_code == 403
+
+
+def test_a_malformed_recipient_is_a_400_not_a_500(client):
+    # The field validator raises ValueError; the app-wide handler used to put
+    # that raw exception in the JSON body (via err.errors()'s ctx), which
+    # jsonify can't serialize, so a bad address came back as a 500.
+    _login_admin(client)
+    r = client.put("/api/email-templates/settings",
+                   json={"mode": "test", "test_recipient": "not-an-address"})
+    assert r.status_code == 400
+    body = r.get_json()
+    assert body["error"] == "Validation failed."
+    assert "valid email address" in body["details"][0]["msg"]

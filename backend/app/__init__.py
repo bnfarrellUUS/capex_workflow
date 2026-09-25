@@ -154,7 +154,10 @@ def create_app(config_object=None):
 
     @app.errorhandler(ValidationError)
     def _handle_validation_error(err: ValidationError):
-        return jsonify(error="Validation failed.", details=err.errors()), 400
+        # include_context=False: a raising field_validator puts the raw
+        # ValueError in each error's ctx, which jsonify can't serialize (a 500).
+        return jsonify(error="Validation failed.",
+                       details=err.errors(include_context=False)), 400
 
     # Serve the built React SPA from the same server as the API. `frontend/dist`
     # is produced by `vite build`; FRONTEND_DIST overrides the location in prod.
