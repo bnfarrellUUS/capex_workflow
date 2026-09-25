@@ -307,7 +307,8 @@ vars, secrets from Key Vault, owned by IT's infra repo.
   safe because all auth state is in the signed session cookie).
 - `.dockerignore` must keep excluding `**/.env` — `config.py`'s
   `load_dotenv()` would bake the Azure SQL password into the image.
-- Pipeline triggers on the Azure **`dev`** branch. Every resource name in it
+- Pipeline triggers on the Azure **`develop`** branch (was `dev` until
+  2026-09-25). Every resource name in it
   (`ca-capri-dev`, `uus-capri-dev-scus-rg`, `uuscapridevscusacr`, the pool and
   `uus-dev-sc`) is **proposed by analogy with APEX, not confirmed by IT**.
 - **`APP_BASE_URL` is the one switch for which config runs** (ADO 5883,
@@ -738,12 +739,17 @@ carries Submit) and the API rejects them as hideable keys.
 - **Two git remotes, different targets (since 2026-09-18).** `origin` is GitHub
   (`bnfarrellUUS/capex_workflow`) and `azure` is Azure DevOps
   (`dh-united/FinanceApps/_git/capri`, mirrored 2026-09-15). Work on local
-  `main`. After committing, push it to GitHub's `main` and to Azure's **`dev`**:
+  `main`. After committing, push it to GitHub's `main` and to Azure's
+  **`develop`**:
 
-      git push origin main && git push azure main:dev
+      git push origin main && git push azure main:develop
 
-  **Never push to `azure main`** — Bryan promotes `dev` → `main` on Azure
-  himself, so that remote's `main` is expected to lag until he does. GitHub's
+  **Never push to `azure main`** — Bryan promotes `develop` → `main` on Azure
+  himself, so that remote's `main` is expected to lag until he does.
+  **`develop` replaced `dev` on 2026-09-25** to match APEX and IT's request;
+  Azure's `dev` still exists at its last commit but nothing lands on it any
+  more. Once IT registers the Dev pipeline, **every push to `develop` deploys
+  to CAPRI Dev**, so don't push it in a state you wouldn't want running there. GitHub's
   `main` and local `main` stay identical; if one gets ahead, fast-forward
   rather than forcing (the only force push so far was the initial mirror,
   which replaced Azure's auto-generated placeholder README commit).

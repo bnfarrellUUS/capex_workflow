@@ -1,9 +1,10 @@
 # =============================================================================
 # CAPRI — Dev deploy pipeline
 #
-# Auto-deploys on push to the Azure repo's `dev` branch (CAPRI's workflow is
-# `git push azure main:dev`; Bryan promotes dev -> main himself). No approval
-# gate, matching dev convention elsewhere on the platform.
+# Auto-deploys on push to the Azure repo's `develop` branch (CAPRI's workflow
+# is `git push azure main:develop`; Bryan promotes develop -> main himself).
+# `develop`, not `dev`, to match APEX and what IT asked for (2026-09-22). No
+# approval gate, matching dev convention elsewhere on the platform.
 #
 # Modelled on APEX's pipelines/azure-pipelines-dev.yml. Its only job is to
 # build the image and swap it into the Container App. It sets NO settings or
@@ -24,7 +25,7 @@
 
 trigger:
   branches:
-    include: [dev]
+    include: [develop]
 
 pr: none
 

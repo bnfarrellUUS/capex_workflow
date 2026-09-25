@@ -12,7 +12,7 @@ on the Container App; secrets come from Key Vault through the Container App's
 | Container App | `ca-capri-dev` *(proposed)* |
 | Resource group | `uus-capri-dev-scus-rg` *(proposed)* |
 | Registry | `uuscapridevscusacr` *(proposed)* |
-| Pipeline | `pipelines/azure-pipelines-dev.yml`, every push to the Azure repo's `dev` branch |
+| Pipeline | `pipelines/azure-pipelines-dev.yml`, every push to the Azure repo's `develop` branch |
 | URL | `https://capri-dev.uniteduptime.com` *(proposed; VPN only, like APEX Dev)* |
 | Database | Azure SQL `uus-capri-dev-scus-sql` (exists; private endpoint only) |
 | Ingress target port | `8000` |
