@@ -30,8 +30,13 @@ def _can_view(req, viewer):
     if req.status.startswith("PENDING_L"):
         from app.services import threshold_service, workflow_service
         actors = workflow_service.current_actors(req, threshold_service.list_thresholds())
-        return viewer.id in {u.id for u in actors}
-    return False
+        if viewer.id in {u.id for u in actors}:
+            return True
+    # Anyone who approved or rejected it -- or on whose behalf a delegate did --
+    # keeps read access at every status afterwards (ADO 5920). Read only:
+    # acting still goes through workflow_service._require_current_approver.
+    return any(a.action in ("APPROVED", "REJECTED") and viewer.id in (a.actor_id, a.acted_for_id)
+               for a in req.actions)
 
 
 def can_view(req, viewer):

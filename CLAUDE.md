@@ -87,7 +87,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 501 tests).
+- Backend: `cd backend && pytest -q` (currently 510 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -262,7 +262,13 @@ hint — stored when the request enters a level and never refreshed, so the API'
 once finished, and never an inactive user) rather than read from the column — `request_service._can_view` therefore
 admits **every eligible actor at the current level**, not just `assignee_id`
 (before 2026-08-05 it didn't, so a second pool approver got a 403 opening a
-request from their own worklist).
+request from their own worklist). It also admits **anyone who approved or
+rejected the request** (`actor_id`, or `acted_for_id` when a delegate acted
+for them), at every status afterwards (ADO 5920, 2026-09-25; before, an
+approver got a 403 refreshing the page right after their approval moved the
+request on). That is **read access only**: acting still requires being a
+current approver. PDF, attachment downloads, commenting and ping deep links
+all share this rule. Past-acted requests don't appear on any worklist.
 
 **Requestors cannot approve their own requests.** Every pool computation
 (`workflow_service.eligible_actors`, `first_assignee`, `next_pending_level`)
