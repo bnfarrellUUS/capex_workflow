@@ -290,21 +290,33 @@ Dev App Gateway, 172.16.32.70).
 
 > Jordan,
 >
-> Following up on this one now that CAPRI Dev is moving (the environment request
-> went out this morning). Taking your APEX approach — values in Key Vault, SSO
-> tested against Dev rather than localhost — so this is shorter than my original:
+> Following up on this one now that the CAPRI Dev environment request has gone
+> out (this morning). I'm taking your APEX approach: values in Key Vault and SSO
+> tested against Dev, not localhost. So this is much shorter than my original,
+> and two of its questions are answered:
+>
+> - **The group is ready.** SEC-App-CAPRI-Dev has its 4 members (Andre Doerfer,
+>   Joe Loner, Chris Jodlowski and me), and each already has an active CAPRI
+>   account.
+> - **No need to answer the UPN question.** CAPRI's accounts are already under
+>   the @dh-united.com UPNs, so sign-ins will match.
+>
+> What's left on your side:
 >
 > 1. **Redirect URI** on the CAPRI app registration:
->    `https://capri-dev.uniteduptime.com/api/auth/sso/callback`. The localhost one
->    is no longer needed.
+>    https://capri-dev.uniteduptime.com/api/auth/sso/callback (the DNS record you
+>    added on the 22nd). The localhost one isn't needed.
 > 2. **Groups claim** set to "Groups assigned to the application", and
 >    **SEC-App-CAPRI-Dev assigned** to the registration. Those two were the last
->    things standing on APEX, so worth doing up front.
-> 3. **Key Vault**, for the CAPRI Dev container: `CAPRI_SSO_TENANT_ID`,
->    `CAPRI_SSO_CLIENT_ID`, `CAPRI_SSO_CLIENT_SECRET`, `CAPRI_SSO_ALLOWED_GROUPS`
->    (the group's object ID, not its name) and `CAPRI_SSO_REDIRECT_URI` (the URI
->    above). Leave `CAPRI_ENABLE_SSO` unset for now; I'll ask for it to be set to
->    1 once Dev is up and I've checked the user records.
+>    things holding up APEX, so worth doing up front.
+> 3. **Key Vault**, for the CAPRI Dev container: CAPRI_SSO_TENANT_ID,
+>    CAPRI_SSO_CLIENT_ID, CAPRI_SSO_CLIENT_SECRET, CAPRI_SSO_ALLOWED_GROUPS (the
+>    group's object ID from its Details tab, not its name) and
+>    CAPRI_SSO_REDIRECT_URI (the URI above).
+> 4. Leave **CAPRI_ENABLE_SSO** unset for now. I'll ask for it to be set to 1
+>    once Dev is up and I've signed in with a password first.
+>
+> And when you create the client secret, could you let me know its expiry date?
 >
 > Thanks,
 > Bryan
