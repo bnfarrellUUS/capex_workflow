@@ -136,6 +136,11 @@ the two steps is missing:
 
 ## The UPN trap (added 2026-09-21, after checking)
 
+**Resolved 2026-09-25:** most UPNs are @dh-united.com (Bryan), and the Dev
+database's real user records already use @dh-united.com, so they match. New
+users must be added with their @dh-united.com UPN as their email. The counts
+quoted below were from a local database, not Dev.
+
 **This is the item most likely to break CAPRI, and it is not in the guide.**
 
 Gate 3 matches the `preferred_username` claim — which Entra populates with the
@@ -272,7 +277,11 @@ it mirrors to GitHub) and let Outlook add your signature.
 
 ## Follow-up to send (2026-09-25) — reply on the 2026-09-21 thread
 
-Short, and aligned with Jordan's APEX reply. The DNS record for
+Short, and aligned with Jordan's APEX reply. **The UPN question is settled and
+no longer asked:** Bryan confirmed on 2026-09-25 that most users' UPNs are
+@dh-united.com, and every real user record on the Dev database (4 of 5) is
+already @dh-united.com. The fifth is the seeded `admin@uniteduptime.com`,
+which is deactivated at first deploy anyway. The DNS record for
 `capri-dev.uniteduptime.com` already exists (Jordan, 2026-09-22, pointing at the
 Dev App Gateway, 172.16.32.70).
 
@@ -291,13 +300,8 @@ Dev App Gateway, 172.16.32.70).
 > 3. **Key Vault**, for the CAPRI Dev container: `CAPRI_SSO_TENANT_ID`,
 >    `CAPRI_SSO_CLIENT_ID`, `CAPRI_SSO_CLIENT_SECRET`, `CAPRI_SSO_ALLOWED_GROUPS`
 >    (the group's object ID, not its name) and `CAPRI_SSO_REDIRECT_URI` (the URI
->    above). Leave `CAPRI_ENABLE_SSO` unset until I've confirmed the user records
->    below; I'll ask for it to be set to 1 then.
->
-> One question still open from the original: CAPRI matches a sign-in on the UPN,
-> and most CAPRI user records are @uniteduptime.com while my own UPN is
-> @dh-united.com. Is the UPN always @dh-united.com, or does it vary by account?
-> I'll correct the records before SSO goes on either way.
+>    above). Leave `CAPRI_ENABLE_SSO` unset for now; I'll ask for it to be set to
+>    1 once Dev is up and I've checked the user records.
 >
 > Thanks,
 > Bryan
