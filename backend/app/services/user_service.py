@@ -97,5 +97,8 @@ def reset_to_default_password(user_id):
     user.must_change_password = True
     user.failed_logins = 0
     user.locked_until = None
+    # Sign them out everywhere: existing session and remember-me cookies
+    # carry the old version and stop loading.
+    user.session_version = (user.session_version or 0) + 1
     db.session.commit()
     return user

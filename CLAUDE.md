@@ -39,7 +39,7 @@ expenditure. See
   The dev server `uus-capri-dev-scus-sql` is **private-endpoint-only**; as of
   **2026-09-18 it is reachable from the office network** — the hostname
   resolves through its `privatelink` CNAME to **172.16.31.204** and the app
-  runs against it (seeded; schema at `a1b2c3d4e5f7` as of 2026-09-25 — **one behind head `b2c3d4e5f6a8`**, so run `flask db upgrade` before using it with current code). Off that
+  runs against it (seeded; schema at `a1b2c3d4e5f7` as of 2026-09-25 — **two behind head `c3d4e5f6a7b9`**, so run `flask db upgrade` before using it with current code). Off that
   network there is still no public A record, so comment `AZURE_SQL_ODBC` back
   out in `.env` to fall back to the local SQLite file.
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
@@ -158,7 +158,11 @@ build`; there is no live dev server.)
 
 - **User** — `email`, `name`, `password_hash`, `must_change_password`, `roles`
   (JSON string array, see Roles), `active`, `division_id`, `delegate_id`
-  (out-of-office delegate), lockout fields, reset token. `roles_list` property
+  (out-of-office delegate), lockout fields, reset token, `session_version`
+  (migration `c3d4e5f6a7b9`: `get_id()` is `"<id>:<version>"`, so it is inside
+  the session **and** remember-me cookies; `load_user` rejects a mismatch, and
+  an admin reset bumps it to sign the user out everywhere — a bare-id cookie
+  from before versioning loads only while the version is 0). `roles_list` property
   parses roles.
 - **Division** — `number`, `name`, `active`, `l1_approvers` (many-to-many via
   `division_l1_approvers`: the Level-1 approver pool for its requests),
@@ -817,8 +821,9 @@ carries Submit) and the API rejects them as hideable keys.
 - Deferred auth follow-ups (final review 2026-07-15, all minor): no vitest for
   `ChangePasswordPage` validation or the reset-to-default confirm flow; the
   "Sign out instead" button doesn't guard a rejected `logout()`; non-`ApiError`
-  failures render nothing in `UserEditPage` reset/delete; an admin reset does
-  not invalidate the target user's existing session/remember cookie.
+  failures render nothing in `UserEditPage` reset/delete. (The fourth — an
+  admin reset not ending the user's sessions — was fixed 2026-09-25; see
+  `session_version` under Data model.)
 - `docs/superpowers/specs/` holds design specs; milestone/phase plans live under
   `docs/`.
 - **Removed 2026-09-15 — older specs still link to them.** These were reference

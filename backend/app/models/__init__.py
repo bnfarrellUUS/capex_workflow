@@ -95,6 +95,9 @@ class User(UserMixin, db.Model):
     # nullable-unique column caps the table at one NULL on SQL Server (see
     # migration b8c9d0e1f2a3).
     entra_oid: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    # Part of the Flask-Login id (see get_id), so it is baked into the session
+    # and remember-me cookies; bumping it signs this user out everywhere.
+    session_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=_utcnow, onupdate=_utcnow
@@ -103,6 +106,9 @@ class User(UserMixin, db.Model):
     @property
     def is_active(self) -> bool:
         return self.active
+
+    def get_id(self) -> str:
+        return f"{self.id}:{self.session_version or 0}"
 
     @property
     def roles_list(self) -> list[str]:

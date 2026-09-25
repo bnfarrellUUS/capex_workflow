@@ -101,9 +101,15 @@ def create_app(config_object=None):
                            code="PASSWORD_CHANGE_REQUIRED"), 403
 
     @login_manager.user_loader
-    def load_user(user_id):
+    def load_user(login_id):
+        # "<user id>:<session_version>" (User.get_id). A bare id is a cookie
+        # from before versioning: honoured until the user's first reset.
         from app.models import User
-        return db.session.get(User, user_id)
+        user_id, _, version = login_id.partition(":")
+        user = db.session.get(User, user_id)
+        if user is None or str(user.session_version or 0) != (version or "0"):
+            return None
+        return user
 
     @login_manager.unauthorized_handler
     def unauthorized():
