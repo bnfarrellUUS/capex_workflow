@@ -39,7 +39,7 @@ expenditure. See
   The dev server `uus-capri-dev-scus-sql` is **private-endpoint-only**; as of
   **2026-09-18 it is reachable from the office network** — the hostname
   resolves through its `privatelink` CNAME to **172.16.31.204** and the app
-  runs against it (seeded; schema at `a1b2c3d4e5f7` as of 2026-09-25 — **two behind head `c3d4e5f6a7b9`**, so run `flask db upgrade` before using it with current code). Off that
+  runs against it (seeded; schema at `c3d4e5f6a7b9`, the head, as of 2026-09-25). Off that
   network there is still no public A record, so comment `AZURE_SQL_ODBC` back
   out in `.env` to fall back to the local SQLite file.
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
