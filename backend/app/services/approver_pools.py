@@ -6,6 +6,8 @@ relationship writes only the two foreign keys, so the order is written here
 after the rows exist, and the relationship reads it back via `order_by`.
 """
 
+from sqlalchemy import bindparam
+
 from app.extensions import db
 from app.models import User
 
@@ -26,12 +28,18 @@ def set_pool(owner, attr, user_ids):
     users = ordered_users(user_ids)
     setattr(owner, attr, users)
     db.session.flush()
-    table = type(owner).__mapper__.relationships[attr].secondary
-    owner_col = next(c for c in table.c if c.name not in ("user_id", "position"))
-    for position, user in enumerate(users):
+    if users:
+        rel = type(owner).__mapper__.relationships[attr]
+        # The relationship knows which association columns point at the owner
+        # and at the user; guessing by column name would pick the wrong one
+        # if the table ever grew another column.
+        (_, owner_col), = rel.synchronize_pairs
+        (_, user_col), = rel.secondary_synchronize_pairs
         db.session.execute(
-            table.update()
-            .where(owner_col == owner.id, table.c.user_id == user.id)
-            .values(position=position))
+            rel.secondary.update()
+            .where(owner_col == bindparam("b_owner"), user_col == bindparam("b_user"))
+            .values(position=bindparam("b_position")),
+            [{"b_owner": owner.id, "b_user": u.id, "b_position": i}
+             for i, u in enumerate(users)])
     # Drop the in-memory list so the next read comes back ordered from the DB.
     db.session.expire(owner, [attr])
