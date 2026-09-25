@@ -1,11 +1,7 @@
 from app.extensions import db
-from app.models import Region, User
+from app.models import Region
+from app.services.approver_pools import set_pool
 from app.services.errors import ServiceError
-
-
-def _users(ids):
-    ids = [i for i in (ids or []) if i]
-    return db.session.query(User).filter(User.id.in_(ids)).all() if ids else []
 
 
 def list_regions():
@@ -16,8 +12,9 @@ def create_region(*, name, active=True, vp_approver_ids=None):
     nm = name.strip()
     if db.session.query(Region).filter_by(name=nm).first() is not None:
         raise ServiceError("Region name already exists.", 409)
-    region = Region(name=nm, active=active, vp_approvers=_users(vp_approver_ids))
+    region = Region(name=nm, active=active)
     db.session.add(region)
+    set_pool(region, "vp_approvers", vp_approver_ids)
     db.session.commit()
     return region
 
@@ -33,6 +30,6 @@ def update_region(region_id, *, name, active, vp_approver_ids):
         raise ServiceError("Region name already exists.", 409)
     region.name = nm
     region.active = active
-    region.vp_approvers = _users(vp_approver_ids)
+    set_pool(region, "vp_approvers", vp_approver_ids)
     db.session.commit()
     return region

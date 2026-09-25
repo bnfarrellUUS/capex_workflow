@@ -1,5 +1,6 @@
 from app.extensions import db
-from app.models import ApprovalThreshold, User
+from app.models import ApprovalThreshold
+from app.services.approver_pools import set_pool
 from app.services.errors import ServiceError
 
 
@@ -14,11 +15,6 @@ def list_thresholds():
     return [existing[level] for level in (1, 2, 3)]
 
 
-def _users(ids):
-    ids = [i for i in (ids or []) if i]
-    return db.session.query(User).filter(User.id.in_(ids)).all() if ids else []
-
-
 def set_thresholds(items):
     by_level = {t.level: t for t in list_thresholds()}
     for item in items:
@@ -26,6 +22,6 @@ def set_thresholds(items):
             raise ServiceError("Invalid threshold level.")
         row = by_level[item["level"]]
         row.max_amount = item["max_amount"]
-        row.approvers = _users(item.get("approver_ids"))
+        set_pool(row, "approvers", item.get("approver_ids"))
     db.session.commit()
     return [by_level[level] for level in (1, 2, 3)]

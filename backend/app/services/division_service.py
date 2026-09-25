@@ -1,11 +1,7 @@
 from app.extensions import db
-from app.models import Division, User
+from app.models import Division
+from app.services.approver_pools import set_pool
 from app.services.errors import ServiceError
-
-
-def _users(ids):
-    ids = [i for i in (ids or []) if i]
-    return db.session.query(User).filter(User.id.in_(ids)).all() if ids else []
 
 
 def _region(region_id):
@@ -46,7 +42,7 @@ def update_division(division_id, *, number, name, active, l1_approver_ids, regio
     div.number = num
     div.name = name.strip()
     div.active = active
-    div.l1_approvers = _users(l1_approver_ids)
+    set_pool(div, "l1_approvers", l1_approver_ids)
     div.region = _region(region_id)
     db.session.commit()
     return div

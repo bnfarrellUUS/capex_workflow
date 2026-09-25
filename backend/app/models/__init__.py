@@ -12,21 +12,27 @@ from app.extensions import db
 
 # Level approvers are many-to-many: any one of them can act at that level.
 # L1 approvers are per-division; L2 approvers are per-region (a region's VP
-# pool); L3 approvers hang off the threshold row.
+# pool); L3 approvers hang off the threshold row. `position` is the order an
+# admin set (the first approver is the request's "assigned to"); the
+# relationship does not write it, so pools are saved through
+# services/approver_pools.set_pool, never by assigning the list directly.
 division_l1_approvers = Table(
     "division_l1_approvers", db.metadata,
     Column("division_id", String(36), ForeignKey("divisions.id", ondelete="CASCADE"), primary_key=True),
     Column("user_id", String(36), ForeignKey("users.id", ondelete="NO ACTION"), primary_key=True),
+    Column("position", Integer, nullable=False, server_default="0"),
 )
 threshold_approvers = Table(
     "threshold_approvers", db.metadata,
     Column("threshold_id", String(36), ForeignKey("approval_thresholds.id", ondelete="CASCADE"), primary_key=True),
     Column("user_id", String(36), ForeignKey("users.id", ondelete="NO ACTION"), primary_key=True),
+    Column("position", Integer, nullable=False, server_default="0"),
 )
 region_vp_approvers = Table(
     "region_vp_approvers", db.metadata,
     Column("region_id", String(36), ForeignKey("regions.id", ondelete="CASCADE"), primary_key=True),
     Column("user_id", String(36), ForeignKey("users.id", ondelete="NO ACTION"), primary_key=True),
+    Column("position", Integer, nullable=False, server_default="0"),
 )
 
 # Money uses fixed precision so SQL Server stores cents (an unscaled Numeric
@@ -109,7 +115,8 @@ class Region(db.Model):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Level-2 approvers (the region's VP + backups; any one may approve).
-    vp_approvers: Mapped[list["User"]] = relationship("User", secondary=region_vp_approvers)
+    vp_approvers: Mapped[list["User"]] = relationship(
+        "User", secondary=region_vp_approvers, order_by=region_vp_approvers.c.position)
 
     divisions: Mapped[list["Division"]] = relationship(back_populates="region")
 
@@ -124,7 +131,7 @@ class Division(db.Model):
 
     # Level-1 approvers for this division (any one may approve).
     l1_approvers: Mapped[list["User"]] = relationship(
-        "User", secondary=division_l1_approvers
+        "User", secondary=division_l1_approvers, order_by=division_l1_approvers.c.position
     )
 
     # Nullable because divisions predate regions; the admin form requires it.
@@ -145,7 +152,8 @@ class ApprovalThreshold(db.Model):
     level: Mapped[int] = mapped_column(Integer, unique=True)  # 1, 2, 3
     max_amount: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
     # Approvers for this level (any one may approve). L1 uses the division's list.
-    approvers: Mapped[list["User"]] = relationship("User", secondary=threshold_approvers)
+    approvers: Mapped[list["User"]] = relationship(
+        "User", secondary=threshold_approvers, order_by=threshold_approvers.c.position)
 
 
 class CapexRequest(db.Model):
