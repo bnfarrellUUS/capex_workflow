@@ -61,7 +61,14 @@ export default function ChangePasswordPage() {
           </Button>
           <button type="button"
             className="w-full text-center text-sm text-muted hover:text-fg hover:underline"
-            onClick={async () => { await logout(); navigate('/login', { replace: true }) }}>
+            onClick={async () => {
+              try {
+                await logout()
+                navigate('/login', { replace: true })
+              } catch {
+                setLocalError('Could not sign out. Try again.')
+              }
+            }}>
             Sign out instead
           </button>
         </form>

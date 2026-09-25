@@ -818,12 +818,12 @@ carries Submit) and the API rejects them as hideable keys.
 - If `DEFAULT_PASSWORD` ever changes, update it in lockstep: the config
   constant, the literal "Welcome@1" copy in `UserForm.tsx` (new-user note) and
   `UserEditPage.tsx` (reset section), and this file.
-- Deferred auth follow-ups (final review 2026-07-15, all minor): no vitest for
-  `ChangePasswordPage` validation or the reset-to-default confirm flow; the
-  "Sign out instead" button doesn't guard a rejected `logout()`; non-`ApiError`
-  failures render nothing in `UserEditPage` reset/delete. (The fourth — an
-  admin reset not ending the user's sessions — was fixed 2026-09-25; see
-  `session_version` under Data model.)
+- The deferred auth follow-ups from the 2026-07-15 review are all closed
+  (2026-09-25): `ChangePasswordPage.test.tsx` covers its validation and the
+  "Sign out instead" failure (now an error, not a silent no-op);
+  `UserEditPage.test.tsx` covers the reset confirm flow and the generic
+  "Reset failed." / "Delete failed." messages for non-`ApiError` failures;
+  an admin reset now signs the user out (`session_version`).
 - `docs/superpowers/specs/` holds design specs; milestone/phase plans live under
   `docs/`.
 - **Removed 2026-09-15 — older specs still link to them.** These were reference

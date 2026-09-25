@@ -25,14 +25,17 @@ export default function UserEditPage() {
     mutationFn: () => deleteUser(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); navigate('/admin/users') },
   })
-  const deleteError = deleteMutation.error instanceof ApiError ? deleteMutation.error.message : null
+  const deleteError = deleteMutation.error instanceof ApiError ? deleteMutation.error.message
+    : deleteMutation.error ? 'Delete failed.' : null
 
   const [resetMsg, setResetMsg] = useState<string | null>(null)
   const resetMutation = useMutation({
     mutationFn: () => resetUserPassword(id),
     onMutate: () => setResetMsg(null),
-    onSuccess: () => setResetMsg('Password reset to the default. The user must choose a new one at next sign-in.'),
+    onSuccess: () => setResetMsg('Password reset to the default. The user has been signed out and must choose a new one at next sign-in.'),
   })
+  const resetError = resetMutation.error instanceof ApiError ? resetMutation.error.message
+    : resetMutation.error ? 'Reset failed.' : null
 
   if (!user) return <p className="text-sm text-muted">Loading…</p>
 
@@ -46,17 +49,15 @@ export default function UserEditPage() {
       <div className="max-w-lg border-t border-border pt-6">
         <h2 className="mb-1 font-semibold text-fg">Reset password</h2>
         <p className="mb-2 text-sm text-muted">
-          Sets the account back to the default password (Welcome@1); the user must choose
-          their own at next sign-in.
+          Sets the account back to the default password (Welcome@1) and signs the user out
+          everywhere; they must choose their own at next sign-in.
         </p>
         <Button disabled={resetMutation.isPending}
           onClick={() => {
             if (window.confirm(`Reset ${user.email} to the default password?`)) resetMutation.mutate()
           }}>Reset to default password</Button>
         {resetMsg && <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{resetMsg}</p>}
-        {resetMutation.error instanceof ApiError && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">{resetMutation.error.message}</p>
-        )}
+        {resetError && <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">{resetError}</p>}
       </div>
       <div className="max-w-lg border-t border-border pt-6">
         <h2 className="mb-1 font-semibold text-fg">Delete user</h2>
