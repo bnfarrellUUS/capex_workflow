@@ -85,7 +85,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 403 tests).
+- Backend: `cd backend && pytest -q` (currently 420 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -306,9 +306,17 @@ vars, secrets from Key Vault, owned by IT's infra repo.
 - Pipeline triggers on the Azure **`dev`** branch. Every resource name in it
   (`ca-capri-dev`, `uus-capri-dev-scus-rg`, `uuscapridevscusacr`, the pool and
   `uus-dev-sc`) is **proposed by analogy with APEX, not confirmed by IT**.
-- **Not yet deployable:** `wsgi.py` still loads `DevConfig` (insecure default
-  `SECRET_KEY`, SQLite fallback if `AZURE_SQL_ODBC` is missing, Outlook email)
-  — ADO 5883/5884 fix that.
+- **`APP_BASE_URL` is the one switch for which config runs** (ADO 5883,
+  `config.config_from_env()`, read at call time): unset/localhost →
+  `DevConfig` (unchanged local behaviour); anything else → `ProdConfig`
+  (secure cookies, **no SQLite fallback** — no DB URL means Flask-SQLAlchemy
+  refuses to start — and `EMAIL_ENABLED` default-off). There is deliberately no
+  separate environment flag. `create_app` then refuses to start a non-local
+  `APP_BASE_URL` that still has the repo's `INSECURE_DEV_SECRET` (or none), or
+  that isn't `https://`. No ProxyFix: nothing builds URLs from the request
+  scheme (redirects are relative; SSO's redirect URI is configured).
+- **Still not deployable:** email is Outlook-only until the SendGrid backend
+  (ADO 5884).
 
 ## Entra ID SSO
 

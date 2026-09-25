@@ -1,7 +1,7 @@
 import os
 import tempfile
 from datetime import timedelta
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlsplit
 
 from dotenv import load_dotenv
 
@@ -33,8 +33,20 @@ def _database_url(default=None):
     return default
 
 
+# Signs sessions on a developer's PC only. It is in the repo, so create_app
+# refuses to start a deployed server (non-local APP_BASE_URL) that still uses it.
+INSECURE_DEV_SECRET = "dev-insecure-change-me"
+
+
+def is_local_url(url):
+    """True for an unset/empty URL or one pointing at this machine."""
+    if not url:
+        return True
+    return urlsplit(url).hostname in ("localhost", "127.0.0.1", "::1")
+
+
 class BaseConfig:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-change-me")
+    SECRET_KEY = os.environ.get("SECRET_KEY", INSECURE_DEV_SECRET)
     # Starting password for new accounts and admin resets; the owner must
     # replace it on first login (User.must_change_password).
     DEFAULT_PASSWORD = "Welcome@1"
@@ -77,9 +89,21 @@ class TestConfig(BaseConfig):
 
 
 class ProdConfig(BaseConfig):
-    # e.g. mssql+pyodbc://user:pass@host/db?driver=ODBC+Driver+18+for+SQL+Server
-    # Read lazily so importing the module never fails when the var is unset
-    # (dev/test); deployment must set DATABASE_URL.
+    # No SQLite fallback: with neither DATABASE_URL nor AZURE_SQL_ODBC set this
+    # is None and Flask-SQLAlchemy refuses to start, rather than the server
+    # quietly running on an empty database of its own.
     SQLALCHEMY_DATABASE_URI = _database_url()
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
+
+
+def config_from_env():
+    """APP_BASE_URL is the single switch: a non-local URL is a deployed server.
+
+    Read at call time, not import time, so it is testable. There is deliberately
+    no separate "environment" flag -- two knobs drift apart, and a container
+    left on DevConfig would sign sessions with INSECURE_DEV_SECRET.
+    """
+    if is_local_url(os.environ.get("APP_BASE_URL")):
+        return DevConfig
+    return ProdConfig

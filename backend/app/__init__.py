@@ -3,14 +3,34 @@ import os
 from flask import Flask, jsonify, send_from_directory, abort, request, session
 from pydantic import ValidationError
 
-from .config import DevConfig
+from .config import INSECURE_DEV_SECRET, config_from_env, is_local_url
 from .extensions import db, migrate, login_manager, csrf
 from .services.errors import ServiceError
 
 
+def _refuse_unsafe_deployment(config):
+    """A deployed server (non-local APP_BASE_URL) must have its own SECRET_KEY
+    and be served over https. Failing here names the problem in the container
+    log; the alternatives are forgeable sessions (the dev key is in the repo)
+    or secure-only cookies that browsers never send over http, which looks like
+    every sign-in silently failing."""
+    base_url = config.get("APP_BASE_URL")
+    if is_local_url(base_url):
+        return
+    if config.get("SECRET_KEY") in (None, "", INSECURE_DEV_SECRET):
+        raise RuntimeError(
+            f"SECRET_KEY must be set to a random value when APP_BASE_URL is "
+            f"{base_url!r}; refusing to start with the development key.")
+    if not base_url.startswith("https://"):
+        raise RuntimeError(
+            f"APP_BASE_URL must be https:// on a deployed server (got "
+            f"{base_url!r}): session cookies are secure-only there.")
+
+
 def create_app(config_object=None):
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_object(config_object or DevConfig)
+    app.config.from_object(config_object or config_from_env())
+    _refuse_unsafe_deployment(app.config)
 
     db.init_app(app)
     migrate.init_app(app, db)
