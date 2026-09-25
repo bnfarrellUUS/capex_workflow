@@ -2,6 +2,8 @@
 # Azure SQL connection string; config.py's load_dotenv() would read it.
 **/.env
 **/.env.*
+# FLASK_DEBUG=1 for local `flask run`; the Dockerfile sets FLASK_APP itself.
+backend/.flaskenv
 backend/instance
 **/*.db
 **/*.db-journal

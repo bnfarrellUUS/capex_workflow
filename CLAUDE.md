@@ -284,7 +284,10 @@ sends at all. Defaults live in `email_template_service.DEFAULTS`.
 
 ## Deployment (Dev — in progress)
 
-Tracked on Azure DevOps Boards (FinanceApps, area `Solutions\CAPRI`): PBI
+**Settings reference and runbook: `docs/operations/deploy.md`** (every env
+var, required/secret, health-check table, first deploy, rollback — keep it in
+sync when a setting is added). Tracked on Azure DevOps Boards (FinanceApps,
+area `Solutions\CAPRI`): PBI
 **5879** (code: container-ready), **5880** (IT: Dev environment), **5881**
 (Entra SSO). Target is APEX's pattern — Azure Container Apps, settings as env
 vars, secrets from Key Vault, owned by IT's infra repo.
