@@ -361,10 +361,12 @@ function ReassignPanel({ req, disabled, onReassign, onClear }: {
         Reassign to (admin)
       </label>
       <div className="flex flex-wrap gap-2">
-        <Select id="reassign-to" className="w-auto" value={userId} onChange={(e) => setUserId(e.target.value)}>
-          <option value="">Choose a user…</option>
-          {choices.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-        </Select>
+        <div className="w-56">
+          <Select id="reassign-to" value={userId} onChange={(e) => setUserId(e.target.value)}>
+            <option value="">Choose a user…</option>
+            {choices.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </Select>
+        </div>
         <Input className="flex-1" placeholder="Reason (optional)" value={note}
           onChange={(e) => setNote(e.target.value)} />
         <Button variant="secondary" disabled={disabled || !userId}
