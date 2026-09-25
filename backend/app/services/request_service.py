@@ -69,13 +69,35 @@ def list_requests(viewer, scope="mine", status=None, division_id=None):
     return q.order_by(CapexRequest.created_at.desc()).all()
 
 
+def _live_assignee(req, approvers=None):
+    """The request's "assigned to": its first current approver while pending.
+
+    assignee_id is a snapshot taken when the request entered its level, and
+    nothing refreshes it; showing it would name someone deactivated or moved
+    down the pool since. With nobody eligible it falls back to the snapshot
+    only if that user is still active, and it is None once the request is
+    finished (the workflow clears it)."""
+    if not req.status.startswith("PENDING_L"):
+        return req.assignee
+    if approvers is None:
+        from app.services import threshold_service, workflow_service
+        approvers = workflow_service.eligible_actors(
+            req.current_level, req.division, threshold_service.list_thresholds(),
+            exclude_id=req.requestor_id)
+    if approvers:
+        return approvers[0]
+    # Nobody eligible: keep the snapshot only if that person can still act.
+    return req.assignee if req.assignee is not None and req.assignee.active else None
+
+
 def request_summary(req):
+    assignee = _live_assignee(req)
     return {
         "id": req.id, "number": req.number, "status": req.status,
         "total_cost": money_str(req.total_cost),
         "division_name": f"{req.division.number} — {req.division.name}" if req.division else None,
         "requestor_name": req.requestor.name if req.requestor else None,
-        "assignee_name": req.assignee.name if req.assignee else None,
+        "assignee_name": assignee.name if assignee else None,
         "current_level": req.current_level, "required_levels": req.required_levels,
         "created_at": req.created_at.isoformat() if req.created_at else None,
     }
@@ -144,12 +166,13 @@ def request_out(req):
         approvers = workflow_service.eligible_actors(
             req.current_level, req.division, threshold_service.list_thresholds(),
             exclude_id=req.requestor_id)
+    assignee = _live_assignee(req, approvers)
     return {
         "id": req.id,
         "number": req.number,
         "status": req.status,
         "requestor_id": req.requestor_id,
-        "assignee_id": req.assignee_id,
+        "assignee_id": assignee.id if assignee else None,
         "current_approver_ids": [u.id for u in approvers],
         "current_approver_names": [u.name for u in approvers],
         "division_id": req.division_id,
@@ -192,7 +215,7 @@ def request_out(req):
             for i in req.equipment_items
         ],
         "requestor_name": req.requestor.name if req.requestor else None,
-        "assignee_name": req.assignee.name if req.assignee else None,
+        "assignee_name": assignee.name if assignee else None,
         "division_name": f"{req.division.number} — {req.division.name}" if req.division else None,
         "actions": [
             {"action": a.action, "level": a.level, "comment": a.comment,

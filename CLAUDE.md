@@ -85,7 +85,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 457 tests).
+- Backend: `cd backend && pytest -q` (currently 463 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -234,7 +234,10 @@ them and `effective_assignee` ignores an inactive delegate, so deactivating an
 approver never leaves requests routed to an account nobody can sign in to — a
 level whose only approvers are inactive is skipped like any empty level. The pool
 appears on every member's "assigned" worklist; `assignee_id` is just a display
-hint (the first current approver) — `request_service._can_view` therefore
+hint — stored when the request enters a level and never refreshed, so the API's
+`assignee_id`/`assignee_name` are **computed live** by
+`request_service._live_assignee` (the first current eligible approver; none
+once finished, and never an inactive user) rather than read from the column — `request_service._can_view` therefore
 admits **every eligible actor at the current level**, not just `assignee_id`
 (before 2026-08-05 it didn't, so a second pool approver got a 403 opening a
 request from their own worklist).
