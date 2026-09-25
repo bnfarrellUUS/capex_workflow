@@ -83,6 +83,14 @@ describe('RequestsListPage', () => {
     expect(screen.getAllByText('CX000042').length).toBeGreaterThan(1)   // row + modal chip
   })
 
+  it('offers Decided by me to everyone and lists with scope=decided', async () => {
+    mockMe(['REQUESTOR'])
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Decided by me' }))
+    await waitFor(() => expect(reqApi.listRequests).toHaveBeenLastCalledWith(
+      { scope: 'decided', status: undefined }))
+  })
+
   it('marks a stuck request with "No approver"', async () => {
     mockMe(['ADMIN'])
     vi.mocked(reqApi.listRequests).mockResolvedValue([{

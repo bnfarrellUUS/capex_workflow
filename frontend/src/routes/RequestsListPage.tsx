@@ -17,6 +17,7 @@ const STATUSES = ['', 'DRAFT', 'PENDING_L1', 'PENDING_L2', 'PENDING_L3', 'APPROV
 const SCOPE_LABELS: Record<string, string> = {
   mine: 'My Requests',
   assigned: 'Assigned to me',
+  decided: 'Decided by me',
   all: 'All',
 }
 
@@ -28,7 +29,8 @@ export default function RequestsListPage() {
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
   const canSeeAll = (me?.roles ?? []).some((r) => r === 'ADMIN' || r === 'FINANCE')
-  const scopes = canSeeAll ? ['mine', 'assigned', 'all'] : ['mine', 'assigned']
+  // Decided by me: requests you approved or rejected, at any status (ADO 5920).
+  const scopes = canSeeAll ? ['mine', 'assigned', 'decided', 'all'] : ['mine', 'assigned', 'decided']
   // STUCK = pending with nobody able to act (ADO 5907); only an ADMIN can fix
   // one, by reassigning it from the detail page.
   const statuses = me?.roles.includes('ADMIN') ? [...STATUSES, 'STUCK'] : STATUSES

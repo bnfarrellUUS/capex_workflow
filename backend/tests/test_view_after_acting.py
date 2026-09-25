@@ -112,3 +112,64 @@ def test_api_detail_and_pdf_work_for_a_past_approver(app, client):
     client.post("/api/auth/login", json={"email": "l1@x.com", "password": "secret123"})
     assert client.get(f"/api/requests/{req.id}").status_code == 200
     assert client.get(f"/api/requests/{req.id}/pdf").status_code == 200
+
+
+# ---- "Decided by me" list scope --------------------------------------------
+
+def _ids(rows):
+    return [r.id for r in rows]
+
+
+def test_decided_lists_what_you_approved_or_rejected_at_any_status(app):
+    req, requestor, l1, vp = _two_level_request()
+    other = make_draft(requestor.id, req.division_id, costs=("30000",), number="CX000002")
+    submit(other.id, requestor.id)
+    approve(req.id, l1.id)                        # req now PENDING_L2
+    reject(other.id, l1.id, "No budget")
+    assert set(_ids(request_service.list_requests(l1, scope="decided"))) == {req.id, other.id}
+    assert _ids(request_service.list_requests(vp, scope="decided")) == []
+
+
+def test_decided_lists_a_request_once_even_after_several_decisions(app):
+    req, requestor, l1, vp = _two_level_request()
+    reject(req.id, l1.id, "Fix it")
+    from app.services.workflow_service import resubmit
+    resubmit(req.id, requestor.id)
+    approve(req.id, l1.id)
+    assert _ids(request_service.list_requests(l1, scope="decided")) == [req.id]
+
+
+def test_decided_includes_what_a_delegate_decided_for_you(app):
+    requestor = make_user("req", roles='["REQUESTOR"]')
+    cover = make_user("cover")
+    away = make_user("away", delegate_id=cover.id)
+    div = make_division(l1_approver_id=away.id)
+    set_thresholds()
+    req = make_draft(requestor.id, div.id, costs=("30000",))
+    submit(req.id, requestor.id)
+    approve(req.id, cover.id)
+    assert _ids(request_service.list_requests(away, scope="decided")) == [req.id]
+    assert _ids(request_service.list_requests(cover, scope="decided")) == [req.id]
+
+
+def test_decided_ignores_submitting_and_reassigning(app):
+    admin = make_user("admin", roles='["ADMIN"]')
+    req, requestor, l1, vp = _two_level_request()
+    reassign(req.id, admin.id, vp.id)
+    assert _ids(request_service.list_requests(requestor, scope="decided")) == []
+    assert _ids(request_service.list_requests(admin, scope="decided")) == []
+
+
+def test_decided_honours_the_status_filter(app):
+    req, requestor, l1, vp = _two_level_request()
+    approve(req.id, l1.id)
+    assert _ids(request_service.list_requests(l1, scope="decided", status="APPROVED")) == []
+    assert _ids(request_service.list_requests(l1, scope="decided", status="PENDING_L2")) == [req.id]
+
+
+def test_api_decided_scope(app, client):
+    req, requestor, l1, vp = _two_level_request()
+    approve(req.id, l1.id)
+    client.post("/api/auth/login", json={"email": "l1@x.com", "password": "secret123"})
+    assert [r["id"] for r in client.get("/api/requests?scope=decided").get_json()] == [req.id]
+    assert client.get("/api/requests/export.xlsx?scope=decided").status_code == 200

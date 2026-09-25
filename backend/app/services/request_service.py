@@ -1,5 +1,7 @@
+from sqlalchemy import or_
+
 from app.extensions import db
-from app.models import CapexRequest, EquipmentItem
+from app.models import ApprovalAction, CapexRequest, EquipmentItem
 from app.serialization import money_str
 from app.services.counter_service import next_request_number
 from app.services.errors import ServiceError
@@ -62,6 +64,14 @@ def list_requests(viewer, scope="mine", status=None, division_id=None):
         ]
     elif scope == "all" and ("ADMIN" in viewer.roles_list or "FINANCE" in viewer.roles_list):
         pass
+    elif scope == "decided":
+        # "Decided by me": the same rule as _can_view's past-actor clause, so
+        # every row here opens (ADO 5920).
+        decided = (db.session.query(ApprovalAction.request_id)
+                   .filter(ApprovalAction.action.in_(("APPROVED", "REJECTED")),
+                           or_(ApprovalAction.actor_id == viewer.id,
+                               ApprovalAction.acted_for_id == viewer.id)))
+        q = q.filter(CapexRequest.id.in_(decided))
     else:
         q = q.filter(CapexRequest.requestor_id == viewer.id)
     if status == "STUCK":

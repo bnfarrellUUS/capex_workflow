@@ -87,7 +87,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 510 tests).
+- Backend: `cd backend && pytest -q` (currently 516 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -268,7 +268,10 @@ for them), at every status afterwards (ADO 5920, 2026-09-25; before, an
 approver got a 403 refreshing the page right after their approval moved the
 request on). That is **read access only**: acting still requires being a
 current approver. PDF, attachment downloads, commenting and ping deep links
-all share this rule. Past-acted requests don't appear on any worklist.
+all share this rule. They're listed under the Requests page's **"Decided by
+  me"** scope (`scope=decided`, shown to everyone like "Assigned to me";
+  the export honours it), which uses the same APPROVED/REJECTED + actor/
+  acted-for test, so every row opens. They stay off the "Assigned" worklist.
 
 **Requestors cannot approve their own requests.** Every pool computation
 (`workflow_service.eligible_actors`, `first_assignee`, `next_pending_level`)
@@ -505,7 +508,8 @@ changes for users until an Entra app registration exists.
   `routes/requestsSort.ts` — status sorts in workflow order, blanks last; the
   list page adds a search box over number/division/requestor, an
   Export-to-Excel button that downloads the current scope/status/search as
-  an xlsx, and an ADMIN/FINANCE-only "All" scope tab),
+  an xlsx, a "Decided by me" scope tab, and an ADMIN/FINANCE-only "All"
+  scope tab),
   `RequestDetailPage`, `ProfilePage`, `ReportsPage` (`/reports`, FINANCE/ADMIN
   only: year picker, spend-by-division/month/status tables with inline CSS
   bars, cycle time), `MessagesPage` (`/messages` — see "Pings (in-app
