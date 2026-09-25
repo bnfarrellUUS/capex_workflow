@@ -357,7 +357,7 @@ def directory() -> list[dict]:
 def suggested_recipients(viewer, request_id: str) -> list[dict]:
     """The people most likely to answer a request-attached ping, ranked first in
     the picker: the requestor; while pending, the eligible approver pool at the
-    current level (the same `workflow_service.eligible_actors` the worklists
+    current level (the same `workflow_service.current_actors` the worklists
     use, with the requestor excluded exactly as everywhere else); once
     APPROVED, every active FINANCE user. The viewer is never suggested to
     themself. Matching is on user ids from the request's own fields, never on
@@ -373,9 +373,7 @@ def suggested_recipients(viewer, request_id: str) -> list[dict]:
     if req.requestor is not None and req.requestor.active:
         found[req.requestor.id] = req.requestor
     if req.status.startswith("PENDING_L"):
-        for actor in workflow_service.eligible_actors(
-                req.current_level, req.division, threshold_service.list_thresholds(),
-                exclude_id=req.requestor_id):
+        for actor in workflow_service.current_actors(req, threshold_service.list_thresholds()):
             if actor.active:
                 found.setdefault(actor.id, actor)
     elif req.status == "APPROVED":

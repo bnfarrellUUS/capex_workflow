@@ -59,6 +59,8 @@ export interface CapexRequestData {
   assignee_name: string | null
   current_approver_ids: string[]
   current_approver_names: string[]
+  /** An ADMIN's per-request approver at the current level, if any (ADO 5907). */
+  reassigned_to_name?: string | null
   division_name: string | null
   finance_completed: boolean
   equipment_items: EquipItem[]
@@ -93,6 +95,14 @@ export function approveRequest(id: string, comment?: string): Promise<CapexReque
 }
 export function rejectRequest(id: string, comment: string): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/reject`, { method: 'POST', body: { comment } })
+}
+/** ADMIN: name a per-request approver for the current level (ADO 5907). */
+export function reassignRequest(id: string, userId: string, comment?: string): Promise<CapexRequestData> {
+  return api<CapexRequestData>(`/requests/${id}/reassign`, { method: 'POST', body: { user_id: userId, comment } })
+}
+/** ADMIN: drop the reassignment; the level's usual pool owns the request again. */
+export function clearReassignment(id: string): Promise<CapexRequestData> {
+  return api<CapexRequestData>(`/requests/${id}/reassign`, { method: 'DELETE' })
 }
 export function resubmitRequest(id: string): Promise<CapexRequestData> {
   return api<CapexRequestData>(`/requests/${id}/resubmit`, { method: 'POST' })
@@ -132,6 +142,8 @@ export interface RequestSummary {
   requestor_name: string | null
   assignee_name: string | null
   created_at: string | null
+  /** Pending with nobody able to act on it (ADO 5907). */
+  stuck?: boolean
 }
 
 export function listRequests(params: { scope?: string; status?: string } = {}): Promise<RequestSummary[]> {

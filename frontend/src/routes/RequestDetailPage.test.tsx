@@ -18,6 +18,8 @@ vi.mock('../api/requests', () => ({
   deleteAttachment: vi.fn(),
   resendRecord: vi.fn(),
   addComment: vi.fn(),
+  reassignRequest: vi.fn(),
+  clearReassignment: vi.fn(),
   attachmentUrl: (id: string, attId: string) => `/api/requests/${id}/attachments/${attId}`,
   requestPdfUrl: (id: string) => `/api/requests/${id}/pdf`,
 }))
@@ -29,12 +31,19 @@ vi.mock('../api/requestSections', () => ({
   getHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
   saveHiddenSections: vi.fn(() => Promise.resolve([] as string[])),
 }))
+vi.mock('../api/users', () => ({
+  listUsers: vi.fn(() => Promise.resolve([
+    { id: 'owner-1', email: 'o@x.com', name: 'Owner', roles: ['REQUESTOR'], active: true, division_id: null },
+    { id: 'gone-1', email: 'g@x.com', name: 'Gone', roles: ['APPROVER'], active: false, division_id: null },
+    { id: 'helper-1', email: 'h@x.com', name: 'Helper', roles: ['FINANCE'], active: true, division_id: null },
+  ])),
+}))
 vi.mock('../api/pings', () => ({
   createPing: vi.fn(), pingDirectory: vi.fn(() => Promise.resolve([])),
   pingSuggestions: vi.fn(() => Promise.resolve([])),
 }))
 
-import { getRequest, resendRecord, deleteRequest } from '../api/requests'
+import { getRequest, resendRecord, deleteRequest, reassignRequest, clearReassignment } from '../api/requests'
 import { getHiddenSections } from '../api/requestSections'
 import { ApiError } from '../api/client'
 import { readOpenRequests, touchOpenRequest } from '../openRequests'
@@ -263,6 +272,60 @@ describe('RequestDetailPage — ping entry point', () => {
     fireEvent.click(ping)
     expect(screen.getByRole('dialog', { name: /new ping/i })).toBeInTheDocument()
     expect(screen.getByText('CX000042')).toBeInTheDocument()
+  })
+})
+
+describe('RequestDetailPage — admin reassign', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getHiddenSections).mockResolvedValue([])
+  })
+
+  it('is hidden from non-admins', async () => {
+    mockRoles = ['APPROVER']
+    vi.mocked(getRequest).mockResolvedValue(makeRequest())
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.queryByRole('button', { name: /^Reassign$/ })).toBeNull()
+  })
+
+  it('is hidden once the request is no longer pending', async () => {
+    mockRoles = ['ADMIN']
+    vi.mocked(getRequest).mockResolvedValue({ ...makeRequest(), status: 'APPROVED' })
+    renderPage()
+    await screen.findByText('Request CX000042')
+    expect(screen.queryByRole('button', { name: /^Reassign$/ })).toBeNull()
+  })
+
+  it('offers only active users other than the requestor, and reassigns', async () => {
+    mockRoles = ['ADMIN']
+    const req = makeRequest()
+    vi.mocked(getRequest).mockResolvedValue(req)
+    vi.mocked(reassignRequest).mockResolvedValue({ ...req, current_approver_names: ['Helper'] })
+    renderPage()
+
+    const picker = await screen.findByLabelText(/Reassign to/i)
+    await screen.findByRole('option', { name: 'Helper' })
+    expect(screen.queryByRole('option', { name: 'Owner' })).toBeNull()
+    expect(screen.queryByRole('option', { name: 'Gone' })).toBeNull()
+
+    const button = screen.getByRole('button', { name: /^Reassign$/ })
+    expect(button).toBeDisabled()
+    fireEvent.change(picker, { target: { value: 'helper-1' } })
+    fireEvent.change(screen.getByPlaceholderText(/Reason/i), { target: { value: 'Covering' } })
+    fireEvent.click(button)
+
+    await waitFor(() => expect(reassignRequest).toHaveBeenCalledWith('req-1', 'helper-1', 'Covering'))
+  })
+
+  it('offers to return a reassigned request to normal routing', async () => {
+    mockRoles = ['ADMIN']
+    const req = { ...makeRequest(), reassigned_to_name: 'Helper' }
+    vi.mocked(getRequest).mockResolvedValue(req)
+    vi.mocked(clearReassignment).mockResolvedValue({ ...req, reassigned_to_name: null })
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /Return to normal routing/ }))
+    await waitFor(() => expect(clearReassignment).toHaveBeenCalledWith('req-1'))
   })
 })
 

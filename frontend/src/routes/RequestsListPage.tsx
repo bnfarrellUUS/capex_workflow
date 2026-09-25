@@ -29,6 +29,9 @@ export default function RequestsListPage() {
   const [exportError, setExportError] = useState('')
   const canSeeAll = (me?.roles ?? []).some((r) => r === 'ADMIN' || r === 'FINANCE')
   const scopes = canSeeAll ? ['mine', 'assigned', 'all'] : ['mine', 'assigned']
+  // STUCK = pending with nobody able to act (ADO 5907); only an ADMIN can fix
+  // one, by reassigning it from the detail page.
+  const statuses = me?.roles.includes('ADMIN') ? [...STATUSES, 'STUCK'] : STATUSES
   const { data: rows = [] } = useQuery({
     queryKey: ['requests', scope, status],
     queryFn: () => listRequests({ scope, status: status || undefined }),
@@ -78,9 +81,9 @@ export default function RequestsListPage() {
         <FilterIcon size={16} />
         <div className="w-48">
           <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {STATUSES.map((s) => (
+            {statuses.map((s) => (
               <option key={s} value={s}>
-                {s === '' ? 'All statuses' : s}
+                {s === '' ? 'All statuses' : s === 'STUCK' ? 'Stuck (no approver)' : s}
               </option>
             ))}
           </Select>
@@ -157,6 +160,12 @@ export function RequestsTable({ rows }: { rows: RequestSummary[] }) {
               </td>
               <td className="py-2.5 pr-4">
                 <StatusBadge status={r.status} />
+                {r.stuck && (
+                  <span className="ml-2 text-xs font-medium text-amber-600 dark:text-amber-400"
+                    title="Nobody active can approve this request at its level">
+                    No approver
+                  </span>
+                )}
               </td>
               <td className="py-2.5 pr-4 text-fg">{r.division_name ?? '—'}</td>
               <td className="py-2.5 pr-4 text-fg">{r.requestor_name}</td>

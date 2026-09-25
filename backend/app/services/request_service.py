@@ -29,9 +29,7 @@ def _can_view(req, viewer):
     # eligible pool at its level, and any one of them may act on it.
     if req.status.startswith("PENDING_L"):
         from app.services import threshold_service, workflow_service
-        actors = workflow_service.eligible_actors(
-            req.current_level, req.division, threshold_service.list_thresholds(),
-            exclude_id=req.requestor_id)
+        actors = workflow_service.current_actors(req, threshold_service.list_thresholds())
         return viewer.id in {u.id for u in actors}
     return False
 
@@ -55,18 +53,31 @@ def list_requests(viewer, scope="mine", status=None, division_id=None):
         rows = q.order_by(CapexRequest.created_at.desc()).all()
         return [
             r for r in rows
-            if viewer.id in {u.id for u in workflow_service.eligible_actors(
-                r.current_level, r.division, thresholds, exclude_id=r.requestor_id)}
+            if viewer.id in {u.id for u in workflow_service.current_actors(r, thresholds)}
         ]
     elif scope == "all" and ("ADMIN" in viewer.roles_list or "FINANCE" in viewer.roles_list):
         pass
     else:
         q = q.filter(CapexRequest.requestor_id == viewer.id)
-    if status:
+    if status == "STUCK":
+        q = q.filter(CapexRequest.status.like("PENDING_L%"))
+    elif status:
         q = q.filter(CapexRequest.status == status)
     if division_id:
         q = q.filter(CapexRequest.division_id == division_id)
-    return q.order_by(CapexRequest.created_at.desc()).all()
+    rows = q.order_by(CapexRequest.created_at.desc()).all()
+    if status == "STUCK":
+        from app.services import threshold_service
+        thresholds = threshold_service.list_thresholds()
+        rows = [r for r in rows if _is_stuck(r, thresholds)]
+    return rows
+
+
+def _is_stuck(req, thresholds):
+    """Pending, but nobody can act on it -- every approver at the level (and
+    their delegates) is inactive, with no ADMIN reassignment (ADO 5907)."""
+    from app.services import workflow_service
+    return req.status.startswith("PENDING_L") and not workflow_service.current_actors(req, thresholds)
 
 
 def _live_assignee(req, approvers=None):
@@ -81,9 +92,7 @@ def _live_assignee(req, approvers=None):
         return req.assignee
     if approvers is None:
         from app.services import threshold_service, workflow_service
-        approvers = workflow_service.eligible_actors(
-            req.current_level, req.division, threshold_service.list_thresholds(),
-            exclude_id=req.requestor_id)
+        approvers = workflow_service.current_actors(req, threshold_service.list_thresholds())
     if approvers:
         return approvers[0]
     # Nobody eligible: keep the snapshot only if that person can still act.
@@ -91,8 +100,13 @@ def _live_assignee(req, approvers=None):
 
 
 def request_summary(req):
-    assignee = _live_assignee(req)
+    approvers = []
+    if req.status.startswith("PENDING_L"):
+        from app.services import threshold_service, workflow_service
+        approvers = workflow_service.current_actors(req, threshold_service.list_thresholds())
+    assignee = _live_assignee(req, approvers)
     return {
+        "stuck": req.status.startswith("PENDING_L") and not approvers,
         "id": req.id, "number": req.number, "status": req.status,
         "total_cost": money_str(req.total_cost),
         "division_name": f"{req.division.number} — {req.division.name}" if req.division else None,
@@ -163,9 +177,7 @@ def request_out(req):
     from app.services import threshold_service, workflow_service
     approvers = []
     if req.status.startswith("PENDING_L"):
-        approvers = workflow_service.eligible_actors(
-            req.current_level, req.division, threshold_service.list_thresholds(),
-            exclude_id=req.requestor_id)
+        approvers = workflow_service.current_actors(req, threshold_service.list_thresholds())
     assignee = _live_assignee(req, approvers)
     return {
         "id": req.id,
@@ -216,6 +228,8 @@ def request_out(req):
         ],
         "requestor_name": req.requestor.name if req.requestor else None,
         "assignee_name": assignee.name if assignee else None,
+        "reassigned_to_name": (req.reassigned_to.name
+                               if req.reassigned_to and req.status.startswith("PENDING_L") else None),
         "division_name": f"{req.division.number} — {req.division.name}" if req.division else None,
         "actions": [
             {"action": a.action, "level": a.level, "comment": a.comment,

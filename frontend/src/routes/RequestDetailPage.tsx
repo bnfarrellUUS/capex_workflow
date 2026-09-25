@@ -5,9 +5,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getRequest, approveRequest, rejectRequest, resubmitRequest, completeFinance,
   deleteRequest, uploadAttachment, deleteAttachment, attachmentUrl,
-  requestPdfUrl, resendRecord,
+  requestPdfUrl, resendRecord, reassignRequest, clearReassignment,
   type CapexRequestData,
 } from '../api/requests'
+import { listUsers } from '../api/users'
 import { getHiddenSections } from '../api/requestSections'
 import { isSectionVisible } from './wizard/sections'
 import { formatActionDate } from './formatDate'
@@ -104,7 +105,8 @@ export default function RequestDetailPage() {
   const canResendRecord = (me.roles.includes('FINANCE') || me.roles.includes('ADMIN'))
     && req.finance_completed
   const canAttach = canEdit || canFinance
-  const hasActions = isAssignee || canEdit || canResubmit
+  const canReassign = me.roles.includes('ADMIN') && req.status.startsWith('PENDING_')
+  const hasActions = isAssignee || canEdit || canResubmit || canReassign
 
   const pipeline = (
     <ol className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-2 px-7 py-3 text-xs">
@@ -323,12 +325,67 @@ export default function RequestDetailPage() {
               )}
             </div>
           )}
+          {canReassign && (
+            <ReassignPanel req={req} disabled={busy}
+              onReassign={(userId, note) => act(() => reassignRequest(id, userId, note || undefined))}
+              onClear={() => act(() => clearReassignment(id))} />
+          )}
         </section>
       )}
       </BrandCard>
 
       <button className="text-sm text-muted hover:text-fg" onClick={() => navigate('/')}>← Back to dashboard</button>
       {pinging && <PingModal init={pinging} onClose={() => setPinging(null)} />}
+    </div>
+  )
+}
+
+/** ADMIN-only (ADO 5907): name a per-request approver for the current level,
+ *  e.g. when every approver at the level has been deactivated. The server
+ *  rejects inactive users and the requestor; the picker just doesn't offer them. */
+function ReassignPanel({ req, disabled, onReassign, onClear }: {
+  req: CapexRequestData
+  disabled: boolean
+  onReassign: (userId: string, note: string) => Promise<boolean>
+  onClear: () => void
+}) {
+  const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: listUsers })
+  const [userId, setUserId] = useState('')
+  const [note, setNote] = useState('')
+  const choices = users
+    .filter((u) => u.active && u.id !== req.requestor_id)
+    .sort((a, b) => a.name.localeCompare(b.name))
+  return (
+    <div className="space-y-2 border-t border-border pt-3">
+      <label htmlFor="reassign-to" className="block text-sm font-medium text-fg">
+        Reassign to (admin)
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <Select id="reassign-to" className="w-auto" value={userId} onChange={(e) => setUserId(e.target.value)}>
+          <option value="">Choose a user…</option>
+          {choices.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </Select>
+        <Input className="flex-1" placeholder="Reason (optional)" value={note}
+          onChange={(e) => setNote(e.target.value)} />
+        <Button variant="secondary" disabled={disabled || !userId}
+          onClick={async () => {
+            if (await onReassign(userId, note)) { setUserId(''); setNote('') }
+          }}>
+          Reassign
+        </Button>
+      </div>
+      <p className="text-xs text-muted">
+        Adds this person as an approver at Level {req.status.replace('PENDING_L', '')} for this request only;
+        the level's usual approvers can still act. Cleared when the request moves on.
+      </p>
+      {req.reassigned_to_name && (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span>Currently reassigned to <span className="font-medium">{req.reassigned_to_name}</span>.</span>
+          <Button variant="ghost" size="sm" disabled={disabled} onClick={onClear}>
+            Return to normal routing
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

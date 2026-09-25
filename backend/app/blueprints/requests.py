@@ -98,6 +98,23 @@ def approve_request(request_id):
     return jsonify(request_service.request_out(req))
 
 
+@bp.post("/<request_id>/reassign")
+@require_roles("ADMIN")
+def reassign_request(request_id):
+    body = request.get_json(silent=True) or {}
+    req = workflow_service.reassign(request_id, current_user.id,
+                                    body.get("user_id"), body.get("comment"))
+    notify.notify_reassigned(req, req.reassigned_to)
+    return jsonify(request_service.request_out(req))
+
+
+@bp.delete("/<request_id>/reassign")
+@require_roles("ADMIN")
+def clear_reassignment(request_id):
+    req = workflow_service.clear_reassignment(request_id, current_user.id)
+    return jsonify(request_service.request_out(req))
+
+
 @bp.post("/<request_id>/reject")
 @login_required
 def reject_request(request_id):

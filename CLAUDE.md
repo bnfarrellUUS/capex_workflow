@@ -39,7 +39,7 @@ expenditure. See
   The dev server `uus-capri-dev-scus-sql` is **private-endpoint-only**; as of
   **2026-09-18 it is reachable from the office network** — the hostname
   resolves through its `privatelink` CNAME to **172.16.31.204** and the app
-  runs against it (seeded; schema at `a1b2c3d4e5f7`, the head, as of 2026-09-25). Off that
+  runs against it (seeded; schema at `a1b2c3d4e5f7` as of 2026-09-25 — **one behind head `b2c3d4e5f6a8`**, so run `flask db upgrade` before using it with current code). Off that
   network there is still no public A record, so comment `AZURE_SQL_ODBC` back
   out in `.env` to fall back to the local SQLite file.
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
@@ -87,7 +87,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 469 tests).
+- Backend: `cd backend && pytest -q` (currently 494 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -204,7 +204,7 @@ build`; there is no live dev server.)
 - **EquipmentItem** — line items (`units`, `condition` NEW/USED, `type`, `make`,
   `model`, `cost`); sum drives `total_cost`.
 - **Attachment**, **ApprovalAction** (audit trail: SUBMITTED/APPROVED/REJECTED/
-  RESUBMITTED/FINANCE_COMPLETED, with `level`, `comment`, `acted_for_id` for
+  RESUBMITTED/REASSIGNED/FINANCE_COMPLETED, with `level`, `comment`, `acted_for_id` for
   delegated actions), **NotificationLog**, **Counter**, **AppSetting**.
 - **RequestComment** — the Q&A thread (`author_id`, `body`, `created_at`).
   **Immutable**: no `updated_at`, and no edit or delete route exists. Cascades
@@ -237,7 +237,20 @@ L3 from the threshold row — each mapped through their out-of-office delegate;
 users are out of every pool** (since 2026-09-25): `intended_approvers` drops
 them and `effective_assignee` ignores an inactive delegate, so deactivating an
 approver never leaves requests routed to an account nobody can sign in to — a
-level whose only approvers are inactive is skipped like any empty level. The pool
+level whose only approvers are inactive is skipped like any empty level. That
+skip happens only when a request *enters* a level; one already pending at a
+level whose pool later goes inactive is **stuck**, and an **ADMIN reassign**
+(ADO 5907, since 2026-09-25) is the fix: `POST /api/requests/<id>/reassign`
+(`user_id`, optional `comment`) stores `capex_requests.reassigned_to_id`
+(migration `b2c3d4e5f6a8`), which puts that user **in front of** the current
+level's pool for this request only; `DELETE` on the same path clears it
+("Return to normal routing"). Both log a `REASSIGNED` action; the target must
+be active and never the requestor; every workflow transition clears the column,
+so it never carries into the next level. **Every "who can act / see / be
+notified" question goes through `workflow_service.current_actors(req, …)`**
+(pool + reassignment), not `eligible_actors` directly — keep it that way.
+List rows carry `stuck` (pending, `current_actors` empty), shown as "No
+approver"; `status=STUCK` on the list/export is an admin-only filter choice. The pool
 appears on every member's "assigned" worklist; `assignee_id` is just a display
 hint — stored when the request enters a level and never refreshed, so the API's
 `assignee_id`/`assignee_name` are **computed live** by

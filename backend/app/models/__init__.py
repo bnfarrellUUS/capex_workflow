@@ -174,6 +174,13 @@ class CapexRequest(db.Model):
         ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
     )
     assignee: Mapped[Optional["User"]] = relationship("User", foreign_keys=[assignee_id])
+    # An ADMIN's per-request approver for the CURRENT level only (ADO 5907):
+    # joins that level's pool in front, and is cleared whenever the request
+    # leaves the level. See workflow_service.current_actors / reassign.
+    reassigned_to_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
+    )
+    reassigned_to: Mapped[Optional["User"]] = relationship("User", foreign_keys=[reassigned_to_id])
     division_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("divisions.id", ondelete="NO ACTION"), nullable=True
     )
@@ -288,7 +295,7 @@ class ApprovalAction(db.Model):
     acted_for_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
     )
-    action: Mapped[str] = mapped_column(String(30))  # SUBMITTED | APPROVED | REJECTED | RESUBMITTED | FINANCE_COMPLETED
+    action: Mapped[str] = mapped_column(String(30))  # SUBMITTED | APPROVED | REJECTED | RESUBMITTED | REASSIGNED | FINANCE_COMPLETED
     level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)

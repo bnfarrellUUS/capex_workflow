@@ -65,14 +65,21 @@ def _send_template(intended, type_, req, attachments=None, **extra):
 def notify_assignment(req):
     # Notify every eligible approver at the current level (any one may act).
     from app.services import threshold_service, workflow_service
-    actors = workflow_service.eligible_actors(
-        req.current_level, req.division, threshold_service.list_thresholds(),
-        exclude_id=req.requestor_id)
+    actors = workflow_service.current_actors(req, threshold_service.list_thresholds())
     level = f"Level {req.current_level}"
     if req.required_levels:
         level += f" of {req.required_levels}"
     for actor in actors:
         _send_template(actor.email, "ASSIGNED", req, level=level)
+
+
+def notify_reassigned(req, user):
+    """An ADMIN reassigned the request: tell only the new approver, with the
+    usual ASSIGNED email (the pool already had its chance)."""
+    level = f"Level {req.current_level}"
+    if req.required_levels:
+        level += f" of {req.required_levels}"
+    _send_template(user.email, "ASSIGNED", req, level=level)
 
 
 def notify_decision(req, approved, comment=None):
@@ -101,9 +108,7 @@ def notify_comment(req, comment):
     if comment.author_id == req.requestor_id:
         # Whoever is holding the request answers the requestor.
         if req.status.startswith("PENDING_L"):
-            recipients = workflow_service.eligible_actors(
-                req.current_level, req.division, threshold_service.list_thresholds(),
-                exclude_id=req.requestor_id)
+            recipients = workflow_service.current_actors(req, threshold_service.list_thresholds())
         elif req.status == "APPROVED":
             recipients = [u for u in db.session.query(User)
                           .filter(User.active.is_(True)).all()

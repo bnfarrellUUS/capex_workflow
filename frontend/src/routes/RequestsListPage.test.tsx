@@ -82,4 +82,29 @@ describe('RequestsListPage', () => {
     expect(screen.getByRole('dialog', { name: /new ping/i })).toBeInTheDocument()
     expect(screen.getAllByText('CX000042').length).toBeGreaterThan(1)   // row + modal chip
   })
+
+  it('marks a stuck request with "No approver"', async () => {
+    mockMe(['ADMIN'])
+    vi.mocked(reqApi.listRequests).mockResolvedValue([{
+      id: 'req-1', number: 'CX000042', status: 'PENDING_L1', total_cost: '100',
+      division_name: '100 — Ops', requestor_name: 'Owner', assignee_name: null, created_at: null,
+      stuck: true,
+    }])
+    renderPage()
+    expect(await screen.findByText('No approver')).toBeInTheDocument()
+  })
+
+  it('offers the Stuck filter to admins only', async () => {
+    mockMe(['FINANCE'])
+    const { unmount } = renderPage()
+    await waitFor(() => expect(reqApi.listRequests).toHaveBeenCalled())
+    expect(screen.queryByRole('option', { name: /Stuck/ })).toBeNull()
+    unmount()
+
+    mockMe(['ADMIN'])
+    renderPage()
+    fireEvent.change(await screen.findByDisplayValue('All statuses'), { target: { value: 'STUCK' } })
+    await waitFor(() => expect(reqApi.listRequests).toHaveBeenLastCalledWith(
+      { scope: 'mine', status: 'STUCK' }))
+  })
 })
