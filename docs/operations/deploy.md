@@ -62,13 +62,16 @@ fallback to an empty local database.
 
 | Variable | Required | Secret | Dev value | Notes |
 |---|---|---|---|---|
-| `EMAIL_ENABLED` | no | no | `0` **until ADO 5884 ships** | `1` sends notification emails. **Today the only sender is the Outlook desktop app, which does not exist in a container.** Leave this at `0` (the default on a deployed server) until the SendGrid backend is in. Every notification is still recorded in the `NotificationLog` table either way. |
+| `EMAIL_ENABLED` | no | no | `1` once SendGrid is set up | `1` sends notification emails. Defaults to off on a deployed server. Every notification is recorded in the `NotificationLog` table either way. |
+| `EMAIL_BACKEND` | with email | no | `sendgrid` | `outlook` (the default) drives the Outlook desktop app over COM, which **does not exist in a container**. A value other than `outlook` or `sendgrid` makes the app refuse to start. |
+| `SENDGRID_API_KEY` | with SendGrid | **yes** | — | With `EMAIL_ENABLED=1` and `EMAIL_BACKEND=sendgrid`, the app **refuses to start** without it. Every send is tagged with the SendGrid category `capri`, because the account may be shared with other apps. |
+| `EMAIL_FROM` | with SendGrid | no | a verified address | **Required**, no default: SendGrid accepts mail from an unverified sender with a 202 and then **silently drops it**, so this must be an address (or domain) verified in SendGrid. The app refuses to start without it when SendGrid is enabled. |
+| `EMAIL_FROM_NAME` | no | no | leave unset | The display name. Defaults to `CAPRI`. |
 | `EMAIL_REDIRECT_TO` | no | no | an internal address | The **default** recipient for Test mode. Test/Live itself is an admin setting in the app (Admin → Email Templates), stored in the database and defaulting to **Test**. In Test mode every message goes to the test recipient with a "redirected while testing" banner. |
 
-**Coming with ADO 5884 (not read yet; do not set until that ships):**
-`EMAIL_BACKEND` (`outlook` / `sendgrid`), the SendGrid API key (**secret**),
-and the from-address. It must be an address verified in SendGrid, because
-SendGrid accepts mail from an unverified sender and then silently drops it.
+The brand images (header band, buttons, footer) travel inside each message as
+inline attachments, and the record PDF as an ordinary attachment, the same way
+the Outlook sender does it (`backend/app/services/email_sendgrid.py`).
 
 ### Sign-in (SSO)
 
@@ -126,7 +129,7 @@ curl -s https://capri-dev.uniteduptime.com/api/auth/config
 |---|---|---|
 | `status` / `database` | `ok` (HTTP 200) | HTTP 503 means the database is unreachable: check the network path to the private endpoint and the SQL user. |
 | `db_backend` | `mssql` | `sqlite` means neither database variable reached the container. On a deployed server the app should refuse to start in that case, so treat this as a bug. |
-| `email_backend` | `off` until 5884, then `sendgrid` | `outlook` means `EMAIL_ENABLED=1` was set before the SendGrid backend exists. |
+| `email_backend` | `sendgrid` (or `off` before email is set up) | `outlook` means `EMAIL_BACKEND` is unset. Outlook can't send from a container, so every email fails (logged only). |
 | `email_mode` | `test` until go-live | `live` means real recipients are being emailed. |
 | `sso` | `off` until 5881, then `on` | `off` after enabling means `CAPRI_ENABLE_SSO` isn't `1` or one of the five values is missing. The startup log names which. |
 | `telemetry` | `on` | `APPLICATIONINSIGHTS_CONNECTION_STRING` is unset. |
@@ -153,7 +156,8 @@ curl -s https://capri-dev.uniteduptime.com/api/auth/config
    whether the seed's sample divisions (100, 200) and the Central region stay.
 6. Upload an attachment to a draft, redeploy, and confirm it still downloads.
    That proves `UPLOAD_ROOT` is on the file share.
-7. Once 5884 ships: enable email **in Test mode**, walk one request through
+7. Set the SendGrid settings and `EMAIL_ENABLED=1`, keeping the app **in
+   Test mode**. Walk one request through
    submit → L1 → L2 → L3 → finance, and check every email in classic Outlook,
    including the images and the record PDF.
 

@@ -27,10 +27,26 @@ def _refuse_unsafe_deployment(config):
             f"{base_url!r}): session cookies are secure-only there.")
 
 
+def _refuse_incomplete_email(config):
+    """An unknown sender name, or SendGrid switched on without its key or a
+    from-address, would otherwise fail on every send -- logged, never shown to
+    a user, and (for a bad from-address) not even an error at SendGrid."""
+    backend = config.get("EMAIL_BACKEND") or "outlook"
+    if backend not in ("outlook", "sendgrid"):
+        raise RuntimeError(
+            f"EMAIL_BACKEND must be 'outlook' or 'sendgrid' (got {backend!r}).")
+    if backend == "sendgrid" and config.get("EMAIL_ENABLED"):
+        for key in ("SENDGRID_API_KEY", "EMAIL_FROM"):
+            if not config.get(key):
+                raise RuntimeError(
+                    f"{key} must be set when EMAIL_ENABLED=1 and EMAIL_BACKEND=sendgrid.")
+
+
 def create_app(config_object=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_object or config_from_env())
     _refuse_unsafe_deployment(app.config)
+    _refuse_incomplete_email(app.config)
 
     db.init_app(app)
     migrate.init_app(app, db)

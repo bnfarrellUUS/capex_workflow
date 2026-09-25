@@ -39,7 +39,8 @@ def health():
         "status": "ok" if database == "ok" else "error",
         "database": database,
         "db_backend": db.engine.dialect.name,  # "mssql" or "sqlite"
-        "email_backend": "outlook" if current_app.config.get("EMAIL_ENABLED") else "off",
+        "email_backend": (current_app.config.get("EMAIL_BACKEND") or "outlook")
+                         if current_app.config.get("EMAIL_ENABLED") else "off",
         "email_mode": email_mode,
         "sso": "on" if sso_config() else "off",
         "telemetry": "on" if current_app.config.get("CAPRI_TELEMETRY") else "off",

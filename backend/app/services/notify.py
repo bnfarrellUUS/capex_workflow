@@ -23,12 +23,21 @@ def _delivery(intended):
     return intended, None
 
 
+def _sender():
+    """The configured delivery module; both expose the same send()."""
+    if current_app.config.get("EMAIL_BACKEND") == "sendgrid":
+        from app.services import email_sendgrid
+        return email_sendgrid
+    from app.services import email_outlook
+    return email_outlook
+
+
 def _redirect_note(intended):
     return _delivery(intended)[1]
 
 
 def _emit(intended, subject, html, enabled, request_id, type_, attachments=None):
-    """Always record a NotificationLog; deliver via Outlook when enabled."""
+    """Always record a NotificationLog; deliver via the configured sender when enabled."""
     try:
         log.info("EMAIL to=%s subject=%s", intended, subject)
         db.session.add(NotificationLog(request_id=request_id, recipient=intended, type=type_))
@@ -40,8 +49,7 @@ def _emit(intended, subject, html, enabled, request_id, type_, attachments=None)
         return
     redirect_to = _delivery(intended)[0]
     try:
-        from app.services import email_outlook
-        email_outlook.send(redirect_to, subject, "", html=html, attachments=attachments)
+        _sender().send(redirect_to, subject, "", html=html, attachments=attachments)
     except Exception:
         log.exception("email delivery failed (intended %s)", intended)
 
@@ -134,7 +142,6 @@ def _emit_plain(intended, subject, body, request_id, type_):
     redirect_to, note = _delivery(intended)
     full = f"{note}\n\n{body}" if note else body
     try:
-        from app.services import email_outlook
-        email_outlook.send(redirect_to, subject, full)
+        _sender().send(redirect_to, subject, full)
     except Exception:
         log.exception("email delivery failed (intended %s)", intended)

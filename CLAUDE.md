@@ -85,7 +85,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 434 tests).
+- Backend: `cd backend && pytest -q` (currently 447 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -127,7 +127,8 @@ build`; there is no live dev server.)
   only the header carries the product name; see its docstring before using
   `--all`, which produces button pills a few px wider than the committed ones),
   `email_outlook` (Outlook COM sender; attaches referenced `cid:capri-*`
-  assets), `security`, `errors` (`ServiceError(msg, status)`),
+  assets), `email_sendgrid` (SendGrid v3 sender for a deployed server — see
+  Deployment), `security`, `errors` (`ServiceError(msg, status)`),
   `region_service` (CRUD for regions — `list_regions`, `create_region`,
   `update_region`; enforces unique region name),
   `export_service` (xlsx export of the requests list via openpyxl),
@@ -337,8 +338,17 @@ vars, secrets from Key Vault, owned by IT's infra repo.
   when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set; the SDK
   (`azure-monitor-opentelemetry`) is imported only then, so the tests fake it
   through `sys.modules` and it need not be installed locally.
-- **Still not deployable:** email is Outlook-only until the SendGrid backend
-  (ADO 5884).
+- **Email senders** (ADO 5884): `EMAIL_BACKEND` = `outlook` (default; the
+  desktop app over COM) or `sendgrid` (`services/email_sendgrid.py`). Same
+  `send(to, subject, body, html=, attachments=)` signature; `notify._sender()`
+  is the only place that chooses. SendGrid is called through its v3 REST API
+  with the stdlib (no SDK) via the `_post` seam tests replace; brand PNGs go
+  inline by Content-ID (`email_frame.inline_assets(html)`, shared with the
+  Outlook sender) and the record PDF as a normal attachment, category
+  `capri`. `create_app` refuses an unknown `EMAIL_BACKEND`, and SendGrid with
+  `EMAIL_ENABLED` but no `SENDGRID_API_KEY` or `EMAIL_FROM` (no default: an
+  unverified sender is silently dropped by SendGrid). Still to verify: a real
+  send rendered in classic Outlook, once IT supplies the key.
 
 ## Entra ID SSO
 

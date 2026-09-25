@@ -13,6 +13,9 @@ Everything else is table-based with inline CSS (Word ignores div layout and
 padding on <a>).
 """
 
+import os
+import re
+
 NAVY = "#0B2A4A"
 SKY = "#93BBF5"
 BLUE = "#2563EB"
@@ -45,6 +48,16 @@ BUTTONS = {
 }
 
 BUTTON_LABELS = {type_: b[3] for type_, b in BUTTONS.items()}
+
+_ASSETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets"))
+_CID_RE = re.compile(rf"cid:{CID_PREFIX}([a-z0-9-]+)")
+
+
+def inline_assets(html):
+    """(Content-ID, file path) for every brand asset the HTML references --
+    what each sender must attach inline for the cid: images to render."""
+    return [(f"{CID_PREFIX}{name}", os.path.join(_ASSETS_DIR, ASSET_FILES[name]))
+            for name in sorted(set(_CID_RE.findall(html))) if name in ASSET_FILES]
 
 
 def _cid_src(name):

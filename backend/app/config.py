@@ -69,6 +69,15 @@ class BaseConfig:
     # intended recipient in the body; clear it when real delivery is wanted.
     EMAIL_ENABLED = os.environ.get("EMAIL_ENABLED", "0") == "1"
     EMAIL_REDIRECT_TO = os.environ.get("EMAIL_REDIRECT_TO", "bryan.farrell@uniteduptime.com")
+    # Which sender delivers: "outlook" (the desktop app over COM; Windows only)
+    # or "sendgrid" (services/email_sendgrid.py; what a container uses). With
+    # EMAIL_ENABLED and sendgrid, create_app refuses to start unless the key and
+    # a from-address are set -- SendGrid silently drops mail from an unverified
+    # sender, so EMAIL_FROM must be one verified there.
+    EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "outlook").strip().lower()
+    SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+    EMAIL_FROM = os.environ.get("EMAIL_FROM")
+    EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "CAPRI")
     # Base URL used to build deep links in notification emails. On a server set
     # this to the real host (e.g. https://capri.uniteduptime.com).
     APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5100")
