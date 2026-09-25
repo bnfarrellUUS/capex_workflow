@@ -71,33 +71,33 @@ registration**, which needs rights over the registration rather than over the
 group. Without that assignment the group never appears in CAPRI's tokens at
 all, regardless of who is in it.
 
-## Redirect URI to register
+## Redirect URIs to register
 
-**One URI**, exactly as written — CAPRI runs as a single Flask server that
+**Two URIs**, exactly as written. CAPRI runs as a single Flask server that
 serves both the API and the built React app on one port, so unlike APEX there is
-only one to register:
+one per environment:
 
 ```
 http://localhost:5100/api/auth/sso/callback
+https://capri-dev.uniteduptime.com/api/auth/sso/callback
 ```
 
 Entra matches these **literally**: scheme, host, port, path, no trailing slash.
 
-**There is no deployed environment to register yet.** When CAPRI is deployed it
-will need a **DNS name and HTTPS** first: Entra accepts plain `http://` only for
-`localhost`, so a bare LAN address such as `http://172.16.32.70:8081` cannot be
-registered at all. This is the same wall APEX hit on 2026-09-21 and the one that
-held ARIA's production SSO up for months, so it is worth planning for before
-CAPRI is deployed rather than after. Until then that environment simply runs
-with SSO off and keeps password login, which the app's fail-closed rule gives us
-for free.
+**The second is the Dev hostname requested on 2026-09-25** (ADO 5891, in the
+"CAPRI Dev: Container App environment" email). If IT picks a different name,
+register that instead. Entra accepts plain `http://` only for `localhost`, so
+the Dev environment needs its DNS name and HTTPS in place before SSO can work
+there. That's the same wall APEX hit on 2026-09-21, and the one that held ARIA's
+production SSO up for months. Until then Dev simply runs with SSO off and keeps
+password login, which the app's fail-closed rule gives us for free.
 
 ## Please confirm
 
 - [ ] **The `groups` claim is emitted in ID tokens** — Token configuration →
       *Groups assigned to the application* (not *All groups*), with
       `SEC-App-Capri-Dev` assigned to the app registration.
-- [ ] **The redirect URI above is registered**, exactly.
+- [ ] **Both redirect URIs above are registered**, exactly.
 - [ ] **Intended users are in `SEC-App-Capri-Dev`.** Note that group membership
       alone is not enough — see below.
 - [ ] **Someone owns the client secret expiry date**, with a calendar reminder.
@@ -224,13 +224,17 @@ What I need from you:
    the app needs rights over the registration, which is yours. Same
    easy-to-miss step as APEX: with "Groups assigned to the application", a group
    only appears in the tokens of apps it is actually assigned to.
-5. Confirmation of the redirect URI you've registered
+5. Confirmation of the redirect URIs you've registered
 
-**Redirect URI to register.** Just one for CAPRI — unlike APEX, it runs as a
-single server on one port, so there's only the one way in. Entra matches
-literally: scheme, host, port, path, no trailing slash.
+**Redirect URIs to register.** Two for CAPRI, one per environment. Unlike
+APEX, it runs as a single server on one port. Entra matches literally: scheme,
+host, port, path, no trailing slash.
 
     http://localhost:5100/api/auth/sso/callback
+    https://capri-dev.uniteduptime.com/api/auth/sso/callback
+
+The second is the Dev hostname from this morning's CAPRI Dev environment email.
+If you've picked a different name, please register that one instead.
 
 **Three things to confirm:**
 
@@ -245,19 +249,17 @@ literally: scheme, host, port, path, no trailing slash.
    silently fails every sign-in with what reads like an access-permissions
    problem.
 3. Whether you want one registration or two (the APEX question #3). If the
-   convention is per-environment, the localhost URI above belongs on a Dev
-   registration and we can set up Prod when CAPRI has a hostname. Just tell me
+   convention is per-environment, both URIs above belong on a Dev
+   registration and we can set up Prod when CAPRI has a production hostname. Just tell me
    the shape and I'll match it.
 
 **One more:** who owns the client secret's expiry date? Same as APEX — an
 expired secret is a full outage with no warning and nothing diagnosable from
 inside the app, so I'd like a named owner and a calendar reminder.
 
-**For later, not now:** CAPRI has no deployed environment yet. When it gets one
-it'll need a DNS name and a certificate before SSO can work there, since Entra
-only accepts http:// for localhost. That's the same DNS/HTTPS dependency APEX is
-waiting on, so it may be worth solving once and covering both — but it doesn't
-block anything here.
+**Timing:** the Dev URI only works once Dev has its DNS name and certificate
+(Entra only accepts http:// for localhost). Registering it now is harmless, and
+it saves a second change later.
 
 Thanks,
 Bryan
