@@ -85,7 +85,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 420 tests).
+- Backend: `cd backend && pytest -q` (currently 426 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -315,6 +315,14 @@ vars, secrets from Key Vault, owned by IT's infra repo.
   `APP_BASE_URL` that still has the repo's `INSECURE_DEV_SECRET` (or none), or
   that isn't `https://`. No ProxyFix: nothing builds URLs from the request
   scheme (redirects are relative; SSO's redirect URI is configured).
+- **Seeding vs. a real admin** (ADO 5885): `python seed.py` refuses any
+  non-SQLite database unless given `--allow-non-sqlite`, because its admin
+  password (`ChangeMe123!`) is public — so with `AZURE_SQL_ODBC` in `.env`
+  it refuses on a developer PC too. On a deployed database use
+  **`python create_admin.py <email> "<name>"`** (prompts twice; ≥12 chars;
+  ADMIN role only; refuses an existing email). The Dev Azure SQL database was
+  seeded on 2026-09-18, so its `admin@uniteduptime.com` must be deactivated or
+  re-passworded at first deploy (ADO 5896).
 - **Still not deployable:** email is Outlook-only until the SendGrid backend
   (ADO 5884).
 

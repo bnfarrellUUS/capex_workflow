@@ -42,8 +42,26 @@ def seed(session) -> None:
     session.commit()
 
 
+def check_seed_target(database_url, allow_non_sqlite):
+    """The seed's admin password is in the repo, so by default it only runs
+    against a local SQLite file. Anything else (Azure SQL) needs the explicit
+    flag; the message names only the dialect, never the connection string."""
+    if allow_non_sqlite or database_url.startswith("sqlite"):
+        return
+    dialect = database_url.split(":", 1)[0]
+    raise SystemExit(
+        f"Refusing to seed a {dialect} database: seed.py creates "
+        "admin@uniteduptime.com with the password ChangeMe123!, which is "
+        "public. Use create_admin.py for a real admin, or pass "
+        "--allow-non-sqlite if you really mean to seed this database.")
+
+
 if __name__ == "__main__":
+    import sys
+
     app = create_app()
+    check_seed_target(app.config["SQLALCHEMY_DATABASE_URI"],
+                      allow_non_sqlite="--allow-non-sqlite" in sys.argv[1:])
     with app.app_context():
         seed(db.session)
         print("Seed complete.")

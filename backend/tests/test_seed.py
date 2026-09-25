@@ -33,3 +33,27 @@ def test_seed_creates_central_region(app):
     div_200 = db.session.query(Division).filter_by(number="200").one()
     assert div_100.region_id == region.id
     assert div_200.region_id == region.id
+
+
+# --- the CLI guard: the seed's admin password is public (it is in the repo) ---
+
+import pytest
+
+from seed import check_seed_target
+
+
+def test_seed_target_allows_sqlite():
+    check_seed_target("sqlite:///capex_dev.db", allow_non_sqlite=False)
+
+
+def test_seed_target_refuses_azure_sql_without_the_flag():
+    url = "mssql+pyodbc:///?odbc_connect=Pwd%3Dsecret"
+    with pytest.raises(SystemExit) as exc:
+        check_seed_target(url, allow_non_sqlite=False)
+    message = str(exc.value)
+    assert "--allow-non-sqlite" in message
+    assert "secret" not in message  # never echo the connection string
+
+
+def test_seed_target_allows_azure_sql_with_the_flag():
+    check_seed_target("mssql+pyodbc:///?odbc_connect=x", allow_non_sqlite=True)
