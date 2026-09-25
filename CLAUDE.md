@@ -39,7 +39,7 @@ expenditure. See
   The dev server `uus-capri-dev-scus-sql` is **private-endpoint-only**; as of
   **2026-09-18 it is reachable from the office network** — the hostname
   resolves through its `privatelink` CNAME to **172.16.31.204** and the app
-  runs against it (schema migrated to `e7f8a9b0c1d2` and seeded). Off that
+  runs against it (seeded; schema at `c9d0e1f2a3b4`, the head, as of 2026-09-25). Off that
   network there is still no public A record, so comment `AZURE_SQL_ODBC` back
   out in `.env` to fall back to the local SQLite file.
 - **frontend/** — React 19 + Vite 6 + TypeScript SPA. React Router 7, TanStack
