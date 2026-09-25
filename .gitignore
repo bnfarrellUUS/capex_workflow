@@ -14,3 +14,6 @@ Thumbs.db
 __pycache__/
 *.pyc
 .playwright-mcp/
+
+# Local screenshots of directory data (staff names/emails); repo mirrors to GitHub
+capri_sec.png
