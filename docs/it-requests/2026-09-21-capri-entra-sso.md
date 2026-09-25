@@ -9,8 +9,8 @@ off** (guide §10 Step 0). Nothing is blocked on this request except turning it
 on, and nothing changes for users until it is.
 
 **Status:** **sent 2026-09-21 16:08** to Jordan St. Clair (cc Joe Loner, Eric
-Arnold, Jessica Beltran), as drafted below. No reply on that thread as of
-2026-09-25. Jordan's reply on the parallel APEX thread (2026-09-21 17:50) set
+Arnold, Jessica Beltran), as drafted below. Follow-up sent on the same thread
+2026-09-25 14:25 UTC (at the bottom); no reply from IT yet. Jordan's reply on the parallel APEX thread (2026-09-21 17:50) set
 IT's approach, which the follow-up at the bottom adopts: SSO values live in Key
 Vault and are read at deploy time (never sent to Bryan), and sign-in is
 validated against the Dev environment rather than localhost.
@@ -275,7 +275,7 @@ it mirrors to GitHub) and let Outlook add your signature.
 
 ---
 
-## Follow-up to send (2026-09-25) — reply on the 2026-09-21 thread
+## Follow-up (sent 2026-09-25 14:25 UTC) — reply on the 2026-09-21 thread
 
 Short, and aligned with Jordan's APEX reply. **The UPN question is settled and
 no longer asked:** Bryan confirmed on 2026-09-25 that most users' UPNs are
