@@ -158,15 +158,15 @@ build`; there is no live dev server.)
   parses roles.
 - **Division** — `number`, `name`, `active`, `l1_approvers` (many-to-many via
   `division_l1_approvers`: the Level-1 approver pool for its requests),
-  **Pool order is stored** (since 2026-09-25, migration `a1b2c3d4e5f7`): the
+  `region_id` (nullable FK to `Region`; the Division form requires picking one
+  even though the column is nullable at the DB level).
+- **Pool order is stored** (since 2026-09-25, migration `a1b2c3d4e5f7`): the
   three pool tables (`division_l1_approvers`, `region_vp_approvers`,
   `threshold_approvers`) carry a `position`, and the relationships read it back
   via `order_by`. The first approver is the request's "assigned to". A
   `secondary` relationship doesn't write `position`, so **save pools through
   `services/approver_pools.set_pool(owner, attr, ids)`**, never by assigning
   the list; it keeps the submitted order and drops blanks/duplicates/unknowns.
-  `region_id` (nullable FK to `Region`; the Division form requires picking one
-  even though the column is nullable at the DB level).
 - **Region** — `name` (unique), `active`, `vp_approvers` (many-to-many via
   `region_vp_approvers`: the Level-2 approver pool for every division in the
   region); `divisions` back-populates `Division.region`. Migration
