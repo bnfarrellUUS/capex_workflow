@@ -281,7 +281,10 @@ Short, and aligned with Jordan's APEX reply. **The UPN question is settled and
 no longer asked:** Bryan confirmed on 2026-09-25 that most users' UPNs are
 @dh-united.com, and every real user record on the Dev database (4 of 5) is
 already @dh-united.com. The fifth is the seeded `admin@uniteduptime.com`,
-which is deactivated at first deploy anyway. The DNS record for
+which is deactivated at first deploy anyway. The group (exact display name
+**SEC-App-CAPRI-Dev**) has 4 members on 2026-09-25 -- Andre Doerfer, Bryan
+Farrell, Chris Jodlowski, Joe Loner -- and each has an active Dev user record
+under their @dh-united.com UPN. The DNS record for
 `capri-dev.uniteduptime.com` already exists (Jordan, 2026-09-22, pointing at the
 Dev App Gateway, 172.16.32.70).
 
@@ -295,7 +298,7 @@ Dev App Gateway, 172.16.32.70).
 >    `https://capri-dev.uniteduptime.com/api/auth/sso/callback`. The localhost one
 >    is no longer needed.
 > 2. **Groups claim** set to "Groups assigned to the application", and
->    **SEC-App-Capri-Dev assigned** to the registration. Those two were the last
+>    **SEC-App-CAPRI-Dev assigned** to the registration. Those two were the last
 >    things standing on APEX, so worth doing up front.
 > 3. **Key Vault**, for the CAPRI Dev container: `CAPRI_SSO_TENANT_ID`,
 >    `CAPRI_SSO_CLIENT_ID`, `CAPRI_SSO_CLIENT_SECRET`, `CAPRI_SSO_ALLOWED_GROUPS`
