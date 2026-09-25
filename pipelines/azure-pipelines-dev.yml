@@ -1,0 +1,120 @@
+# =============================================================================
+# CAPRI — Dev deploy pipeline
+#
+# Auto-deploys on push to the Azure repo's `dev` branch (CAPRI's workflow is
+# `git push azure main:dev`; Bryan promotes dev -> main himself). No approval
+# gate, matching dev convention elsewhere on the platform.
+#
+# Modelled on APEX's pipelines/azure-pipelines-dev.yml. Its only job is to
+# build the image and swap it into the Container App. It sets NO settings or
+# secrets -- the Container App, its environment variables and its Key Vault
+# references are owned by IT's infrastructure repo.
+#
+# The image is built by `az acr build` inside Azure Container Registry, so no
+# Docker is needed anywhere on our side. Tests run inside that build (see the
+# Dockerfile's `test` stage and the frontend stage's vitest + tsc), so a
+# failing test stops the pipeline before anything is deployed.
+#
+# TO CONFIRM WITH IT before registering this pipeline (ADO 5890 / 5895):
+# every value under `variables` below is proposed by analogy with APEX's names,
+# not read from real resources. The pool and service connection are APEX's;
+# they only work here if they can reach CAPRI's (private-endpoint) ACR and
+# Container App.
+# =============================================================================
+
+trigger:
+  branches:
+    include: [dev]
+
+pr: none
+
+pool:
+  name: citizendev-sandbox
+
+variables:
+  azureSubscription: 'uus-dev-sc'
+  resourceGroup:     'uus-capri-dev-scus-rg'
+  acrName:           'uuscapridevscusacr'
+  acrLoginServer:    'uuscapridevscusacr.azurecr.io'
+  imageName:         'capri'
+  imageTag:          '$(Build.BuildId)'
+  imageRef:          '$(acrLoginServer)/$(imageName):$(imageTag)'
+  containerAppName:  'ca-capri-dev'
+
+stages:
+  - stage: BuildAndPush
+    displayName: 'Test, build & push image'
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'az acr build'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az acr build \
+                  --registry $(acrName) \
+                  --image $(imageName):$(imageTag) \
+                  --image $(imageName):dev-latest \
+                  --file $(Build.SourcesDirectory)/Dockerfile \
+                  $(Build.SourcesDirectory)
+                echo "Image pushed: $(imageRef)"
+
+  - stage: Deploy
+    displayName: 'Deploy to ACA (dev)'
+    dependsOn: BuildAndPush
+    jobs:
+      - job: DeployACA
+        steps:
+          - task: AzureCLI@2
+            displayName: 'az containerapp update'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                echo "Updating $(containerAppName) to $(imageRef)..."
+                az containerapp update \
+                  --name $(containerAppName) \
+                  --resource-group $(resourceGroup) \
+                  --image $(imageRef)
+
+                # The container runs `flask db upgrade` before gunicorn starts,
+                # so a failed migration shows up here as an unhealthy revision.
+                echo "Waiting for the new revision to become healthy..."
+                UNHEALTHY_COUNT=0
+                for i in $(seq 1 30); do
+                  STATE=$(az containerapp revision list \
+                    --name $(containerAppName) \
+                    --resource-group $(resourceGroup) \
+                    --query "[?properties.active] | [0].properties.healthState" -o tsv 2>/dev/null || echo "")
+                  echo "  attempt $i/30: healthState=${STATE:-<pending>}"
+                  if [ "$STATE" = "Healthy" ]; then break; fi
+                  if [ "$STATE" = "Unhealthy" ]; then
+                    UNHEALTHY_COUNT=$((UNHEALTHY_COUNT + 1))
+                    # The first probes often fire before the app has finished
+                    # starting (migrations, DB connection), so only fail after
+                    # several consecutive Unhealthy readings.
+                    if [ "$UNHEALTHY_COUNT" -ge 5 ]; then
+                      echo "##vso[task.logissue type=error]Revision reported Unhealthy $UNHEALTHY_COUNT times in a row — check container logs in the Portal (or: az containerapp logs show --name $(containerAppName) --resource-group $(resourceGroup) --follow)."
+                      exit 1
+                    fi
+                  else
+                    UNHEALTHY_COUNT=0
+                  fi
+                  sleep 10
+                done
+
+                if [ "$STATE" != "Healthy" ]; then
+                  echo "##vso[task.logissue type=error]Revision did not become healthy within the wait window."
+                  exit 1
+                fi
+
+                echo "Deployed successfully: $(imageRef)"

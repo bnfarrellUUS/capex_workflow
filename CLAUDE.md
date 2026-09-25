@@ -85,7 +85,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 336 tests).
+- Backend: `cd backend && pytest -q` (currently 403 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -281,6 +281,34 @@ redirects every message to a configurable test recipient (default
 `EMAIL_REDIRECT_TO`) and adds a "redirected while testing" banner; **Live**
 sends to the real recipients. `EMAIL_ENABLED` still gates whether Outlook
 sends at all. Defaults live in `email_template_service.DEFAULTS`.
+
+## Deployment (Dev — in progress)
+
+Tracked on Azure DevOps Boards (FinanceApps, area `Solutions\CAPRI`): PBI
+**5879** (code: container-ready), **5880** (IT: Dev environment), **5881**
+(Entra SSO). Target is APEX's pattern — Azure Container Apps, settings as env
+vars, secrets from Key Vault, owned by IT's infra repo.
+
+- **`Dockerfile`** (repo root) + **`.dockerignore`** +
+  **`backend/gunicorn.conf.py`** + **`pipelines/azure-pipelines-dev.yml`**
+  (added 2026-09-25). **No Docker locally — IT forbids it.** The image is built
+  in Azure by `az acr build`; the first real test of the Dockerfile is a
+  pipeline run, so keep it close to APEX's.
+- Stages: `frontend` (vitest + `npm run build`, i.e. tsc + vite) → `base`
+  (Python 3.14 + ODBC Driver 18 + requirements) → `test` (pytest; the final
+  stage copies its marker so a failing test fails the build) → `final`.
+  Layout mirrors the repo (`/app/backend`, `/app/frontend/dist`) because
+  `create_app()` finds the SPA relative to the repo root.
+- The container runs `flask db upgrade` then gunicorn (2 gthread workers —
+  safe because all auth state is in the signed session cookie).
+- `.dockerignore` must keep excluding `**/.env` — `config.py`'s
+  `load_dotenv()` would bake the Azure SQL password into the image.
+- Pipeline triggers on the Azure **`dev`** branch. Every resource name in it
+  (`ca-capri-dev`, `uus-capri-dev-scus-rg`, `uuscapridevscusacr`, the pool and
+  `uus-dev-sc`) is **proposed by analogy with APEX, not confirmed by IT**.
+- **Not yet deployable:** `wsgi.py` still loads `DevConfig` (insecure default
+  `SECRET_KEY`, SQLite fallback if `AZURE_SQL_ODBC` is missing, Outlook email)
+  — ADO 5883/5884 fix that.
 
 ## Entra ID SSO
 
