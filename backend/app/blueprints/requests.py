@@ -68,7 +68,12 @@ def delete_request(request_id):
 @login_required
 def update_request(request_id):
     data = RequestDraft(**(request.get_json(silent=True) or {}))
-    req = request_service.update_draft(request_id, current_user, data.model_dump(exclude_unset=True))
+    fields = data.model_dump(exclude_unset=True)
+    if "equipment_items" in fields:
+        # The list replaces the request's items wholesale, so each item needs
+        # every field; exclude_unset would strip the schema defaults from them.
+        fields["equipment_items"] = [i.model_dump() for i in data.equipment_items]
+    req = request_service.update_draft(request_id, current_user, fields)
     return jsonify(request_service.request_out(req))
 
 

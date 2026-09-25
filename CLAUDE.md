@@ -146,7 +146,9 @@ build`; there is no live dev server.)
 - `schemas/request.py` — Pydantic v2 input models. **Important:** the PATCH
   route builds `RequestDraft(**json).model_dump(exclude_unset=True)`, so a field
   absent from `RequestDraft` is silently dropped even if the model/serializer
-  support it. Add new editable fields to this schema.
+  support it. Add new editable fields to this schema. `exclude_unset` would also
+  strip defaults from nested `equipment_items` (a 500 before 2026-09-25), so the
+  route re-dumps each item in full — keep that if another nested list is added.
 - `serialization.py` (`money_str`), `authz.py`, `roles.py`, `config.py`,
   `extensions.py` (`db`, login manager, CSRF).
 

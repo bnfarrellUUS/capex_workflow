@@ -72,3 +72,16 @@ def test_cannot_get_others_draft(client, app):
     rid = client.post("/api/requests").get_json()["id"]
     _login(client, "other")
     assert client.get(f"/api/requests/{rid}").status_code == 403
+
+
+def test_patch_equipment_item_takes_schema_defaults_for_omitted_fields(client):
+    """Omitted item fields used to raise KeyError (500): the route's
+    exclude_unset dump stripped them from nested items too."""
+    _login(client)
+    rid = client.post("/api/requests").get_json()["id"]
+    resp = client.patch(f"/api/requests/{rid}",
+                        json={"equipment_items": [{"type": "Truck", "cost": "1000"}]})
+    assert resp.status_code == 200
+    [item] = resp.get_json()["equipment_items"]
+    assert (item["units"], item["condition"], item["make"], item["model"]) == (1, "NEW", "", "")
+    assert item["cost"] == "1000"
