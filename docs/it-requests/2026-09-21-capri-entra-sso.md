@@ -8,9 +8,12 @@ ARIA and APEX were built to.
 off** (guide §10 Step 0). Nothing is blocked on this request except turning it
 on, and nothing changes for users until it is.
 
-**Status:** drafted, **not yet sent**. The ready-to-paste version is at the
-bottom of this file, addressed to Jordan St. Clair (cc Joe Loner, Eric Arnold,
-Jessica Beltran — the recipients of the APEX request sent 2026-09-21 14:28).
+**Status:** **sent 2026-09-21 16:08** to Jordan St. Clair (cc Joe Loner, Eric
+Arnold, Jessica Beltran), as drafted below. No reply on that thread as of
+2026-09-25. Jordan's reply on the parallel APEX thread (2026-09-21 17:50) set
+IT's approach, which the follow-up at the bottom adopts: SSO values live in Key
+Vault and are read at deploy time (never sent to Bryan), and sign-in is
+validated against the Dev environment rather than localhost.
 
 **Before sending:** **attach the CAPRI user list**, which is what makes the UPN
 question answerable per account. The list is deliberately not in this file: the
@@ -163,7 +166,7 @@ against Azure regardless of the UPN answer.
 
 ---
 
-## The email to send
+## The email as sent (2026-09-21 16:08)
 
 **To:** Jordan St. Clair · **Cc:** Joe Loner, Eric Arnold, Jessica Beltran
 (the same recipients as the APEX request sent 2026-09-21 14:28)
@@ -224,17 +227,13 @@ What I need from you:
    the app needs rights over the registration, which is yours. Same
    easy-to-miss step as APEX: with "Groups assigned to the application", a group
    only appears in the tokens of apps it is actually assigned to.
-5. Confirmation of the redirect URIs you've registered
+5. Confirmation of the redirect URI you've registered
 
-**Redirect URIs to register.** Two for CAPRI, one per environment. Unlike
-APEX, it runs as a single server on one port. Entra matches literally: scheme,
-host, port, path, no trailing slash.
+**Redirect URI to register.** Just one for CAPRI — unlike APEX, it runs as a
+single server on one port, so there's only the one way in. Entra matches
+literally: scheme, host, port, path, no trailing slash.
 
     http://localhost:5100/api/auth/sso/callback
-    https://capri-dev.uniteduptime.com/api/auth/sso/callback
-
-The second is the Dev hostname from this morning's CAPRI Dev environment email.
-If you've picked a different name, please register that one instead.
 
 **Three things to confirm:**
 
@@ -249,20 +248,56 @@ If you've picked a different name, please register that one instead.
    silently fails every sign-in with what reads like an access-permissions
    problem.
 3. Whether you want one registration or two (the APEX question #3). If the
-   convention is per-environment, both URIs above belong on a Dev
-   registration and we can set up Prod when CAPRI has a production hostname. Just tell me
+   convention is per-environment, the localhost URI above belongs on a Dev
+   registration and we can set up Prod when CAPRI has a hostname. Just tell me
    the shape and I'll match it.
 
 **One more:** who owns the client secret's expiry date? Same as APEX — an
 expired secret is a full outage with no warning and nothing diagnosable from
 inside the app, so I'd like a named owner and a calendar reminder.
 
-**Timing:** the Dev URI only works once Dev has its DNS name and certificate
-(Entra only accepts http:// for localhost). Registering it now is harmless, and
-it saves a second change later.
+**For later, not now:** CAPRI has no deployed environment yet. When it gets one
+it'll need a DNS name and a certificate before SSO can work there, since Entra
+only accepts http:// for localhost. That's the same DNS/HTTPS dependency APEX is
+waiting on, so it may be worth solving once and covering both — but it doesn't
+block anything here.
 
 Thanks,
 Bryan
 
 **Before sending:** attach the CAPRI user list (deliberately not in this repo —
 it mirrors to GitHub) and let Outlook add your signature.
+
+---
+
+## Follow-up to send (2026-09-25) — reply on the 2026-09-21 thread
+
+Short, and aligned with Jordan's APEX reply. The DNS record for
+`capri-dev.uniteduptime.com` already exists (Jordan, 2026-09-22, pointing at the
+Dev App Gateway, 172.16.32.70).
+
+> Jordan,
+>
+> Following up on this one now that CAPRI Dev is moving (the environment request
+> went out this morning). Taking your APEX approach — values in Key Vault, SSO
+> tested against Dev rather than localhost — so this is shorter than my original:
+>
+> 1. **Redirect URI** on the CAPRI app registration:
+>    `https://capri-dev.uniteduptime.com/api/auth/sso/callback`. The localhost one
+>    is no longer needed.
+> 2. **Groups claim** set to "Groups assigned to the application", and
+>    **SEC-App-Capri-Dev assigned** to the registration. Those two were the last
+>    things standing on APEX, so worth doing up front.
+> 3. **Key Vault**, for the CAPRI Dev container: `CAPRI_SSO_TENANT_ID`,
+>    `CAPRI_SSO_CLIENT_ID`, `CAPRI_SSO_CLIENT_SECRET`, `CAPRI_SSO_ALLOWED_GROUPS`
+>    (the group's object ID, not its name) and `CAPRI_SSO_REDIRECT_URI` (the URI
+>    above). Leave `CAPRI_ENABLE_SSO` unset until I've confirmed the user records
+>    below; I'll ask for it to be set to 1 then.
+>
+> One question still open from the original: CAPRI matches a sign-in on the UPN,
+> and most CAPRI user records are @uniteduptime.com while my own UPN is
+> @dh-united.com. Is the UPN always @dh-united.com, or does it vary by account?
+> I'll correct the records before SSO goes on either way.
+>
+> Thanks,
+> Bryan
