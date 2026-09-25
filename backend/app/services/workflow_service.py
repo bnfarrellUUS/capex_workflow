@@ -18,20 +18,31 @@ def compute_required_levels(total_cost, thresholds) -> int:
 
 
 def intended_approvers(level, division, thresholds):
-    """The users configured to approve at a level (any one of them may act)."""
+    """The active users configured to approve at a level (any one may act).
+
+    Inactive users are dropped here, so a deactivated approver is out of every
+    pool -- worklists, notifications, who may act, and empty-level skipping all
+    follow from this one filter. Deactivating someone must not leave requests
+    routed to an account nobody can sign in to."""
     if level == 1:
-        return list(division.l1_approvers) if division is not None else []
-    if level == 2:
+        pool = division.l1_approvers if division is not None else []
+    elif level == 2:
         region = division.region if division is not None else None
-        return list(region.vp_approvers) if region is not None else []
-    match = next((t for t in thresholds if t.level == level), None)
-    return list(match.approvers) if match is not None else []
+        pool = region.vp_approvers if region is not None else []
+    else:
+        match = next((t for t in thresholds if t.level == level), None)
+        pool = match.approvers if match is not None else []
+    return [u for u in pool if u.active]
 
 
 def effective_assignee(user):
+    """Who acts for `user`: their out-of-office delegate, unless that delegate
+    has been deactivated -- then the approver keeps their own requests."""
     if user is None:
         return None
-    return user.delegate if user.delegate_id else user
+    if user.delegate_id and user.delegate is not None and user.delegate.active:
+        return user.delegate
+    return user
 
 
 def eligible_actors(level, division, thresholds, exclude_id=None):

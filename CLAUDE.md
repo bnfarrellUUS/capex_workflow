@@ -85,7 +85,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 447 tests).
+- Backend: `cd backend && pytest -q` (currently 452 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -221,7 +221,11 @@ derived from `total_cost` vs the `ApprovalThreshold` caps. Each level has a
 division's region's `vp_approvers`** (not the threshold row —
 `workflow_service.intended_approvers` reads `division.region.vp_approvers`),
 L3 from the threshold row — each mapped through their out-of-office delegate;
-**any one** eligible approver may approve (advances) or reject. The pool
+**any one** eligible approver may approve (advances) or reject. **Inactive
+users are out of every pool** (since 2026-09-25): `intended_approvers` drops
+them and `effective_assignee` ignores an inactive delegate, so deactivating an
+approver never leaves requests routed to an account nobody can sign in to — a
+level whose only approvers are inactive is skipped like any empty level. The pool
 appears on every member's "assigned" worklist; `assignee_id` is just a display
 hint (the first current approver) — `request_service._can_view` therefore
 admits **every eligible actor at the current level**, not just `assignee_id`
@@ -326,8 +330,9 @@ vars, secrets from Key Vault, owned by IT's infra repo.
   it refuses on a developer PC too. On a deployed database use
   **`python create_admin.py <email> "<name>"`** (prompts twice; ≥12 chars;
   ADMIN role only; refuses an existing email). The Dev Azure SQL database was
-  seeded on 2026-09-18, so its `admin@uniteduptime.com` must be deactivated or
-  re-passworded at first deploy (ADO 5896).
+  seeded on 2026-09-18; its `admin@uniteduptime.com` was **deactivated on
+  2026-09-25** and removed from the Central region's VP pool (now Joe Loner,
+  Andre Doerfer, Chris Jodlowski, Bryan Farrell).
 - **`/api/health`** (ADO 5886, no sign-in) reports **modes, never values**:
   `status`, `database` (503 when unreachable), `db_backend` (`mssql`/`sqlite`
   — the SQLAlchemy dialect), `email_backend` (`off`/`outlook`), `email_mode`

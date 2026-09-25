@@ -137,26 +137,26 @@ curl -s https://capri-dev.uniteduptime.com/api/auth/config
 
 ## First deploy
 
-1. The Dev database was **seeded on 2026-09-18**, so it already contains
-   `admin@uniteduptime.com` with the public password `ChangeMe123!`. Deal with
-   it in step 4, before anyone else can reach Dev.
+1. The Dev database was seeded on 2026-09-18, which created
+   `admin@uniteduptime.com` with the public password `ChangeMe123!`. **Done
+   2026-09-25:** that account is deactivated and out of the Central region's VP
+   pool. The four real admins (Andre Doerfer, Bryan Farrell, Chris Jodlowski,
+   Joe Loner) are active and in `SEC-App-CAPRI-Dev`.
 2. Deploy with `EMAIL_ENABLED=0` and `CAPRI_ENABLE_SSO` unset. Check
    `/api/health` against the table above.
-3. Create the real administrator from a console in the container
-   (`az containerapp exec`). It prompts for a password of at least 12
-   characters:
+3. Sign in with a password as one of the four admins. They already exist, so
+   `create_admin.py` isn't needed on Dev. For a new database, create the first
+   admin from a console in the container (`az containerapp exec`):
    ```
    python create_admin.py <email> "<name>"
    ```
-   Never run `python seed.py` here. It refuses a non-SQLite database unless
-   forced, because its admin password is public.
-4. Sign in as the new admin and **deactivate `admin@uniteduptime.com`** under
-   Admin → Users.
-5. Set up divisions, regions (VP pools), approval thresholds and users. Decide
+   Never run `python seed.py` against a deployed database. It refuses a
+   non-SQLite database unless forced, because its admin password is public.
+4. Set up divisions, regions (VP pools), approval thresholds and users. Decide
    whether the seed's sample divisions (100, 200) and the Central region stay.
-6. Upload an attachment to a draft, redeploy, and confirm it still downloads.
+5. Upload an attachment to a draft, redeploy, and confirm it still downloads.
    That proves `UPLOAD_ROOT` is on the file share.
-7. Set the SendGrid settings and `EMAIL_ENABLED=1`, keeping the app **in
+6. Set the SendGrid settings and `EMAIL_ENABLED=1`, keeping the app **in
    Test mode**. Walk one request through
    submit → L1 → L2 → L3 → finance, and check every email in classic Outlook,
    including the images and the record PDF.

@@ -28,22 +28,22 @@ def test_required_levels_l3():
 
 
 def test_intended_approvers_l1_are_division_approvers():
-    a1 = User(id="a1", email="a@x", name="A", password_hash="x")
-    a2 = User(id="a2", email="b@x", name="B", password_hash="x")
+    a1 = User(id="a1", email="a@x", name="A", password_hash="x", active=True)
+    a2 = User(id="a2", email="b@x", name="B", password_hash="x", active=True)
     div = Division(number="100", name="F", l1_approvers=[a1, a2])
     assert intended_approvers(1, div, _thresholds()) == [a1, a2]
 
 
 def test_effective_assignee_prefers_delegate():
-    delegate = User(id="d1", email="d@x", name="D", password_hash="x")
-    appr = User(id="a1", email="a@x", name="A", password_hash="x",
+    delegate = User(id="d1", email="d@x", name="D", password_hash="x", active=True)
+    appr = User(id="a1", email="a@x", name="A", password_hash="x", active=True,
                 delegate_id="d1", delegate=delegate)
     assert effective_assignee(appr) is delegate
 
 
 def test_eligible_actors_map_through_delegate():
-    delegate = User(id="d1", email="d@x", name="D", password_hash="x")
-    appr = User(id="a1", email="a@x", name="A", password_hash="x",
+    delegate = User(id="d1", email="d@x", name="D", password_hash="x", active=True)
+    appr = User(id="a1", email="a@x", name="A", password_hash="x", active=True,
                 delegate_id="d1", delegate=delegate)
     div = Division(number="100", name="F", l1_approvers=[appr])
     assert eligible_actors(1, div, _thresholds()) == [delegate]
@@ -51,7 +51,7 @@ def test_eligible_actors_map_through_delegate():
 
 
 def test_intended_approvers_l2_come_from_region():
-    vp = User(id="vp", email="vp@x", name="VP", password_hash="x")
+    vp = User(id="vp", email="vp@x", name="VP", password_hash="x", active=True)
     div = Division(number="100", name="F", region=Region(name="West", vp_approvers=[vp]))
     assert intended_approvers(2, div, _thresholds()) == [vp]
 
@@ -62,22 +62,22 @@ def test_intended_approvers_l2_empty_without_region():
 
 
 def test_eligible_actors_exclude_requestor_directly():
-    a1 = User(id="a1", email="a@x", name="A", password_hash="x")
-    rq = User(id="rq", email="r@x", name="R", password_hash="x")
+    a1 = User(id="a1", email="a@x", name="A", password_hash="x", active=True)
+    rq = User(id="rq", email="r@x", name="R", password_hash="x", active=True)
     div = Division(number="100", name="F", l1_approvers=[a1, rq])
     assert eligible_actors(1, div, _thresholds(), exclude_id="rq") == [a1]
 
 
 def test_eligible_actors_exclude_requestor_as_delegate():
-    rq = User(id="rq", email="r@x", name="R", password_hash="x")
-    appr = User(id="a1", email="a@x", name="A", password_hash="x",
+    rq = User(id="rq", email="r@x", name="R", password_hash="x", active=True)
+    appr = User(id="a1", email="a@x", name="A", password_hash="x", active=True,
                 delegate_id="rq", delegate=rq)
     div = Division(number="100", name="F", l1_approvers=[appr])
     assert eligible_actors(1, div, _thresholds(), exclude_id="rq") == []
 
 
 def test_next_pending_level_skips_empty_levels():
-    vp = User(id="vp", email="vp@x", name="VP", password_hash="x")
+    vp = User(id="vp", email="vp@x", name="VP", password_hash="x", active=True)
     div = Division(number="100", name="F", l1_approvers=[],
                    region=Region(name="West", vp_approvers=[vp]))
     assert next_pending_level(0, div, _thresholds()) == 2
@@ -85,6 +85,6 @@ def test_next_pending_level_skips_empty_levels():
 
 
 def test_next_pending_level_none_when_requestor_is_everyone():
-    rq = User(id="rq", email="r@x", name="R", password_hash="x")
+    rq = User(id="rq", email="r@x", name="R", password_hash="x", active=True)
     div = Division(number="100", name="F", l1_approvers=[rq])
     assert next_pending_level(0, div, _thresholds(), exclude_id="rq") is None
