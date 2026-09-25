@@ -358,7 +358,10 @@ vars, secrets from Key Vault, owned by IT's infra repo.
   (`test`/`live`, `unknown` without a DB), `sso`, `telemetry`, `version`
   (`CAPRI_VERSION`, baked into the image from the pipeline's build number via
   `--build-arg`; `dev` locally). Don't add a field that echoes a setting's
-  value.
+  value. It is the **readiness/startup** probe; **liveness** is
+  `/api/health/live` (ADO 5908), a bare `{"status":"ok"}` that never touches
+  the database, so an Azure SQL failover takes the replica out of rotation
+  instead of restart-looping it (each restart runs `flask db upgrade`).
 - **Application Insights** (`app/telemetry.py`, ported from APEX): on only
   when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set; the SDK
   (`azure-monitor-opentelemetry`) is imported only then, so the tests fake it

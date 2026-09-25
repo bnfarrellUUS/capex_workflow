@@ -65,3 +65,14 @@ def test_health_is_503_when_the_database_is_unreachable(client):
     assert body["status"] == "error"
     assert body["database"] == "error"
     assert body["email_mode"] == "unknown"  # not asserted without a database
+
+
+def test_liveness_answers_without_the_database(client):
+    # ACA restarts a container whose liveness probe fails; a brief Azure SQL
+    # failover must not do that (ADO 5908), so /live never touches the DB.
+    boom = OperationalError("SELECT 1", {}, Exception("down"))
+    with mock.patch("app.blueprints.health.db.session.execute", side_effect=boom) as execute:
+        resp = client.get("/api/health/live")
+    assert resp.status_code == 200
+    assert resp.get_json() == {"status": "ok"}
+    execute.assert_not_called()

@@ -10,9 +10,18 @@ from app.services.sso_service import sso_config
 bp = Blueprint("health", __name__)
 
 
+@bp.get("/api/health/live")
+def live():
+    """Liveness only: the process is up and serving. Never touches the
+    database, so the Container App's liveness probe doesn't restart the app
+    during a brief Azure SQL failover (ADO 5908) -- /api/health, which does
+    check it, is the readiness/startup probe."""
+    return jsonify({"status": "ok"})
+
+
 @bp.get("/api/health")
 def health():
-    """Liveness plus the MODE each deployment setting selected.
+    """Readiness plus the MODE each deployment setting selected.
 
     Never returns a configuration value -- no connection string, host,
     recipient or secret. The modes are here because a missing setting falls

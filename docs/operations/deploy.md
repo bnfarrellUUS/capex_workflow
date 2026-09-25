@@ -16,7 +16,8 @@ on the Container App; secrets come from Key Vault through the Container App's
 | URL | `https://capri-dev.uniteduptime.com` *(proposed; VPN only, like APEX Dev)* |
 | Database | Azure SQL `uus-capri-dev-scus-sql` (exists; private endpoint only) |
 | Ingress target port | `8000` |
-| Health probe path | `/api/health` |
+| Liveness probe path | `/api/health/live` — process up only; never touches the database |
+| Readiness + startup probe path | `/api/health` — 503 while the database is unreachable |
 | Replicas | **1** (see "One replica" below) |
 
 *(proposed)* means named by analogy with APEX and not yet confirmed by IT.
@@ -136,6 +137,14 @@ curl -s https://capri-dev.uniteduptime.com/api/auth/config
 | `sso` | `off` until 5881, then `on` | `off` after enabling means `CAPRI_ENABLE_SSO` isn't `1` or one of the five values is missing. The startup log names which. |
 | `telemetry` | `on` | `APPLICATIONINSIGHTS_CONNECTION_STRING` is unset. |
 | `version` | the pipeline's build number | `dev` means the image wasn't built by the pipeline. |
+
+**Probes (ADO 5908).** Point the Container App's **liveness** probe at
+`/api/health/live`, which returns `{"status": "ok"}` whenever the process is
+serving and never touches the database. Point **readiness** (and startup) at
+`/api/health`. If liveness used `/api/health`, a brief Azure SQL failover would
+make ACA restart the container over and over, and every restart runs
+`flask db upgrade` against a database that is still recovering. Readiness only
+takes the replica out of rotation until the database answers again.
 
 ## First deploy
 
