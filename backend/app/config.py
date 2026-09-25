@@ -91,6 +91,11 @@ class DevConfig(BaseConfig):
 
 class TestConfig(BaseConfig):
     TESTING = True
+    # Pinned rather than inherited: BaseConfig reads these from the environment
+    # (and backend/.env) at import, so a developer's APP_BASE_URL=https://...
+    # would otherwise make every create_app(TestConfig) refuse to start.
+    APP_BASE_URL = "http://localhost:5100"
+    EMAIL_BACKEND = "outlook"
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
     UPLOAD_ROOT = os.path.join(tempfile.gettempdir(), "capex_test_uploads")

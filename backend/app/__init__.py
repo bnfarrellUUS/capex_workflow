@@ -25,6 +25,12 @@ def _refuse_unsafe_deployment(config):
         raise RuntimeError(
             f"APP_BASE_URL must be https:// on a deployed server (got "
             f"{base_url!r}): session cookies are secure-only there.")
+    if not config.get("UPLOAD_ROOT"):
+        # The default (instance/uploads) is the container's own disk, wiped on
+        # every deploy while the database keeps pointing at the files.
+        raise RuntimeError(
+            "UPLOAD_ROOT must point at persistent storage (a mounted file share) "
+            "on a deployed server.")
 
 
 def _refuse_incomplete_email(config):
@@ -35,6 +41,13 @@ def _refuse_incomplete_email(config):
     if backend not in ("outlook", "sendgrid"):
         raise RuntimeError(
             f"EMAIL_BACKEND must be 'outlook' or 'sendgrid' (got {backend!r}).")
+    if (backend == "outlook" and config.get("EMAIL_ENABLED")
+            and not is_local_url(config.get("APP_BASE_URL"))):
+        # Outlook is a Windows desktop app driven over COM; on a server every
+        # send would fail inside notify and only be logged.
+        raise RuntimeError(
+            "EMAIL_BACKEND must be 'sendgrid' when EMAIL_ENABLED=1 on a deployed "
+            "server; the Outlook backend only works on a Windows PC.")
     if backend == "sendgrid" and config.get("EMAIL_ENABLED"):
         for key in ("SENDGRID_API_KEY", "EMAIL_FROM"):
             if not config.get(key):

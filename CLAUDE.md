@@ -85,7 +85,7 @@ build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 463 tests).
+- Backend: `cd backend && pytest -q` (currently 469 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -165,7 +165,8 @@ build`; there is no live dev server.)
 - **Pool order is stored** (since 2026-09-25, migration `a1b2c3d4e5f7`): the
   three pool tables (`division_l1_approvers`, `region_vp_approvers`,
   `threshold_approvers`) carry a `position`, and the relationships read it back
-  via `order_by`. The first approver is the request's "assigned to". A
+  via `order_by` (tiebreaker `user_id`: migrated rows all start at 0 and SQL
+  Server doesn't order ties). The first approver is the request's "assigned to". A
   `secondary` relationship doesn't write `position`, so **save pools through
   `services/approver_pools.set_pool(owner, attr, ids)`**, never by assigning
   the list; it keeps the submitted order and drops blanks/duplicates/unknowns.
@@ -335,7 +336,11 @@ vars, secrets from Key Vault, owned by IT's infra repo.
   separate environment flag. `create_app` then refuses to start a non-local
   `APP_BASE_URL` that still has the repo's `INSECURE_DEV_SECRET` (or none), or
   that isn't `https://`. No ProxyFix: nothing builds URLs from the request
-  scheme (redirects are relative; SSO's redirect URI is configured).
+  scheme (redirects are relative; SSO's redirect URI is configured). A
+  deployed server also refuses to start without `UPLOAD_ROOT` (the fallback is
+  the container's wiped-on-deploy disk) or with `EMAIL_ENABLED=1` on the
+  `outlook` backend. `TestConfig` pins `APP_BASE_URL`/`EMAIL_BACKEND` so a
+  developer's `.env` can't flip the suite into deployed mode.
 - **Seeding vs. a real admin** (ADO 5885): `python seed.py` refuses any
   non-SQLite database unless given `--allow-non-sqlite`, because its admin
   password (`ChangeMe123!`) is public — so with `AZURE_SQL_ODBC` in `.env`

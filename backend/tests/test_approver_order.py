@@ -80,3 +80,15 @@ def test_the_first_approver_in_the_set_order_is_the_assignee(app):
     set_thresholds()
     req = make_draft(requestor.id, div.id, costs=("30000",))
     assert submit(req.id, requestor.id).assignee_id == m.id
+
+
+def test_equal_positions_come_back_in_a_stable_order(app):
+    """Rows migrated in all share position 0; SQL Server doesn't order ties, so
+    a tiebreaker keeps the email's and the page's "assigned to" the same."""
+    from app.models import division_l1_approvers
+    z, a, m = _three()
+    div = make_division()
+    db.session.execute(division_l1_approvers.insert(), [
+        {"division_id": div.id, "user_id": u.id, "position": 0} for u in (z, a, m)])
+    db.session.commit()
+    assert _ids(_fresh(Division, div.id).l1_approvers) == sorted([z.id, a.id, m.id])

@@ -88,24 +88,42 @@ stages:
                   --resource-group $(resourceGroup) \
                   --image $(imageRef)
 
+                # Wait on the revision THIS update created. Reading "the first
+                # active revision" instead can pick the old one, which stays
+                # active and Healthy while a broken new one fails to start, and
+                # report success for a deploy that isn't serving.
+                REVISION=$(az containerapp show \
+                  --name $(containerAppName) \
+                  --resource-group $(resourceGroup) \
+                  --query properties.latestRevisionName -o tsv)
+                echo "New revision: $REVISION"
+
                 # The container runs `flask db upgrade` before gunicorn starts,
                 # so a failed migration shows up here as an unhealthy revision.
-                echo "Waiting for the new revision to become healthy..."
+                echo "Waiting for $REVISION to become healthy..."
+                STATE=""
                 UNHEALTHY_COUNT=0
                 for i in $(seq 1 30); do
-                  STATE=$(az containerapp revision list \
+                  OUT=$(az containerapp revision show \
                     --name $(containerAppName) \
                     --resource-group $(resourceGroup) \
-                    --query "[?properties.active] | [0].properties.healthState" -o tsv 2>/dev/null || echo "")
-                  echo "  attempt $i/30: healthState=${STATE:-<pending>}"
+                    --revision "$REVISION" \
+                    --query "join(' ', [properties.healthState, properties.provisioningState])" \
+                    -o tsv 2>/dev/null || echo "")
+                  read -r STATE PROVISIONING <<< "$OUT" || true
+                  echo "  attempt $i/30: healthState=${STATE:-<pending>} provisioningState=${PROVISIONING:-<pending>}"
                   if [ "$STATE" = "Healthy" ]; then break; fi
+                  if [ "$PROVISIONING" = "Failed" ]; then
+                    echo "##vso[task.logissue type=error]Revision $REVISION failed to provision — check container logs in the Portal (or: az containerapp logs show --name $(containerAppName) --resource-group $(resourceGroup) --revision $REVISION)."
+                    exit 1
+                  fi
                   if [ "$STATE" = "Unhealthy" ]; then
                     UNHEALTHY_COUNT=$((UNHEALTHY_COUNT + 1))
                     # The first probes often fire before the app has finished
                     # starting (migrations, DB connection), so only fail after
                     # several consecutive Unhealthy readings.
                     if [ "$UNHEALTHY_COUNT" -ge 5 ]; then
-                      echo "##vso[task.logissue type=error]Revision reported Unhealthy $UNHEALTHY_COUNT times in a row — check container logs in the Portal (or: az containerapp logs show --name $(containerAppName) --resource-group $(resourceGroup) --follow)."
+                      echo "##vso[task.logissue type=error]Revision $REVISION reported Unhealthy $UNHEALTHY_COUNT times in a row — check container logs in the Portal (or: az containerapp logs show --name $(containerAppName) --resource-group $(resourceGroup) --revision $REVISION)."
                       exit 1
                     fi
                   else
@@ -115,7 +133,7 @@ stages:
                 done
 
                 if [ "$STATE" != "Healthy" ]; then
-                  echo "##vso[task.logissue type=error]Revision did not become healthy within the wait window."
+                  echo "##vso[task.logissue type=error]Revision $REVISION did not become healthy within the wait window."
                   exit 1
                 fi
 

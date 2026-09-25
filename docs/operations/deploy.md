@@ -56,14 +56,14 @@ fallback to an empty local database.
 
 | Variable | Required | Secret | Dev value | Notes |
 |---|---|---|---|---|
-| `UPLOAD_ROOT` | **yes** | no | the Azure Files mount path | Where request attachments are stored. Unset, they go to the container's own disk, **which is wiped on every deploy and restart** while the database still points at them. Mount an Azure Files share and point this at it (ADO 5893). |
+| `UPLOAD_ROOT` | **yes** | no | the Azure Files mount path | Where request attachments are stored. The app **refuses to start** without it on a deployed server, because the fallback is the container's own disk, **which is wiped on every deploy and restart** while the database still points at the files. Mount an Azure Files share and point this at it (ADO 5893). |
 
 ### Email
 
 | Variable | Required | Secret | Dev value | Notes |
 |---|---|---|---|---|
 | `EMAIL_ENABLED` | no | no | `1` once SendGrid is set up | `1` sends notification emails. Defaults to off on a deployed server. Every notification is recorded in the `NotificationLog` table either way. |
-| `EMAIL_BACKEND` | with email | no | `sendgrid` | `outlook` (the default) drives the Outlook desktop app over COM, which **does not exist in a container**. A value other than `outlook` or `sendgrid` makes the app refuse to start. |
+| `EMAIL_BACKEND` | with email | no | `sendgrid` | `outlook` (the default) drives the Outlook desktop app over COM, which **does not exist in a container**, so with `EMAIL_ENABLED=1` on a deployed server the app **refuses to start** unless this is `sendgrid`. A value other than `outlook` or `sendgrid` also makes it refuse to start. |
 | `SENDGRID_API_KEY` | with SendGrid | **yes** | — | With `EMAIL_ENABLED=1` and `EMAIL_BACKEND=sendgrid`, the app **refuses to start** without it. Every send is tagged with the SendGrid category `capri`, because the account may be shared with other apps. |
 | `EMAIL_FROM` | with SendGrid | no | a verified address | **Required**, no default: SendGrid accepts mail from an unverified sender with a 202 and then **silently drops it**, so this must be an address (or domain) verified in SendGrid. The app refuses to start without it when SendGrid is enabled. |
 | `EMAIL_FROM_NAME` | no | no | leave unset | The display name. Defaults to `CAPRI`. |
@@ -105,7 +105,9 @@ Leave `CAPRI_ENABLE_SSO` unset until the Entra app registration exists (ADO
 
 - `flask db upgrade`, then gunicorn on port 8000 (`backend/gunicorn.conf.py`:
   2 workers × 4 threads). If a migration fails, the container never starts,
-  and the pipeline reports an unhealthy revision.
+  and the pipeline reports the failure. It waits on the revision that deploy
+  created (`latestRevisionName`), not the first active one, so a still-running
+  old revision can't mask a broken new one.
 - **One replica.** Every replica runs migrations at start, and two starting
   together would race. Multiple gunicorn **workers** are fine, because all
   sign-in state lives in the signed session cookie.
@@ -129,7 +131,7 @@ curl -s https://capri-dev.uniteduptime.com/api/auth/config
 |---|---|---|
 | `status` / `database` | `ok` (HTTP 200) | HTTP 503 means the database is unreachable: check the network path to the private endpoint and the SQL user. |
 | `db_backend` | `mssql` | `sqlite` means neither database variable reached the container. On a deployed server the app should refuse to start in that case, so treat this as a bug. |
-| `email_backend` | `sendgrid` (or `off` before email is set up) | `outlook` means `EMAIL_BACKEND` is unset. Outlook can't send from a container, so every email fails (logged only). |
+| `email_backend` | `sendgrid` (or `off` before email is set up) | It can't read `outlook` with email on: the app refuses to start in that case. |
 | `email_mode` | `test` until go-live | `live` means real recipients are being emailed. |
 | `sso` | `off` until 5881, then `on` | `off` after enabling means `CAPRI_ENABLE_SSO` isn't `1` or one of the five values is missing. The startup log names which. |
 | `telemetry` | `on` | `APPLICATIONINSIGHTS_CONNECTION_STRING` is unset. |

@@ -101,3 +101,49 @@ def test_prod_config_without_a_database_refuses_to_start():
 
     with pytest.raises(RuntimeError):
         create_app(NoDb)
+
+
+# --- review follow-ups (2026-09-25) -----------------------------------------
+
+def test_test_config_pins_its_own_base_url_and_email_backend():
+    """A developer's .env (e.g. APP_BASE_URL=https://capri-dev...) must not leak
+    into the suite through BaseConfig's import-time reads: a non-local URL would
+    make every create_app(TestConfig) refuse to start."""
+    assert vars(TestConfig)["APP_BASE_URL"] == "http://localhost:5100"
+    assert vars(TestConfig)["EMAIL_BACKEND"] == "outlook"
+
+
+def test_deployed_app_refuses_outlook_with_email_on():
+    """Outlook drives a Windows desktop app over COM; on a server every send
+    would fail and only be logged."""
+    class OutlookOn(_Deployed):
+        EMAIL_ENABLED = True
+        EMAIL_BACKEND = "outlook"
+
+    with pytest.raises(RuntimeError, match="EMAIL_BACKEND"):
+        create_app(OutlookOn)
+
+
+def test_deployed_app_with_email_off_may_leave_outlook_selected():
+    class OutlookOff(_Deployed):
+        EMAIL_ENABLED = False
+        EMAIL_BACKEND = "outlook"
+
+    create_app(OutlookOff)
+
+
+def test_deployed_app_refuses_to_start_without_upload_root():
+    """Without it, attachments land on the container's own disk, which is wiped
+    on every deploy while the database keeps pointing at them."""
+    class NoUploads(_Deployed):
+        UPLOAD_ROOT = None
+
+    with pytest.raises(RuntimeError, match="UPLOAD_ROOT"):
+        create_app(NoUploads)
+
+
+def test_local_app_may_use_the_default_upload_folder():
+    class Local(TestConfig):
+        UPLOAD_ROOT = None
+
+    create_app(Local)

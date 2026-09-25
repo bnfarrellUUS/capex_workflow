@@ -13,7 +13,9 @@ from app.extensions import db
 # Level approvers are many-to-many: any one of them can act at that level.
 # L1 approvers are per-division; L2 approvers are per-region (a region's VP
 # pool); L3 approvers hang off the threshold row. `position` is the order an
-# admin set (the first approver is the request's "assigned to"); the
+# admin set (the first approver is the request's "assigned to"), with user_id
+# as the tiebreaker -- migrated rows all start at 0, and SQL Server does not
+# order ties, so without it two reads could name different people; the
 # relationship does not write it, so pools are saved through
 # services/approver_pools.set_pool, never by assigning the list directly.
 division_l1_approvers = Table(
@@ -116,7 +118,8 @@ class Region(db.Model):
 
     # Level-2 approvers (the region's VP + backups; any one may approve).
     vp_approvers: Mapped[list["User"]] = relationship(
-        "User", secondary=region_vp_approvers, order_by=region_vp_approvers.c.position)
+        "User", secondary=region_vp_approvers,
+        order_by=(region_vp_approvers.c.position, region_vp_approvers.c.user_id))
 
     divisions: Mapped[list["Division"]] = relationship(back_populates="region")
 
@@ -131,7 +134,8 @@ class Division(db.Model):
 
     # Level-1 approvers for this division (any one may approve).
     l1_approvers: Mapped[list["User"]] = relationship(
-        "User", secondary=division_l1_approvers, order_by=division_l1_approvers.c.position
+        "User", secondary=division_l1_approvers,
+        order_by=(division_l1_approvers.c.position, division_l1_approvers.c.user_id)
     )
 
     # Nullable because divisions predate regions; the admin form requires it.
@@ -153,7 +157,8 @@ class ApprovalThreshold(db.Model):
     max_amount: Mapped[Optional[Decimal]] = mapped_column(MONEY, nullable=True)
     # Approvers for this level (any one may approve). L1 uses the division's list.
     approvers: Mapped[list["User"]] = relationship(
-        "User", secondary=threshold_approvers, order_by=threshold_approvers.c.position)
+        "User", secondary=threshold_approvers,
+        order_by=(threshold_approvers.c.position, threshold_approvers.c.user_id))
 
 
 class CapexRequest(db.Model):
