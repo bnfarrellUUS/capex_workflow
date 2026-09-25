@@ -14,4 +14,5 @@ pyodbc>=5.1  # Azure SQL Server (needs the "ODBC Driver 18 for SQL Server" syste
 gunicorn>=23.0; sys_platform != "win32"  # WSGI server in the container (Dockerfile); Windows runs `flask run`
 openpyxl>=3.1
 reportlab>=4.0
+azure-monitor-opentelemetry>=1.6  # Application Insights; imported only when APPLICATIONINSIGHTS_CONNECTION_STRING is set
 pytest>=8.0

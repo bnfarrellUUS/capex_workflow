@@ -61,6 +61,7 @@ stages:
                   --registry $(acrName) \
                   --image $(imageName):$(imageTag) \
                   --image $(imageName):dev-latest \
+                  --build-arg CAPRI_VERSION=$(imageTag) \
                   --file $(Build.SourcesDirectory)/Dockerfile \
                   $(Build.SourcesDirectory)
                 echo "Image pushed: $(imageRef)"

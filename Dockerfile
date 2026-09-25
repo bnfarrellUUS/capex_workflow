@@ -50,7 +50,9 @@ RUN python -m pytest -q && touch /tmp/tests-passed
 
 
 FROM base AS final
-ENV FLASK_APP=wsgi.py
+# The pipeline passes its build number; /api/health reports it as `version`.
+ARG CAPRI_VERSION=dev
+ENV FLASK_APP=wsgi.py CAPRI_VERSION=$CAPRI_VERSION
 COPY backend/ ./
 COPY --from=frontend /app/frontend/dist /app/frontend/dist
 COPY --from=test /tmp/tests-passed /tmp/tests-passed

@@ -78,14 +78,14 @@ Manual start:
     cd ../backend && python -m venv .venv && source .venv/Scripts/activate
     pip install -r requirements.txt && flask db upgrade && python seed.py && flask run --port 5100
 
-App: http://localhost:5100 (`GET /api/health` → `{"status":"ok"}`) ·
+App: http://localhost:5100 (`GET /api/health` → `{"status":"ok", ...}` plus the deployment modes) ·
 Dev login: **admin@uniteduptime.com / ChangeMe123!**
 (To iterate on the frontend, rebuild with `node ./node_modules/vite/bin/vite.js
 build`; there is no live dev server.)
 
 ## Testing
 
-- Backend: `cd backend && pytest -q` (currently 426 tests).
+- Backend: `cd backend && pytest -q` (currently 434 tests).
 - Frontend: `npm test` (vitest) and `npm run build`; typecheck with `tsc`.
 - Always run backend pytest + frontend typecheck after changes touching either.
 
@@ -323,6 +323,17 @@ vars, secrets from Key Vault, owned by IT's infra repo.
   ADMIN role only; refuses an existing email). The Dev Azure SQL database was
   seeded on 2026-09-18, so its `admin@uniteduptime.com` must be deactivated or
   re-passworded at first deploy (ADO 5896).
+- **`/api/health`** (ADO 5886, no sign-in) reports **modes, never values**:
+  `status`, `database` (503 when unreachable), `db_backend` (`mssql`/`sqlite`
+  — the SQLAlchemy dialect), `email_backend` (`off`/`outlook`), `email_mode`
+  (`test`/`live`, `unknown` without a DB), `sso`, `telemetry`, `version`
+  (`CAPRI_VERSION`, baked into the image from the pipeline's build number via
+  `--build-arg`; `dev` locally). Don't add a field that echoes a setting's
+  value.
+- **Application Insights** (`app/telemetry.py`, ported from APEX): on only
+  when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set; the SDK
+  (`azure-monitor-opentelemetry`) is imported only then, so the tests fake it
+  through `sys.modules` and it need not be installed locally.
 - **Still not deployable:** email is Outlook-only until the SendGrid backend
   (ADO 5884).
 

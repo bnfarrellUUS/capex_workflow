@@ -37,6 +37,9 @@ def create_app(config_object=None):
     login_manager.init_app(app)
     csrf.init_app(app)
 
+    from . import telemetry
+    app.config["CAPRI_TELEMETRY"] = telemetry.init_app(app)
+
     # Fail open on the flag: CAPRI_ENABLE_SSO=1 with a half-filled config
     # behaves as SSO-off so a typo cannot lock every user out of a working app.
     # Log it, so the mistake is visible rather than silent.
